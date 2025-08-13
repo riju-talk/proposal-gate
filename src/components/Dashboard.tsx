@@ -103,9 +103,9 @@ export const Dashboard = () => {
     <div className="p-6 space-y-6 bg-dashboard-bg min-h-screen">
       {/* Header */}
       <div className="space-y-2">
-        <h1 className="text-3xl font-bold text-foreground">Event Proposal Dashboard</h1>
+        <h1 className="text-3xl font-bold text-foreground">Student Council IIIT-Delhi</h1>
         <p className="text-muted-foreground">
-          Manage and review university event proposals efficiently
+          Event Approval Portal - Manage and review event proposals efficiently
         </p>
       </div>
 

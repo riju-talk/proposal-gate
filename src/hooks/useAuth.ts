@@ -55,29 +55,51 @@ export const useAuthProvider = () => {
   }, []);
 
   const login = async (username: string, password: string): Promise<boolean> => {
-    // Find profile by username
-    const { data: profile } = await supabase
-      .from('profiles')
-      .select('*')
-      .eq('username', username)
-      .single();
-    
-    if (!profile) return false;
-    
-    // Try to sign in with email
-    const { data, error } = await supabase.auth.signInWithPassword({
-      email: profile.email,
-      password: password
-    });
-    
-    if (error || !data.user) return false;
-    
-    setUser({
-      id: profile.id,
-      username: profile.username,
-      email: profile.email
-    });
-    return true;
+    try {
+      // Map username to email for authentication
+      const emailMap: { [key: string]: string } = {
+        'admin': 'admin@university.edu',
+        'coordinator': 'coordinator@university.edu'
+      };
+
+      const email = emailMap[username];
+      if (!email) {
+        console.error('Username not found');
+        return false;
+      }
+
+      // Authenticate with Supabase Auth
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email,
+        password
+      });
+
+      if (error || !data.user) {
+        console.error('Authentication failed:', error);
+        return false;
+      }
+
+      // Get profile data
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('email', email)
+        .single();
+
+      if (profile) {
+        setUser({
+          id: profile.id,
+          username: profile.username,
+          email: profile.email
+        });
+        return true;
+      }
+
+      return false;
+    } catch (error) {
+      console.error('Login error:', error);
+      return false;
+    }
   };
 
   const logout = async () => {

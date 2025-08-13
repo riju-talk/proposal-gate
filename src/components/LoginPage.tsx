@@ -50,8 +50,8 @@ export const LoginPage = () => {
             </div>
           </div>
           <div className="space-y-2">
-            <h1 className="text-3xl font-bold text-foreground">Event Portal</h1>
-            <p className="text-muted-foreground text-lg">University Event Management System</p>
+            <h1 className="text-3xl font-bold text-foreground">Student Council IIIT-Delhi</h1>
+            <p className="text-muted-foreground text-lg">Event Approval Portal</p>
           </div>
         </div>
 
