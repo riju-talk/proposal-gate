@@ -9,6 +9,7 @@ import { LoginPage } from "@/components/LoginPage";
 import { Dashboard } from "@/components/Dashboard";
 import { AppSidebar } from "@/components/Sidebar";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
+import '@/utils/createAdminUsers'; // Auto-create admin users
 
 const queryClient = new QueryClient();
 
