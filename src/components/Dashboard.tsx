@@ -78,7 +78,7 @@ export const Dashboard = () => {
 
   const stats = useMemo(() => {
     const total = proposals.length;
-    const pending = proposals.filter(p => p.status === 'new').length;
+    const pending = proposals.filter(p => p.status === 'pending').length;
     const approved = proposals.filter(p => p.status === 'approved').length;
     const rejected = proposals.filter(p => p.status === 'rejected').length;
     const totalBudget = proposals
@@ -198,7 +198,7 @@ export const Dashboard = () => {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">All Status</SelectItem>
-                  <SelectItem value="new">Pending Review</SelectItem>
+                  <SelectItem value="pending">Pending Review</SelectItem>
                   <SelectItem value="approved">Approved</SelectItem>
                   <SelectItem value="rejected">Rejected</SelectItem>
                 </SelectContent>

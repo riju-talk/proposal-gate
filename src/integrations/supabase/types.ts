@@ -14,7 +14,279 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      club_formation_requests: {
+        Row: {
+          charter_document_url: string | null
+          club_description: string
+          club_name: string
+          club_objectives: string
+          created_at: string
+          faculty_advisor: string | null
+          id: string
+          initial_members: string[] | null
+          proposed_activities: string | null
+          proposed_by_email: string
+          proposed_by_name: string
+          proposed_by_phone: string | null
+          status: string | null
+          updated_at: string
+        }
+        Insert: {
+          charter_document_url?: string | null
+          club_description: string
+          club_name: string
+          club_objectives: string
+          created_at?: string
+          faculty_advisor?: string | null
+          id?: string
+          initial_members?: string[] | null
+          proposed_activities?: string | null
+          proposed_by_email: string
+          proposed_by_name: string
+          proposed_by_phone?: string | null
+          status?: string | null
+          updated_at?: string
+        }
+        Update: {
+          charter_document_url?: string | null
+          club_description?: string
+          club_name?: string
+          club_objectives?: string
+          created_at?: string
+          faculty_advisor?: string | null
+          id?: string
+          initial_members?: string[] | null
+          proposed_activities?: string | null
+          proposed_by_email?: string
+          proposed_by_name?: string
+          proposed_by_phone?: string | null
+          status?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      clubs: {
+        Row: {
+          category: string
+          channel_link: string | null
+          charter_url: string | null
+          coordinator_email: string
+          coordinator_name: string
+          created_at: string
+          description: string | null
+          formed_date: string | null
+          id: string
+          instagram_link: string | null
+          is_active: boolean | null
+          name: string
+          updated_at: string
+        }
+        Insert: {
+          category: string
+          channel_link?: string | null
+          charter_url?: string | null
+          coordinator_email: string
+          coordinator_name: string
+          created_at?: string
+          description?: string | null
+          formed_date?: string | null
+          id?: string
+          instagram_link?: string | null
+          is_active?: boolean | null
+          name: string
+          updated_at?: string
+        }
+        Update: {
+          category?: string
+          channel_link?: string | null
+          charter_url?: string | null
+          coordinator_email?: string
+          coordinator_name?: string
+          created_at?: string
+          description?: string | null
+          formed_date?: string | null
+          id?: string
+          instagram_link?: string | null
+          is_active?: boolean | null
+          name?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      event_proposals: {
+        Row: {
+          additional_requirements: string | null
+          budget_estimate: number | null
+          created_at: string
+          description: string
+          end_time: string
+          event_date: string
+          event_name: string
+          event_type: string
+          expected_participants: number
+          id: string
+          objectives: string | null
+          organizer_email: string
+          organizer_name: string
+          organizer_phone: string | null
+          pdf_document_url: string | null
+          start_time: string
+          status: string | null
+          updated_at: string
+          venue: string
+        }
+        Insert: {
+          additional_requirements?: string | null
+          budget_estimate?: number | null
+          created_at?: string
+          description: string
+          end_time: string
+          event_date: string
+          event_name: string
+          event_type: string
+          expected_participants: number
+          id?: string
+          objectives?: string | null
+          organizer_email: string
+          organizer_name: string
+          organizer_phone?: string | null
+          pdf_document_url?: string | null
+          start_time: string
+          status?: string | null
+          updated_at?: string
+          venue: string
+        }
+        Update: {
+          additional_requirements?: string | null
+          budget_estimate?: number | null
+          created_at?: string
+          description?: string
+          end_time?: string
+          event_date?: string
+          event_name?: string
+          event_type?: string
+          expected_participants?: number
+          id?: string
+          objectives?: string | null
+          organizer_email?: string
+          organizer_name?: string
+          organizer_phone?: string | null
+          pdf_document_url?: string | null
+          start_time?: string
+          status?: string | null
+          updated_at?: string
+          venue?: string
+        }
+        Relationships: []
+      }
+      hostel_info: {
+        Row: {
+          capacity: number | null
+          created_at: string
+          emergency_contact: string | null
+          facilities: string[] | null
+          hostel_name: string
+          id: string
+          rules: string[] | null
+          timings: Json | null
+          updated_at: string
+          warden_contact: string | null
+          warden_name: string | null
+        }
+        Insert: {
+          capacity?: number | null
+          created_at?: string
+          emergency_contact?: string | null
+          facilities?: string[] | null
+          hostel_name: string
+          id?: string
+          rules?: string[] | null
+          timings?: Json | null
+          updated_at?: string
+          warden_contact?: string | null
+          warden_name?: string | null
+        }
+        Update: {
+          capacity?: number | null
+          created_at?: string
+          emergency_contact?: string | null
+          facilities?: string[] | null
+          hostel_name?: string
+          id?: string
+          rules?: string[] | null
+          timings?: Json | null
+          updated_at?: string
+          warden_contact?: string | null
+          warden_name?: string | null
+        }
+        Relationships: []
+      }
+      important_contacts: {
+        Row: {
+          created_at: string
+          department: string | null
+          designation: string | null
+          display_order: number | null
+          email: string | null
+          id: string
+          is_emergency: boolean | null
+          name: string
+          phone_number: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          department?: string | null
+          designation?: string | null
+          display_order?: number | null
+          email?: string | null
+          id?: string
+          is_emergency?: boolean | null
+          name: string
+          phone_number: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          department?: string | null
+          designation?: string | null
+          display_order?: number | null
+          email?: string | null
+          id?: string
+          is_emergency?: boolean | null
+          name?: string
+          phone_number?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      profiles: {
+        Row: {
+          created_at: string
+          email: string
+          full_name: string | null
+          id: string
+          updated_at: string
+          username: string
+        }
+        Insert: {
+          created_at?: string
+          email: string
+          full_name?: string | null
+          id?: string
+          updated_at?: string
+          username: string
+        }
+        Update: {
+          created_at?: string
+          email?: string
+          full_name?: string | null
+          id?: string
+          updated_at?: string
+          username?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never

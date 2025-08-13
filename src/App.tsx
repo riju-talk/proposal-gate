@@ -34,7 +34,7 @@ const AppContent = () => {
         <main className="flex-1">
           <header className="h-12 flex items-center border-b bg-background px-4">
             <SidebarTrigger />
-            <h1 className="ml-4 font-semibold">Event Proposal Management</h1>
+            <h1 className="ml-4 font-semibold">Student Council Event Approval Portal</h1>
           </header>
           <Dashboard />
         </main>

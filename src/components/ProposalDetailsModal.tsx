@@ -108,7 +108,7 @@ export const ProposalDetailsModal = ({
               <p className="text-muted-foreground mt-1">{proposal.eventType}</p>
             </div>
             <Badge className={`${getStatusColor(proposal.status)} border-0 font-medium`}>
-              {proposal.status === 'new' ? 'Pending Review' : proposal.status.charAt(0).toUpperCase() + proposal.status.slice(1)}
+              {proposal.status === 'pending' ? 'Pending Review' : proposal.status.charAt(0).toUpperCase() + proposal.status.slice(1)}
             </Badge>
           </div>
         </DialogHeader>
@@ -206,7 +206,7 @@ export const ProposalDetailsModal = ({
           )}
 
           {/* Review Section (for pending proposals) */}
-          {proposal.status === 'new' && (
+          {proposal.status === 'pending' && (
             <div className="space-y-4 border-t pt-6">
               <h3 className="font-semibold text-lg">Review Proposal</h3>
               <div className="space-y-4">

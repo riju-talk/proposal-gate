@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { supabase } from '@/integrations/supabase/client';
 
 export interface EventProposal {
   id: string;
@@ -18,111 +19,80 @@ export interface EventProposal {
   specialRequirements: string;
   marketingPlan: string;
   supportingDocuments?: File;
-  status: 'new' | 'approved' | 'rejected';
+  status: 'pending' | 'approved' | 'rejected';
   submittedAt: Date;
   reviewedAt?: Date;
   reviewedBy?: string;
   reviewComments?: string;
 }
 
-// Mock data - replace with Supabase later
-const mockProposals: EventProposal[] = [
-  {
-    id: '1',
-    eventName: 'Annual Tech Symposium 2024',
-    eventType: 'Conference',
-    eventDescription: 'A comprehensive technology symposium featuring industry leaders, academic researchers, and students. The event will showcase cutting-edge research in AI, blockchain, and sustainable technology.',
-    eventDate: '2024-09-15',
-    startTime: '09:00',
-    duration: '8 hours',
-    preferredVenue: 'Main Auditorium',
-    expectedAttendees: 250,
-    estimatedBudget: 50000,
-    primaryOrganizer: 'Dr. Sarah Johnson',
-    emailAddress: 'sarah.johnson@university.edu',
-    phoneNumber: '+1 555-0123',
-    department: 'Computer Science',
-    specialRequirements: 'High-speed internet, live streaming setup, accessibility ramps',
-    marketingPlan: 'Social media campaign, university newsletter, department websites, industry partnerships',
-    status: 'new',
-    submittedAt: new Date('2024-08-01T10:30:00'),
-  },
-  {
-    id: '2',
-    eventName: 'Student Research Showcase',
-    eventType: 'Academic',
-    eventDescription: 'An exhibition of outstanding undergraduate and graduate student research projects across all disciplines.',
-    eventDate: '2024-09-22',
-    startTime: '14:00',
-    duration: '4 hours',
-    preferredVenue: 'Student Center',
-    expectedAttendees: 150,
-    estimatedBudget: 15000,
-    primaryOrganizer: 'Prof. Michael Chen',
-    emailAddress: 'michael.chen@university.edu',
-    phoneNumber: '+1 555-0456',
-    department: 'Graduate Studies',
-    specialRequirements: 'Display boards, poster stands, lighting equipment',
-    marketingPlan: 'Department announcements, student portals, faculty recommendations',
-    status: 'approved',
-    submittedAt: new Date('2024-07-28T15:45:00'),
-    reviewedAt: new Date('2024-08-02T11:20:00'),
-    reviewedBy: 'admin',
-    reviewComments: 'Excellent proposal with clear objectives and budget breakdown. Approved for fall semester.',
-  },
-  {
-    id: '3',
-    eventName: 'Environmental Awareness Workshop',
-    eventType: 'Workshop',
-    eventDescription: 'Interactive workshop focusing on sustainable practices and environmental conservation for campus community.',
-    eventDate: '2024-08-30',
-    startTime: '10:00',
-    duration: '3 hours',
-    preferredVenue: 'Green Campus Center',
-    expectedAttendees: 80,
-    estimatedBudget: 8000,
-    primaryOrganizer: 'Lisa Rodriguez',
-    emailAddress: 'lisa.rodriguez@university.edu',
-    phoneNumber: '+1 555-0789',
-    department: 'Environmental Science',
-    specialRequirements: 'Recycling materials, outdoor space access, microphone system',
-    marketingPlan: 'Eco-club networks, campus sustainability office, student organizations',
-    status: 'rejected',
-    submittedAt: new Date('2024-07-25T09:15:00'),
-    reviewedAt: new Date('2024-08-01T16:30:00'),
-    reviewedBy: 'admin',
-    reviewComments: 'Budget exceeds departmental allocation for this semester. Please resubmit with revised budget.',
-  }
-];
+// Map database fields to our interface
+const mapDatabaseToProposal = (dbRow: any): EventProposal => ({
+  id: dbRow.id,
+  eventName: dbRow.event_name,
+  eventType: dbRow.event_type,
+  eventDescription: dbRow.description,
+  eventDate: dbRow.event_date,
+  startTime: dbRow.start_time,
+  duration: `${Math.floor((new Date(`1970-01-01T${dbRow.end_time}:00Z`).getTime() - new Date(`1970-01-01T${dbRow.start_time}:00Z`).getTime()) / (1000 * 60 * 60))} hours`,
+  preferredVenue: dbRow.venue,
+  expectedAttendees: dbRow.expected_participants,
+  estimatedBudget: dbRow.budget_estimate || 0,
+  primaryOrganizer: dbRow.organizer_name,
+  emailAddress: dbRow.organizer_email,
+  phoneNumber: dbRow.organizer_phone || '',
+  department: 'Not specified',
+  specialRequirements: dbRow.additional_requirements || '',
+  marketingPlan: 'Not specified',
+  status: dbRow.status === 'pending' ? 'pending' : dbRow.status,
+  submittedAt: new Date(dbRow.created_at),
+  reviewedAt: dbRow.updated_at !== dbRow.created_at ? new Date(dbRow.updated_at) : undefined,
+  reviewedBy: dbRow.status !== 'pending' ? 'admin' : undefined,
+  reviewComments: ''
+});
 
 export const useEventProposals = () => {
   const [proposals, setProposals] = useState<EventProposal[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    // Simulate API call
-    setTimeout(() => {
-      const storedProposals = localStorage.getItem('event_proposals');
-      if (storedProposals) {
-        const parsed = JSON.parse(storedProposals);
-        // Convert date strings back to Date objects
-        const proposalsWithDates = parsed.map((p: any) => ({
-          ...p,
-          submittedAt: new Date(p.submittedAt),
-          reviewedAt: p.reviewedAt ? new Date(p.reviewedAt) : undefined,
-        }));
-        setProposals(proposalsWithDates);
-      } else {
-        setProposals(mockProposals);
-        localStorage.setItem('event_proposals', JSON.stringify(mockProposals));
+    const fetchProposals = async () => {
+      const { data, error } = await supabase
+        .from('event_proposals')
+        .select('*')
+        .order('created_at', { ascending: false });
+      
+      if (error) {
+        console.error('Error fetching proposals:', error);
+        setIsLoading(false);
+        return;
       }
+      
+      const mappedProposals = data.map(mapDatabaseToProposal);
+      setProposals(mappedProposals);
       setIsLoading(false);
-    }, 1000);
+    };
+
+    fetchProposals();
   }, []);
 
-  const updateProposalStatus = (id: string, status: 'approved' | 'rejected', comments: string) => {
-    setProposals(prev => {
-      const updated = prev.map(proposal => 
+  const updateProposalStatus = async (id: string, status: 'approved' | 'rejected', comments: string) => {
+    const { error } = await supabase
+      .from('event_proposals')
+      .update({ 
+        status,
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', id);
+    
+    if (error) {
+      console.error('Error updating proposal:', error);
+      return;
+    }
+
+    // Update local state
+    setProposals(prev => 
+      prev.map(proposal => 
         proposal.id === id 
           ? { 
               ...proposal, 
@@ -132,12 +102,10 @@ export const useEventProposals = () => {
               reviewComments: comments 
             }
           : proposal
-      );
-      localStorage.setItem('event_proposals', JSON.stringify(updated));
-      return updated;
-    });
+      )
+    );
 
-    // Simulate sending email notification
+    // Get proposal details for email
     const proposal = proposals.find(p => p.id === id);
     if (proposal) {
       console.log(`Email notification sent to ${proposal.emailAddress}: Event "${proposal.eventName}" has been ${status}.`);

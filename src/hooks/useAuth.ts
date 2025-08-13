@@ -1,4 +1,5 @@
-import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import { createContext, useContext, useState, useEffect } from 'react';
+import { supabase } from '@/integrations/supabase/client';
 
 interface User {
   id: string;
@@ -23,39 +24,65 @@ export const useAuth = () => {
   return context;
 };
 
-// Mock authentication - replace with Supabase later
-const mockUsers = [
-  { id: '1', username: 'admin', password: 'admin123', email: 'admin@university.edu' },
-  { id: '2', username: 'coordinator', password: 'coord123', email: 'coordinator@university.edu' }
-];
-
 export const useAuthProvider = () => {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    // Check for stored auth
-    const storedUser = localStorage.getItem('event_portal_user');
-    if (storedUser) {
-      setUser(JSON.parse(storedUser));
-    }
-    setIsLoading(false);
+    // Check for existing session on mount
+    const checkAuth = async () => {
+      const { data: { user: supabaseUser } } = await supabase.auth.getUser();
+      if (supabaseUser) {
+        // Get profile data
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('*')
+          .eq('email', supabaseUser.email)
+          .single();
+        
+        if (profile) {
+          setUser({
+            id: profile.id,
+            username: profile.username,
+            email: profile.email
+          });
+        }
+      }
+      setIsLoading(false);
+    };
+    
+    checkAuth();
   }, []);
 
   const login = async (username: string, password: string): Promise<boolean> => {
-    const foundUser = mockUsers.find(u => u.username === username && u.password === password);
-    if (foundUser) {
-      const { password: _, ...userWithoutPassword } = foundUser;
-      setUser(userWithoutPassword);
-      localStorage.setItem('event_portal_user', JSON.stringify(userWithoutPassword));
-      return true;
-    }
-    return false;
+    // Find profile by username
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('*')
+      .eq('username', username)
+      .single();
+    
+    if (!profile) return false;
+    
+    // Try to sign in with email
+    const { data, error } = await supabase.auth.signInWithPassword({
+      email: profile.email,
+      password: password
+    });
+    
+    if (error || !data.user) return false;
+    
+    setUser({
+      id: profile.id,
+      username: profile.username,
+      email: profile.email
+    });
+    return true;
   };
 
-  const logout = () => {
+  const logout = async () => {
+    await supabase.auth.signOut();
     setUser(null);
-    localStorage.removeItem('event_portal_user');
   };
 
   return {
