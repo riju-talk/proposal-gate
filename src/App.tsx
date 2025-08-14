@@ -18,8 +18,11 @@ const AppContent = () => {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-dashboard-bg via-background to-muted">
+        <div className="text-center space-y-4">
+          <div className="animate-spin rounded-full h-16 w-16 border-4 border-primary/20 border-t-primary mx-auto"></div>
+          <p className="text-muted-foreground text-lg">Loading...</p>
+        </div>
       </div>
     );
   }

@@ -1,5 +1,6 @@
 import { createContext, useContext, useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import type { Session, User as SupabaseUser } from '@supabase/supabase-js';
 
 interface User {
   id: string;
@@ -9,9 +10,12 @@ interface User {
 
 interface AuthContextType {
   user: User | null;
-  login: (username: string, password: string) => Promise<boolean>;
-  logout: () => void;
+  session: Session | null;
+  sendOTP: (email: string) => Promise<{ success: boolean; error?: string }>;
+  verifyOTP: (email: string, token: string) => Promise<{ success: boolean; error?: string }>;
+  logout: () => Promise<void>;
   isLoading: boolean;
+  isOTPSent: boolean;
 }
 
 export const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -26,91 +30,182 @@ export const useAuth = () => {
 
 export const useAuthProvider = () => {
   const [user, setUser] = useState<User | null>(null);
+  const [session, setSession] = useState<Session | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [isOTPSent, setIsOTPSent] = useState(false);
 
   useEffect(() => {
-    // Check for existing session on mount
-    const checkAuth = async () => {
-      const { data: { user: supabaseUser } } = await supabase.auth.getUser();
-      if (supabaseUser) {
-        // Get profile data
-        const { data: profile } = await supabase
-          .from('profiles')
-          .select('*')
-          .eq('email', supabaseUser.email)
-          .single();
+    let mounted = true;
+
+    // Set up auth state listener first
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      async (event, session) => {
+        console.log('Auth state change:', event, session?.user?.email);
         
-        if (profile) {
-          setUser({
-            id: profile.id,
-            username: profile.username,
-            email: profile.email
-          });
+        if (!mounted) return;
+        
+        setSession(session);
+        
+        if (session?.user) {
+          // Defer profile fetching to avoid deadlock
+          setTimeout(async () => {
+            if (!mounted) return;
+            
+            try {
+              const { data: profile, error } = await supabase
+                .from('profiles')
+                .select('*')
+                .eq('email', session.user.email)
+                .single();
+              
+              if (error) {
+                console.error('Profile fetch error:', error);
+                setUser(null);
+              } else if (profile && mounted) {
+                setUser({
+                  id: profile.id,
+                  username: profile.username,
+                  email: profile.email
+                });
+              }
+            } catch (error) {
+              console.error('Profile fetch exception:', error);
+              setUser(null);
+            }
+          }, 0);
+        } else {
+          setUser(null);
+        }
+        
+        if (mounted) {
+          setIsLoading(false);
         }
       }
-      setIsLoading(false);
+    );
+
+    // Check for existing session
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (mounted) {
+        setSession(session);
+        setIsLoading(false);
+      }
+    });
+
+    return () => {
+      mounted = false;
+      subscription.unsubscribe();
     };
-    
-    checkAuth();
   }, []);
 
-  const login = async (username: string, password: string): Promise<boolean> => {
+  const sendOTP = async (email: string): Promise<{ success: boolean; error?: string }> => {
     try {
-      // Map username to email for authentication
+      setIsLoading(true);
+      
+      // Map common usernames to emails for convenience
       const emailMap: { [key: string]: string } = {
         'admin': 'admin@university.edu',
         'coordinator': 'coordinator@university.edu'
       };
-
-      const email = emailMap[username];
-      if (!email) {
-        console.error('Username not found');
-        return false;
-      }
-
-      // Authenticate with Supabase Auth
-      const { data, error } = await supabase.auth.signInWithPassword({
-        email,
-        password
+      
+      const actualEmail = emailMap[email.toLowerCase()] || email;
+      
+      const { error } = await supabase.auth.signInWithOtp({
+        email: actualEmail,
+        options: {
+          emailRedirectTo: `${window.location.origin}/`
+        }
       });
 
-      if (error || !data.user) {
-        console.error('Authentication failed:', error);
-        return false;
+      if (error) {
+        console.error('OTP send error:', error);
+        setIsOTPSent(false);
+        return { 
+          success: false, 
+          error: error.message || 'Failed to send OTP' 
+        };
       }
 
-      // Get profile data
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('email', email)
-        .single();
-
-      if (profile) {
-        setUser({
-          id: profile.id,
-          username: profile.username,
-          email: profile.email
-        });
-        return true;
-      }
-
-      return false;
+      setIsOTPSent(true);
+      return { success: true };
     } catch (error) {
-      console.error('Login error:', error);
-      return false;
+      console.error('OTP send exception:', error);
+      setIsOTPSent(false);
+      return { 
+        success: false, 
+        error: 'An unexpected error occurred' 
+      };
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const verifyOTP = async (email: string, token: string): Promise<{ success: boolean; error?: string }> => {
+    try {
+      setIsLoading(true);
+      
+      // Map common usernames to emails for convenience
+      const emailMap: { [key: string]: string } = {
+        'admin': 'admin@university.edu',
+        'coordinator': 'coordinator@university.edu'
+      };
+      
+      const actualEmail = emailMap[email.toLowerCase()] || email;
+
+      const { data, error } = await supabase.auth.verifyOtp({
+        email: actualEmail,
+        token,
+        type: 'email'
+      });
+
+      if (error) {
+        console.error('OTP verification error:', error);
+        return { 
+          success: false, 
+          error: error.message || 'Invalid OTP code' 
+        };
+      }
+
+      if (data.user) {
+        setIsOTPSent(false);
+        return { success: true };
+      }
+
+      return { 
+        success: false, 
+        error: 'Verification failed' 
+      };
+    } catch (error) {
+      console.error('OTP verification exception:', error);
+      return { 
+        success: false, 
+        error: 'An unexpected error occurred' 
+      };
+    } finally {
+      setIsLoading(false);
     }
   };
 
   const logout = async () => {
-    await supabase.auth.signOut();
-    setUser(null);
+    try {
+      setIsLoading(true);
+      await supabase.auth.signOut();
+      setUser(null);
+      setSession(null);
+      setIsOTPSent(false);
+    } catch (error) {
+      console.error('Logout error:', error);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return {
     user,
-    login,
+    session,
+    sendOTP,
+    verifyOTP,
     logout,
-    isLoading
+    isLoading,
+    isOTPSent
   };
 };
