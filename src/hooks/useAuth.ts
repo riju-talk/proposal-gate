@@ -55,17 +55,24 @@ export const useAuthProvider = () => {
               const { data: profile, error } = await supabase
                 .from('profiles')
                 .select('*')
-                .eq('email', session.user.email)
-                .single();
+                .eq('user_id', session.user.id)
+                .maybeSingle();
               
               if (error) {
                 console.error('Profile fetch error:', error);
                 setUser(null);
               } else if (profile && mounted) {
                 setUser({
-                  id: profile.id,
+                  id: profile.user_id,
                   username: profile.username,
                   email: profile.email
+                });
+              } else if (mounted) {
+                // If no profile found, create a default user object
+                setUser({
+                  id: session.user.id,
+                  username: session.user.email?.split('@')[0] || 'user',
+                  email: session.user.email || ''
                 });
               }
             } catch (error) {
@@ -112,7 +119,10 @@ export const useAuthProvider = () => {
       const { error } = await supabase.auth.signInWithOtp({
         email: actualEmail,
         options: {
-          emailRedirectTo: `${window.location.origin}/`
+          shouldCreateUser: true,
+          data: {
+            username: email.includes('@') ? email.split('@')[0] : email
+          }
         }
       });
 
