@@ -180,6 +180,12 @@ export const useAuthProvider = () => {
 
       if (data.user) {
         setIsOTPSent(false);
+        
+        // Wait a moment for the auth state to update
+        setTimeout(() => {
+          window.location.reload();
+        }, 1000);
+        
         return { success: true };
       }
 
@@ -205,6 +211,11 @@ export const useAuthProvider = () => {
       setUser(null);
       setSession(null);
       setIsOTPSent(false);
+      
+      // Reload the page to reset the app state
+      setTimeout(() => {
+        window.location.reload();
+      }, 500);
     } catch (error) {
       console.error('Logout error:', error);
     } finally {

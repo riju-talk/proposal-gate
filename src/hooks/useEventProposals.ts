@@ -15,6 +15,7 @@ export interface EventProposal {
   organizer_name: string;
   organizer_email: string;
   organizer_phone: string;
+  objectives?: string;
   additional_requirements: string;
   pdf_document_url?: string;
   status: 'pending' | 'approved' | 'rejected' | 'under_consideration';
@@ -37,6 +38,7 @@ const mapDatabaseToProposal = (dbRow: any): EventProposal => ({
   organizer_name: dbRow.organizer_name,
   organizer_email: dbRow.organizer_email,
   organizer_phone: dbRow.organizer_phone || '',
+  objectives: dbRow.objectives || '',
   additional_requirements: dbRow.additional_requirements || '',
   pdf_document_url: dbRow.pdf_document_url,
   status: dbRow.status,
