@@ -3,52 +3,45 @@ import { supabase } from '@/integrations/supabase/client';
 
 export interface EventProposal {
   id: string;
-  eventName: string;
-  eventType: string;
-  eventDescription: string;
-  eventDate: string;
-  startTime: string;
-  duration: string;
-  preferredVenue: string;
-  expectedAttendees: number;
-  estimatedBudget: number;
-  primaryOrganizer: string;
-  emailAddress: string;
-  phoneNumber: string;
-  department: string;
-  specialRequirements: string;
-  marketingPlan: string;
-  supportingDocuments?: File;
-  status: 'pending' | 'approved' | 'rejected';
-  submittedAt: Date;
-  reviewedAt?: Date;
-  reviewedBy?: string;
-  reviewComments?: string;
+  event_name: string;
+  event_type: string;
+  description: string;
+  event_date: string;
+  start_time: string;
+  end_time: string;
+  venue: string;
+  expected_participants: number;
+  budget_estimate: number;
+  organizer_name: string;
+  organizer_email: string;
+  organizer_phone: string;
+  additional_requirements: string;
+  pdf_document_url?: string;
+  status: 'pending' | 'approved' | 'rejected' | 'under_consideration';
+  created_at: string;
+  updated_at: string;
 }
 
-// Map database fields to our interface
+// Database mapping function - returning raw data
 const mapDatabaseToProposal = (dbRow: any): EventProposal => ({
   id: dbRow.id,
-  eventName: dbRow.event_name,
-  eventType: dbRow.event_type,
-  eventDescription: dbRow.description,
-  eventDate: dbRow.event_date,
-  startTime: dbRow.start_time,
-  duration: `${Math.floor((new Date(`1970-01-01T${dbRow.end_time}:00Z`).getTime() - new Date(`1970-01-01T${dbRow.start_time}:00Z`).getTime()) / (1000 * 60 * 60))} hours`,
-  preferredVenue: dbRow.venue,
-  expectedAttendees: dbRow.expected_participants,
-  estimatedBudget: dbRow.budget_estimate || 0,
-  primaryOrganizer: dbRow.organizer_name,
-  emailAddress: dbRow.organizer_email,
-  phoneNumber: dbRow.organizer_phone || '',
-  department: 'Not specified',
-  specialRequirements: dbRow.additional_requirements || '',
-  marketingPlan: 'Not specified',
-  status: dbRow.status === 'pending' ? 'pending' : dbRow.status,
-  submittedAt: new Date(dbRow.created_at),
-  reviewedAt: dbRow.updated_at !== dbRow.created_at ? new Date(dbRow.updated_at) : undefined,
-  reviewedBy: dbRow.status !== 'pending' ? 'admin' : undefined,
-  reviewComments: ''
+  event_name: dbRow.event_name,
+  event_type: dbRow.event_type,
+  description: dbRow.description,
+  event_date: dbRow.event_date,
+  start_time: dbRow.start_time,
+  end_time: dbRow.end_time,
+  venue: dbRow.venue,
+  expected_participants: dbRow.expected_participants,
+  budget_estimate: dbRow.budget_estimate || 0,
+  organizer_name: dbRow.organizer_name,
+  organizer_email: dbRow.organizer_email,
+  organizer_phone: dbRow.organizer_phone || '',
+  additional_requirements: dbRow.additional_requirements || '',
+  pdf_document_url: dbRow.pdf_document_url,
+  status: dbRow.status,
+  created_at: dbRow.created_at,
+  updated_at: dbRow.updated_at
 });
 
 export const useEventProposals = () => {
@@ -76,7 +69,7 @@ export const useEventProposals = () => {
     fetchProposals();
   }, []);
 
-  const updateProposalStatus = async (id: string, status: 'approved' | 'rejected', comments: string) => {
+  const updateProposalStatus = async (id: string, status: 'approved' | 'rejected' | 'under_consideration', comments: string) => {
     const { error } = await supabase
       .from('event_proposals')
       .update({ 
@@ -97,19 +90,11 @@ export const useEventProposals = () => {
           ? { 
               ...proposal, 
               status, 
-              reviewedAt: new Date(),
-              reviewedBy: 'admin',
-              reviewComments: comments 
+              updated_at: new Date().toISOString()
             }
           : proposal
       )
     );
-
-    // Get proposal details for email
-    const proposal = proposals.find(p => p.id === id);
-    if (proposal) {
-      console.log(`Email notification sent to ${proposal.emailAddress}: Event "${proposal.eventName}" has been ${status}.`);
-    }
   };
 
   return {

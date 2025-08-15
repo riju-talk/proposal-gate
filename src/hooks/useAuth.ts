@@ -6,6 +6,7 @@ interface User {
   id: string;
   username: string;
   email: string;
+  role?: string;
 }
 
 interface AuthContextType {
@@ -65,14 +66,16 @@ export const useAuthProvider = () => {
                 setUser({
                   id: profile.user_id,
                   username: profile.username,
-                  email: profile.email
+                  email: profile.email,
+                  role: profile.role
                 });
               } else if (mounted) {
                 // If no profile found, create a default user object
                 setUser({
                   id: session.user.id,
                   username: session.user.email?.split('@')[0] || 'user',
-                  email: session.user.email || ''
+                  email: session.user.email || '',
+                  role: 'user'
                 });
               }
             } catch (error) {

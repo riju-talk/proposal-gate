@@ -1,8 +1,7 @@
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Textarea } from '@/components/ui/textarea';
-import { Label } from '@/components/ui/label';
 import { EventProposal } from '@/hooks/useEventProposals';
 import { 
   Calendar, 
@@ -13,77 +12,72 @@ import {
   User, 
   Mail, 
   Phone, 
-  Building, 
   FileText,
   Check,
   X,
-  Download
+  AlertCircle
 } from 'lucide-react';
 import { useState } from 'react';
-import { useToast } from '@/hooks/use-toast';
 import { formatDistanceToNow } from 'date-fns';
 
 interface ProposalDetailsModalProps {
   proposal: EventProposal | null;
   isOpen: boolean;
   onClose: () => void;
-  onStatusUpdate: (id: string, status: 'approved' | 'rejected', comments: string) => void;
+  onStatusUpdate: (id: string, status: 'approved' | 'rejected' | 'under_consideration', comments: string) => Promise<void>;
+  showActions: boolean;
 }
 
 export const ProposalDetailsModal = ({ 
   proposal, 
   isOpen, 
   onClose, 
-  onStatusUpdate 
+  onStatusUpdate,
+  showActions 
 }: ProposalDetailsModalProps) => {
-  const [reviewComments, setReviewComments] = useState('');
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const { toast } = useToast();
+  const [comments, setComments] = useState('');
 
   if (!proposal) return null;
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'new':
-        return 'bg-dashboard-status-new text-white';
       case 'approved':
-        return 'bg-dashboard-status-approved text-white';
+        return 'bg-success text-success-foreground';
       case 'rejected':
-        return 'bg-dashboard-status-rejected text-white';
+        return 'bg-destructive text-destructive-foreground';
+      case 'under_consideration':
+        return 'bg-warning text-warning-foreground';
       default:
-        return 'bg-muted text-muted-foreground';
+        return 'bg-accent text-accent-foreground';
     }
   };
 
-  const handleStatusUpdate = async (status: 'approved' | 'rejected') => {
-    if (!reviewComments.trim()) {
-      toast({
-        title: "Comments required",
-        description: "Please provide review comments before updating the status.",
-        variant: "destructive",
-      });
-      return;
+  const getStatusText = (status: string) => {
+    switch (status) {
+      case 'approved':
+        return 'Approved';
+      case 'rejected':
+        return 'Rejected';
+      case 'under_consideration':
+        return 'Under Consideration';
+      default:
+        return 'Pending';
     }
+  };
 
-    setIsSubmitting(true);
-    try {
-      onStatusUpdate(proposal.id, status, reviewComments);
-      toast({
-        title: `Proposal ${status}`,
-        description: `The event proposal has been ${status} successfully.`,
-        variant: status === 'approved' ? 'default' : 'destructive',
-      });
-      onClose();
-      setReviewComments('');
-    } catch (error) {
-      toast({
-        title: "Error",
-        description: "Failed to update proposal status. Please try again.",
-        variant: "destructive",
-      });
-    } finally {
-      setIsSubmitting(false);
-    }
+  const handleApprove = async () => {
+    await onStatusUpdate(proposal.id, 'approved', comments);
+    onClose();
+  };
+
+  const handleReject = async () => {
+    await onStatusUpdate(proposal.id, 'rejected', comments);
+    onClose();
+  };
+
+  const handleMarkForConsideration = async () => {
+    await onStatusUpdate(proposal.id, 'under_consideration', comments);
+    onClose();
   };
 
   const InfoRow = ({ icon: Icon, label, value }: { icon: any, label: string, value: string | number }) => (
@@ -103,12 +97,12 @@ export const ProposalDetailsModal = ({
           <div className="flex items-start justify-between gap-4">
             <div className="flex-1">
               <DialogTitle className="text-2xl font-bold text-foreground">
-                {proposal.eventName}
+                {proposal.event_name}
               </DialogTitle>
-              <p className="text-muted-foreground mt-1">{proposal.eventType}</p>
+              <p className="text-muted-foreground mt-1">{proposal.event_type}</p>
             </div>
             <Badge className={`${getStatusColor(proposal.status)} border-0 font-medium`}>
-              {proposal.status === 'pending' ? 'Pending Review' : proposal.status.charAt(0).toUpperCase() + proposal.status.slice(1)}
+              {getStatusText(proposal.status)}
             </Badge>
           </div>
         </DialogHeader>
@@ -118,7 +112,7 @@ export const ProposalDetailsModal = ({
           <div className="space-y-2">
             <h3 className="font-semibold text-lg">Event Description</h3>
             <p className="text-muted-foreground leading-relaxed bg-muted/30 p-4 rounded-lg">
-              {proposal.eventDescription}
+              {proposal.description}
             </p>
           </div>
 
@@ -126,11 +120,13 @@ export const ProposalDetailsModal = ({
           <div className="space-y-4">
             <h3 className="font-semibold text-lg">Event Details</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <InfoRow icon={Calendar} label="Event Date" value={proposal.eventDate} />
-              <InfoRow icon={Clock} label="Start Time & Duration" value={`${proposal.startTime} (${proposal.duration})`} />
-              <InfoRow icon={MapPin} label="Preferred Venue" value={proposal.preferredVenue} />
-              <InfoRow icon={Users} label="Expected Attendees" value={proposal.expectedAttendees} />
-              <InfoRow icon={DollarSign} label="Estimated Budget" value={`₹${proposal.estimatedBudget.toLocaleString()}`} />
+              <InfoRow icon={Calendar} label="Event Date" value={new Date(proposal.event_date).toLocaleDateString()} />
+              <InfoRow icon={Clock} label="Time" value={`${proposal.start_time} - ${proposal.end_time}`} />
+              <InfoRow icon={MapPin} label="Venue" value={proposal.venue} />
+              <InfoRow icon={Users} label="Expected Participants" value={proposal.expected_participants} />
+              {proposal.budget_estimate && (
+                <InfoRow icon={DollarSign} label="Budget Estimate" value={`₹${proposal.budget_estimate.toLocaleString()}`} />
+              )}
             </div>
           </div>
 
@@ -138,110 +134,97 @@ export const ProposalDetailsModal = ({
           <div className="space-y-4">
             <h3 className="font-semibold text-lg">Organizer Information</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <InfoRow icon={User} label="Primary Organizer" value={proposal.primaryOrganizer} />
-              <InfoRow icon={Mail} label="Email Address" value={proposal.emailAddress} />
-              <InfoRow icon={Phone} label="Phone Number" value={proposal.phoneNumber} />
-              <InfoRow icon={Building} label="Department/Club" value={proposal.department} />
-            </div>
-          </div>
-
-          {/* Additional Information */}
-          <div className="space-y-4">
-            <h3 className="font-semibold text-lg">Additional Information</h3>
-            <div className="space-y-4">
-              <div className="space-y-2">
-                <Label className="font-medium">Special Requirements</Label>
-                <p className="text-sm text-muted-foreground bg-muted/30 p-3 rounded-lg">
-                  {proposal.specialRequirements || 'None specified'}
-                </p>
-              </div>
-              <div className="space-y-2">
-                <Label className="font-medium">Marketing & Promotion Plan</Label>
-                <p className="text-sm text-muted-foreground bg-muted/30 p-3 rounded-lg">
-                  {proposal.marketingPlan || 'None specified'}
-                </p>
-              </div>
-            </div>
-          </div>
-
-          {/* Supporting Documents */}
-          <div className="space-y-4">
-            <h3 className="font-semibold text-lg">Supporting Documents</h3>
-            <div className="border-2 border-dashed border-border rounded-lg p-6 text-center">
-              <FileText className="h-12 w-12 text-muted-foreground mx-auto mb-3" />
-              {proposal.supportingDocuments ? (
-                <div className="space-y-2">
-                  <p className="font-medium">Document Available</p>
-                  <Button variant="outline" size="sm" className="gap-2">
-                    <Download className="h-4 w-4" />
-                    Download PDF
-                  </Button>
-                </div>
-              ) : (
-                <p className="text-muted-foreground">No supporting documents uploaded</p>
+              <InfoRow icon={User} label="Organizer Name" value={proposal.organizer_name} />
+              <InfoRow icon={Mail} label="Email Address" value={proposal.organizer_email} />
+              {proposal.organizer_phone && (
+                <InfoRow icon={Phone} label="Phone Number" value={proposal.organizer_phone} />
               )}
             </div>
           </div>
 
+          {/* Additional Requirements */}
+          {proposal.additional_requirements && (
+            <div className="space-y-2">
+              <h3 className="font-semibold text-lg">Additional Requirements</h3>
+              <p className="text-muted-foreground leading-relaxed bg-muted/30 p-4 rounded-lg">
+                {proposal.additional_requirements}
+              </p>
+            </div>
+          )}
+
           {/* Submission Info */}
           <div className="bg-muted/20 p-4 rounded-lg">
             <p className="text-sm text-muted-foreground">
-              <strong>Submitted:</strong> {formatDistanceToNow(proposal.submittedAt, { addSuffix: true })}
+              <strong>Submitted:</strong> {formatDistanceToNow(new Date(proposal.created_at), { addSuffix: true })}
             </p>
-            {proposal.reviewedAt && (
+            {proposal.updated_at !== proposal.created_at && (
               <p className="text-sm text-muted-foreground mt-1">
-                <strong>Reviewed:</strong> {formatDistanceToNow(proposal.reviewedAt, { addSuffix: true })} by {proposal.reviewedBy}
+                <strong>Last Updated:</strong> {formatDistanceToNow(new Date(proposal.updated_at), { addSuffix: true })}
               </p>
             )}
           </div>
 
-          {/* Review Comments (if reviewed) */}
-          {proposal.reviewComments && (
-            <div className="space-y-2">
-              <Label className="font-medium">Review Comments</Label>
-              <p className="text-sm text-muted-foreground bg-muted/30 p-3 rounded-lg">
-                {proposal.reviewComments}
-              </p>
-            </div>
-          )}
-
-          {/* Review Section (for pending proposals) */}
-          {proposal.status === 'pending' && (
-            <div className="space-y-4 border-t pt-6">
-              <h3 className="font-semibold text-lg">Review Proposal</h3>
-              <div className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="review-comments">Review Comments *</Label>
-                  <Textarea
-                    id="review-comments"
-                    value={reviewComments}
-                    onChange={(e) => setReviewComments(e.target.value)}
-                    placeholder="Provide your review comments, feedback, or reasons for approval/rejection..."
-                    className="min-h-[100px]"
-                  />
-                </div>
-                <div className="flex gap-3">
-                  <Button
-                    onClick={() => handleStatusUpdate('approved')}
-                    disabled={isSubmitting}
-                    className="bg-gradient-success hover:opacity-90 gap-2"
-                  >
-                    <Check className="h-4 w-4" />
-                    Approve Proposal
-                  </Button>
-                  <Button
-                    onClick={() => handleStatusUpdate('rejected')}
-                    disabled={isSubmitting}
-                    variant="destructive"
-                    className="gap-2"
-                  >
-                    <X className="h-4 w-4" />
-                    Reject Proposal
-                  </Button>
-                </div>
+          {/* PDF Viewer */}
+          {proposal.pdf_document_url && (
+            <div className="mt-6">
+              <h3 className="text-lg font-semibold mb-4">Event Proposal Document</h3>
+              <div className="border rounded-lg overflow-hidden">
+                <iframe
+                  src={proposal.pdf_document_url}
+                  className="w-full h-96"
+                  title="Event Proposal PDF"
+                />
               </div>
             </div>
           )}
+
+          <DialogFooter className="flex items-center justify-between">
+            {showActions && (
+              <>
+                <div className="flex items-center space-x-2">
+                  <Textarea
+                    placeholder="Add comments (optional)"
+                    value={comments}
+                    onChange={(e) => setComments(e.target.value)}
+                    className="min-w-[300px]"
+                  />
+                </div>
+                <div className="flex items-center space-x-2">
+                  <Button variant="outline" onClick={onClose}>
+                    Close
+                  </Button>
+                  <Button 
+                    variant="outline"
+                    onClick={handleMarkForConsideration}
+                    className="bg-warning hover:bg-warning/90 text-warning-foreground"
+                  >
+                    <AlertCircle className="h-4 w-4 mr-2" />
+                    Mark for Ideation
+                  </Button>
+                  <Button 
+                    variant="destructive" 
+                    onClick={handleReject}
+                    className="bg-destructive hover:bg-destructive/90"
+                  >
+                    <X className="h-4 w-4 mr-2" />
+                    Reject
+                  </Button>
+                  <Button 
+                    onClick={handleApprove}
+                    className="bg-success hover:bg-success/90"
+                  >
+                    <Check className="h-4 w-4 mr-2" />
+                    Approve
+                  </Button>
+                </div>
+              </>
+            )}
+            {!showActions && (
+              <Button variant="outline" onClick={onClose}>
+                Close
+              </Button>
+            )}
+          </DialogFooter>
         </div>
       </DialogContent>
     </Dialog>
