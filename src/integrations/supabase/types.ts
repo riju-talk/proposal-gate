@@ -7,7 +7,7 @@ export type Json =
   | Json[]
 
 export type Database = {
-  // Allows to automatically instanciate createClient with right options
+  // Allows to automatically instantiate createClient with right options
   // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
     PostgrestVersion: "13.0.4"
@@ -67,46 +67,37 @@ export type Database = {
       }
       clubs: {
         Row: {
-          category: string
-          channel_link: string | null
-          charter_url: string | null
-          coordinator_email: string
-          coordinator_name: string
+          avatar_url: string
+          channel_links: string | null
+          coordinator_emails: string
+          coordinator_names: string
           created_at: string
           description: string | null
-          formed_date: string | null
           id: string
-          instagram_link: string | null
           is_active: boolean | null
           name: string
           updated_at: string
         }
         Insert: {
-          category: string
-          channel_link?: string | null
-          charter_url?: string | null
-          coordinator_email: string
-          coordinator_name: string
+          avatar_url?: string
+          channel_links?: string | null
+          coordinator_emails: string
+          coordinator_names: string
           created_at?: string
           description?: string | null
-          formed_date?: string | null
           id?: string
-          instagram_link?: string | null
           is_active?: boolean | null
           name: string
           updated_at?: string
         }
         Update: {
-          category?: string
-          channel_link?: string | null
-          charter_url?: string | null
-          coordinator_email?: string
-          coordinator_name?: string
+          avatar_url?: string
+          channel_links?: string | null
+          coordinator_emails?: string
+          coordinator_names?: string
           created_at?: string
           description?: string | null
-          formed_date?: string | null
           id?: string
-          instagram_link?: string | null
           is_active?: boolean | null
           name?: string
           updated_at?: string
