@@ -33,7 +33,7 @@ export const LoginPage = () => {
       setStep('otp');
       toast({
         title: "OTP sent",
-        description: "Check your email for the verification code.",
+        description: "Check your email for the 6-digit verification code.",
       });
     } else {
       toast({
@@ -75,7 +75,7 @@ export const LoginPage = () => {
       setStep('otp');
       toast({
         title: "OTP sent",
-        description: `Verification code sent to ${quickEmail}`,
+        description: `6-digit verification code sent to ${quickEmail}`,
       });
     } else {
       toast({
@@ -117,7 +117,7 @@ export const LoginPage = () => {
             </div>
             <CardDescription className="text-base">
               {step === 'email' 
-                ? 'Enter your email to receive a verification code'
+                ? 'Enter your email to receive a 6-digit verification code'
                 : 'Enter the 6-digit code sent to your email'
               }
             </CardDescription>
