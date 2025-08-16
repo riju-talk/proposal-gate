@@ -14,7 +14,7 @@ interface EventsViewProps {
 }
 
 export const EventsView = ({ searchTerm, statusFilter, isAdmin, showActions }: EventsViewProps) => {
-  const { proposals, isLoading, updateProposalStatus } = useEventProposals();
+  const { proposals, isLoading, updateProposalStatus } = useEventProposals(statusFilter);
   const [selectedProposal, setSelectedProposal] = useState<EventProposal | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
 

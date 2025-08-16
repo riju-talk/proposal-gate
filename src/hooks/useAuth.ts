@@ -37,6 +37,21 @@ export const useAuthProvider = () => {
   useEffect(() => {
     let mounted = true;
 
+    // --- Supabase Magic Link Hash Handler ---
+    const hash = window.location.hash;
+    if (hash && hash.includes('access_token')) {
+      // Parse the hash into key-value pairs
+      const params = Object.fromEntries(new URLSearchParams(hash.slice(1)));
+      // Required by supabase-js@2.x for session restore
+      if (params['access_token'] && params['refresh_token']) {
+        supabase.auth.setSession({
+          access_token: params['access_token'],
+          refresh_token: params['refresh_token'],
+        });
+        window.location.hash = '';
+      }
+    }
+
     // Set up auth state listener first
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
@@ -166,7 +181,6 @@ export const useAuthProvider = () => {
       setIsLoading(false);
     }
   };
-
   const logout = async () => {
     try {
       setIsLoading(true);
@@ -174,11 +188,13 @@ export const useAuthProvider = () => {
       setUser(null);
       setSession(null);
       setIsLinkSent(false);
-      
-      // Reload the page to reset the app state
+      // Ensure Supabase completely clears session from storage too
+      localStorage.clear();
+      sessionStorage.clear();
+      // Wait for the auth state change to propagate before reload
       setTimeout(() => {
         window.location.reload();
-      }, 500);
+      }, 250);
     } catch (error) {
       console.error('Logout error:', error);
     } finally {

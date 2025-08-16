@@ -84,6 +84,8 @@
   }
 
   body {
-    @apply bg-background text-foreground;
+    min-height: 100vh;
+    @apply text-foreground;
+    background: #111827; /* Very dark blue, consistent with login screen */
   }
 }

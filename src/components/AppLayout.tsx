@@ -63,16 +63,16 @@ export const AppLayout = ({ isAdmin, onRequestAdminLogin }: AppLayoutProps) => {
 
   return (
     <div className="min-h-screen">
-      {/* Header */}
-      <header className="sticky top-0 z-50 w-full border-b bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl supports-[backdrop-filter]:bg-white/60 dark:supports-[backdrop-filter]:bg-slate-900/60 shadow-lg">
+      {/* Header - no mysterious devil/element above here! */}
+      <header className="sticky top-0 z-50 w-full border-b bg-background backdrop-blur-xl shadow-lg">
         <div className="container flex h-16 items-center justify-between">
           <div className="flex items-center space-x-4">
             <div className="flex items-center space-x-3">
-              <div className="w-10 h-10 bg-gradient-to-r from-purple-500 to-blue-500 rounded-xl flex items-center justify-center shadow-lg">
-                <GraduationCap className="text-white h-5 w-5" />
+              <div className="w-10 h-10 rounded-xl flex items-center justify-center shadow-lg">
+                <img src="student_council.jpg" alt="Logo" className="h-10 w-10" />
               </div>
               <div>
-                <h1 className="text-xl font-bold bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent">
+                <h1 className="text-xl font-bold bg-gradient-to-r from-[--primary] to-[--accent] bg-clip-text text-white">
                   Student Council IIIT-Delhi
                 </h1>
                 <p className="text-xs text-muted-foreground">
@@ -85,19 +85,19 @@ export const AppLayout = ({ isAdmin, onRequestAdminLogin }: AppLayoutProps) => {
           <div className="flex items-center space-x-4">
             {/* Search Bar */}
             <div className="relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-purple-400 h-4 w-4" />
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-primary h-4 w-4" />
               <Input
                 placeholder="Search proposals..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10 w-64 bg-white/50 dark:bg-slate-800/50 border-purple-200 dark:border-purple-700 focus:border-purple-400 dark:focus:border-purple-500"
+                className="pl-10 w-64 bg-card border-border focus:border-primary"
               />
             </div>
 
             {/* Filter */}
             <Select value={statusFilter} onValueChange={setStatusFilter}>
-              <SelectTrigger className="w-40 bg-white/50 dark:bg-slate-800/50 border-purple-200 dark:border-purple-700">
-                <Filter className="h-4 w-4 mr-2 text-purple-400" />
+              <SelectTrigger className="w-40 bg-card border-border">
+                <Filter className="h-4 w-4 mr-2 text-primary" />
                 <SelectValue placeholder="Filter" />
               </SelectTrigger>
               <SelectContent>
@@ -112,13 +112,13 @@ export const AppLayout = ({ isAdmin, onRequestAdminLogin }: AppLayoutProps) => {
             {/* Admin Login / User Info */}
             {user ? (
               <div className="flex items-center space-x-3">
-                <div className="flex items-center space-x-2 px-3 py-1 bg-gradient-to-r from-purple-100 to-blue-100 dark:from-purple-900/50 dark:to-blue-900/50 rounded-full">
+                <div className="flex items-center space-x-2 px-3 py-1 bg-primary/10 rounded-full">
                   {isAdminUser ? (
-                    <Shield className="h-4 w-4 text-purple-600 dark:text-purple-400" />
+                    <Shield className="h-4 w-4 text-primary" />
                   ) : (
-                    <Users className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+                    <Users className="h-4 w-4 text-accent" />
                   )}
-                  <span className="text-sm font-medium text-purple-700 dark:text-purple-300">
+                  <span className="text-sm font-medium text-primary">
                     {user.username}
                   </span>
                 </div>
@@ -126,7 +126,7 @@ export const AppLayout = ({ isAdmin, onRequestAdminLogin }: AppLayoutProps) => {
                   variant="outline"
                   size="sm"
                   onClick={handleLogout}
-                  className="flex items-center space-x-2 border-purple-200 dark:border-purple-700 hover:bg-purple-50 dark:hover:bg-purple-900/50"
+                  className="flex items-center space-x-2 border-border hover:bg-primary/20"
                 >
                   <LogOut className="h-4 w-4" />
                   <span>Logout</span>
@@ -135,7 +135,7 @@ export const AppLayout = ({ isAdmin, onRequestAdminLogin }: AppLayoutProps) => {
             ) : (
               <Button
                 onClick={onRequestAdminLogin}
-                className="bg-gradient-to-r from-purple-500 to-blue-500 hover:from-purple-600 hover:to-blue-600 text-white shadow-lg"
+                className="bg-primary hover:bg-primary/80 text-primary-foreground shadow-lg"
               >
                 <Shield className="h-4 w-4 mr-2" />
                 Admin Login
@@ -148,17 +148,17 @@ export const AppLayout = ({ isAdmin, onRequestAdminLogin }: AppLayoutProps) => {
       {/* Main Content */}
       <main className="container py-8">
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-8">
-          <TabsList className="grid w-full grid-cols-2 bg-white/50 dark:bg-slate-800/50 backdrop-blur-sm border border-purple-200 dark:border-purple-700">
+          <TabsList className="grid w-full grid-cols-2 bg-card backdrop-blur-sm border border-border">
             <TabsTrigger 
               value="events" 
-              className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-purple-500 data-[state=active]:to-blue-500 data-[state=active]:text-white"
+              className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground"
             >
               <Calendar className="h-4 w-4 mr-2" />
               Event Proposals
             </TabsTrigger>
             <TabsTrigger 
               value="clubs"
-              className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-purple-500 data-[state=active]:to-blue-500 data-[state=active]:text-white"
+              className="data-[state=active]:bg-accent data-[state=active]:text-accent-foreground"
             >
               <Users className="h-4 w-4 mr-2" />
               Club Approvals

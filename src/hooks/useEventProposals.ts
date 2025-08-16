@@ -46,30 +46,34 @@ const mapDatabaseToProposal = (dbRow: any): EventProposal => ({
   updated_at: dbRow.updated_at
 });
 
-export const useEventProposals = () => {
+export const useEventProposals = (statusFilter?: string) => {
   const [proposals, setProposals] = useState<EventProposal[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     const fetchProposals = async () => {
-      const { data, error } = await supabase
+      let query = supabase
         .from('event_proposals')
         .select('*')
         .order('created_at', { ascending: false });
-      
+
+      if (statusFilter && statusFilter !== 'all') {
+        query = query.eq('status', statusFilter);
+      }
+
+      const { data, error } = await query;
       if (error) {
         console.error('Error fetching proposals:', error);
         setIsLoading(false);
         return;
       }
-      
       const mappedProposals = data.map(mapDatabaseToProposal);
       setProposals(mappedProposals);
       setIsLoading(false);
     };
 
     fetchProposals();
-  }, []);
+  }, [statusFilter]);
 
   const updateProposalStatus = async (id: string, status: 'approved' | 'rejected' | 'under_consideration', comments: string) => {
     const { error } = await supabase

@@ -65,19 +65,16 @@ export const LoginPage = ({ onBack }: LoginPageProps) => {
   return (
     <div className="min-h-screen bg-background flex items-center justify-center p-4 relative overflow-hidden">
       {/* Subtle background elements */}
-      <div className="absolute inset-0 overflow-hidden">
-        <div className="absolute -top-40 -right-40 w-80 h-80 bg-primary/5 rounded-full blur-3xl"></div>
-        <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-accent/5 rounded-full blur-3xl"></div>
-        <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-muted/5 rounded-full blur-3xl"></div>
-      </div>
+      {/* No unwanted backgrounds above card or interfering with back button */}
       
       <div className="w-full max-w-md space-y-8">
         {/* Back button */}
         {onBack && (
           <Button
             variant="ghost"
-            onClick={onBack}
-            className="text-muted-foreground hover:text-foreground hover:bg-muted mb-4"
+            type="button"
+            onClick={() => onBack()}
+            className="absolute left-4 top-4 flex items-center gap-2 z-10 text-muted-foreground hover:text-foreground hover:bg-muted"
           >
             <ArrowLeft className="h-4 w-4 mr-2" />
             Back to Portal
@@ -87,8 +84,8 @@ export const LoginPage = ({ onBack }: LoginPageProps) => {
         {/* Header */}
         <div className="text-center space-y-4">
           <div className="flex justify-center">
-            <div className="bg-primary p-6 rounded-2xl shadow-lg border border-border/20">
-              <University className="h-16 w-16 text-primary-foreground" />
+            <div className="bg-transparent p-6 rounded-2xl shadow-lg border border-border/20">
+              <img src="/student_council.jpg" alt="Logo" className="h-24 w-24" />
             </div>
           </div>
           <div className="space-y-2">
@@ -208,9 +205,9 @@ export const LoginPage = ({ onBack }: LoginPageProps) => {
         <div className="text-center text-sm text-muted-foreground">
           <div className="flex items-center justify-center gap-2 mb-2">
             <Users className="h-4 w-4" />
-            <span>University Academic Affairs</span>
+            <span>IIIT-Delhi Student Council</span>
           </div>
-          <p>© 2024 University Event Management Portal</p>
+          <p>© 2025 IIIT-Delhi Student Council</p>
         </div>
       </div>
     </div>
