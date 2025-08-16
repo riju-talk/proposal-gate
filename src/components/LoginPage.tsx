@@ -63,12 +63,12 @@ export const LoginPage = ({ onBack }: LoginPageProps) => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 flex items-center justify-center p-4 relative overflow-hidden">
+    <div className="min-h-screen bg-background flex items-center justify-center p-4 relative overflow-hidden">
       {/* Subtle background elements */}
       <div className="absolute inset-0 overflow-hidden">
-        <div className="absolute -top-40 -right-40 w-80 h-80 bg-blue-100/40 rounded-full blur-3xl"></div>
-        <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-slate-100/40 rounded-full blur-3xl"></div>
-        <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-indigo-50/30 rounded-full blur-3xl"></div>
+        <div className="absolute -top-40 -right-40 w-80 h-80 bg-primary/5 rounded-full blur-3xl"></div>
+        <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-accent/5 rounded-full blur-3xl"></div>
+        <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-muted/5 rounded-full blur-3xl"></div>
       </div>
       
       <div className="w-full max-w-md space-y-8">
@@ -87,7 +87,7 @@ export const LoginPage = ({ onBack }: LoginPageProps) => {
         {/* Header */}
         <div className="text-center space-y-4">
           <div className="flex justify-center">
-            <div className="bg-primary p-6 rounded-2xl shadow-lg border border-border/50">
+            <div className="bg-primary p-6 rounded-2xl shadow-lg border border-border/20">
               <University className="h-16 w-16 text-primary-foreground" />
             </div>
           </div>
@@ -98,7 +98,7 @@ export const LoginPage = ({ onBack }: LoginPageProps) => {
         </div>
 
         {/* Login Card */}
-        <Card className="shadow-lg border border-border bg-card">
+        <Card className="shadow-lg border border-border/20 bg-card/95 backdrop-blur-sm">
           <CardHeader className="space-y-1 text-center">
             <div className="flex items-center justify-center gap-2 mb-2">
               <Mail className="h-5 w-5 text-primary" />

@@ -6,79 +6,8 @@
 
 @layer base {
   :root {
-    /* Light theme - Subtle academic colors */
-    --background: 210 15% 98%;
-    --foreground: 215 20% 25%;
-
-    --card: 0 0% 100%;
-    --card-foreground: 215 20% 25%;
-
-    --popover: 0 0% 100%;
-    --popover-foreground: 215 20% 25%;
-
-    --primary: 215 30% 45%;
-    --primary-foreground: 0 0% 98%;
-    --primary-glow: 215 40% 65%;
-
-    --secondary: 210 20% 94%;
-    --secondary-foreground: 215 20% 30%;
-
-    --muted: 210 15% 95%;
-    --muted-foreground: 215 15% 50%;
-
-    --accent: 210 25% 55%;
-    --accent-foreground: 0 0% 98%;
-
-    --success: 142 76% 36%;
-    --success-foreground: 0 0% 98%;
-
-    --warning: 38 92% 50%;
-    --warning-foreground: 0 0% 98%;
-
-    --destructive: 0 84% 60%;
-    --destructive-foreground: 0 0% 98%;
-
-    --border: 214 20% 88%;
-    --input: 214 20% 88%;
-    --ring: 215 30% 45%;
-
-    --radius: 0.5rem;
-
-    /* Custom design tokens */
-    --dashboard-bg: 210 15% 98%;
-    --sidebar-bg: 0 0% 100%;
-    --nav-active: 215 30% 45%;
-    --status-new: 210 25% 55%;
-    --status-approved: 150 30% 40%;
-    --status-rejected: 0 50% 50%;
-
-    /* Gradients */
-    --gradient-primary: linear-gradient(135deg, hsl(215 30% 45%), hsl(210 25% 55%));
-    --gradient-success: linear-gradient(135deg, hsl(150 30% 40%), hsl(160 35% 45%));
-    --gradient-card: linear-gradient(145deg, hsl(0 0% 100%), hsl(210 15% 98%));
+    color-scheme: dark;
     
-    /* Shadows */
-    --shadow-elegant: 0 10px 25px -5px hsl(var(--primary) / 0.1);
-    --shadow-glow: 0 0 20px hsl(var(--primary-glow) / 0.15);
-
-    --sidebar-background: 0 0% 98%;
-
-    --sidebar-foreground: 240 5.3% 26.1%;
-
-    --sidebar-primary: 240 5.9% 10%;
-
-    --sidebar-primary-foreground: 0 0% 98%;
-
-    --sidebar-accent: 240 4.8% 95.9%;
-
-    --sidebar-accent-foreground: 240 5.9% 10%;
-
-    --sidebar-border: 220 13% 91%;
-
-    --sidebar-ring: 217.2 91.2% 59.8%;
-  }
-
-  .dark {
     /* Dark theme - Matching the uploaded form design */
     --background: 222 25% 8%;
     --foreground: 210 30% 95%;
@@ -89,9 +18,9 @@
     --popover: 222 20% 12%;
     --popover-foreground: 210 30% 95%;
 
-    --primary: 221 83% 53%;
-    --primary-foreground: 0 0% 98%;
-    --primary-glow: 221 100% 70%;
+    --primary: 215 30% 55%;
+    --primary-foreground: 210 30% 95%;
+    --primary-glow: 215 40% 75%;
 
     --secondary: 222 15% 20%;
     --secondary-foreground: 210 30% 90%;
@@ -99,51 +28,57 @@
     --muted: 222 15% 16%;
     --muted-foreground: 215 20% 60%;
 
-    --accent: 217 91% 60%;
-    --accent-foreground: 0 0% 98%;
+    --accent: 210 25% 65%;
+    --accent-foreground: 222 25% 8%;
 
-    --success: 142 76% 36%;
-    --success-foreground: 0 0% 98%;
+    --success: 150 30% 40%;
+    --success-foreground: 210 30% 95%;
 
-    --warning: 38 92% 50%;
-    --warning-foreground: 0 0% 98%;
+    --warning: 38 60% 50%;
+    --warning-foreground: 222 25% 8%;
 
-    --destructive: 0 84% 60%;
-    --destructive-foreground: 0 0% 98%;
+    --destructive: 0 50% 50%;
+    --destructive-foreground: 210 30% 95%;
 
     --border: 222 15% 22%;
     --input: 222 15% 18%;
-    --ring: 221 83% 53%;
+    --ring: 215 30% 55%;
 
-    /* Custom dark theme tokens */
+    --radius: 0.5rem;
+
+    /* Custom design tokens */
     --dashboard-bg: 222 20% 10%;
     --sidebar-bg: 222 25% 8%;
-    --nav-active: 221 83% 53%;
-    --status-new: 217 91% 60%;
-    --status-approved: 142 76% 36%;
-    --status-rejected: 0 84% 60%;
+    --nav-active: 215 30% 55%;
+    --status-new: 210 25% 65%;
+    --status-approved: 150 30% 40%;
+    --status-rejected: 0 50% 50%;
 
     /* Dark gradients */
-    --gradient-primary: linear-gradient(135deg, hsl(221 83% 53%), hsl(217 91% 60%));
-    --gradient-success: linear-gradient(135deg, hsl(142 76% 36%), hsl(160 84% 39%));
+    --gradient-primary: linear-gradient(135deg, hsl(215 30% 55%), hsl(210 25% 65%));
+    --gradient-success: linear-gradient(135deg, hsl(150 30% 40%), hsl(160 35% 45%));
     --gradient-card: linear-gradient(145deg, hsl(222 20% 12%), hsl(222 25% 8%));
     
     /* Dark shadows */
-    --shadow-elegant: 0 20px 40px -10px hsl(var(--primary) / 0.25);
-    --shadow-glow: 0 0 40px hsl(var(--primary-glow) / 0.3);
+    --shadow-elegant: 0 10px 25px -5px hsl(var(--primary) / 0.2);
+    --shadow-glow: 0 0 20px hsl(var(--primary-glow) / 0.2);
 
     --sidebar-background: 222 25% 8%;
     --sidebar-foreground: 210 30% 90%;
-    --sidebar-primary: 221 83% 53%;
-    --sidebar-primary-foreground: 0 0% 98%;
+    --sidebar-primary: 215 30% 55%;
+    --sidebar-primary-foreground: 210 30% 95%;
     --sidebar-accent: 222 15% 16%;
     --sidebar-accent-foreground: 210 30% 90%;
     --sidebar-border: 222 15% 22%;
-    --sidebar-ring: 221 83% 53%;
+    --sidebar-ring: 215 30% 55%;
   }
-}
+
 
 @layer base {
+  :root {
+    color-scheme: dark;
+  }
+  
   * {
     @apply border-border;
   }
