@@ -12,11 +12,10 @@ interface User {
 interface AuthContextType {
   user: User | null;
   session: Session | null;
-  sendOTP: (email: string) => Promise<{ success: boolean; error?: string }>;
-  verifyOTP: (email: string, token: string) => Promise<{ success: boolean; error?: string }>;
+  signInWithMagicLink: (email: string) => Promise<{ success: boolean; error?: string }>;
   logout: () => Promise<void>;
   isLoading: boolean;
-  isOTPSent: boolean;
+  isLinkSent: boolean;
 }
 
 export const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -33,7 +32,7 @@ export const useAuthProvider = () => {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [isOTPSent, setIsOTPSent] = useState(false);
+  const [isLinkSent, setIsLinkSent] = useState(false);
 
   useEffect(() => {
     let mounted = true;
@@ -119,7 +118,7 @@ export const useAuthProvider = () => {
     };
   }, []);
 
-  const sendOTP = async (email: string): Promise<{ success: boolean; error?: string }> => {
+  const signInWithMagicLink = async (email: string): Promise<{ success: boolean; error?: string }> => {
     try {
       setIsLoading(true);
       
@@ -134,98 +133,31 @@ export const useAuthProvider = () => {
       const { error } = await supabase.auth.signInWithOtp({
         email: actualEmail,
         options: {
+          emailRedirectTo: window.location.origin,
           shouldCreateUser: true,
           data: {
-            username: email.includes('@') ? email.split('@')[0] : email
+            username: email.includes('@') ? email.split('@')[0] : email,
+            role: actualEmail === 'admin@university.edu' ? 'admin' : 
+                  actualEmail === 'coordinator@university.edu' ? 'coordinator' : 
+                  'user'
           }
         }
       });
 
       if (error) {
-        console.error('OTP send error:', error);
-        setIsOTPSent(false);
+        console.error('Magic link send error:', error);
+        setIsLinkSent(false);
         return { 
           success: false, 
-          error: error.message || 'Failed to send OTP' 
+          error: error.message || 'Failed to send magic link' 
         };
       }
 
-      setIsOTPSent(true);
+      setIsLinkSent(true);
       return { success: true };
     } catch (error) {
-      console.error('OTP send exception:', error);
-      setIsOTPSent(false);
-      return { 
-        success: false, 
-        error: 'An unexpected error occurred' 
-      };
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const verifyOTP = async (email: string, token: string): Promise<{ success: boolean; error?: string }> => {
-    try {
-      setIsLoading(true);
-      
-      // Map common usernames to emails for convenience
-      const emailMap: { [key: string]: string } = {
-        'admin': 'admin@university.edu',
-        'coordinator': 'coordinator@university.edu'
-      };
-      
-      const actualEmail = emailMap[email.toLowerCase()] || email;
-
-      const { data, error } = await supabase.auth.verifyOtp({
-        email: actualEmail,
-        token,
-        type: 'email'
-      });
-
-      if (error) {
-        console.error('OTP verification error:', error);
-        return { 
-          success: false, 
-          error: error.message || 'Invalid OTP code' 
-        };
-      }
-
-      if (data.user) {
-        setIsOTPSent(false);
-        
-        // Create or update profile after successful login
-        try {
-          const { error: profileError } = await supabase
-            .from('profiles')
-            .upsert({
-              user_id: data.user.id,
-              email: actualEmail,
-              username: actualEmail === 'admin@university.edu' ? 'admin' : 
-                       actualEmail === 'coordinator@university.edu' ? 'coordinator' : 
-                       actualEmail.split('@')[0],
-              role: actualEmail === 'admin@university.edu' ? 'admin' : 
-                    actualEmail === 'coordinator@university.edu' ? 'coordinator' : 
-                    'user'
-            }, {
-              onConflict: 'user_id'
-            });
-          
-          if (profileError) {
-            console.error('Profile creation error:', profileError);
-          }
-        } catch (profileError) {
-          console.error('Profile creation exception:', profileError);
-        }
-        
-        return { success: true };
-      }
-
-      return { 
-        success: false, 
-        error: 'Verification failed' 
-      };
-    } catch (error) {
-      console.error('OTP verification exception:', error);
+      console.error('Magic link send exception:', error);
+      setIsLinkSent(false);
       return { 
         success: false, 
         error: 'An unexpected error occurred' 
@@ -241,7 +173,7 @@ export const useAuthProvider = () => {
       await supabase.auth.signOut();
       setUser(null);
       setSession(null);
-      setIsOTPSent(false);
+      setIsLinkSent(false);
       
       // Reload the page to reset the app state
       setTimeout(() => {
@@ -257,10 +189,9 @@ export const useAuthProvider = () => {
   return {
     user,
     session,
-    sendOTP,
-    verifyOTP,
+    signInWithMagicLink,
     logout,
     isLoading,
-    isOTPSent
+    isLinkSent
   };
 };
