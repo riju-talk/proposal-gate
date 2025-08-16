@@ -61,7 +61,13 @@ export const useAuthProvider = () => {
               
               if (error) {
                 console.error('Profile fetch error:', error);
-                setUser(null);
+                // Create a default user object if profile doesn't exist
+                setUser({
+                  id: session.user.id,
+                  username: session.user.email?.split('@')[0] || 'user',
+                  email: session.user.email || '',
+                  role: 'user'
+                });
               } else if (profile && mounted) {
                 setUser({
                   id: profile.user_id,
@@ -80,7 +86,13 @@ export const useAuthProvider = () => {
               }
             } catch (error) {
               console.error('Profile fetch exception:', error);
-              setUser(null);
+              // Fallback to basic user info
+              setUser({
+                id: session.user.id,
+                username: session.user.email?.split('@')[0] || 'user',
+                email: session.user.email || '',
+                role: 'user'
+              });
             }
           }, 0);
         } else {
@@ -181,10 +193,29 @@ export const useAuthProvider = () => {
       if (data.user) {
         setIsOTPSent(false);
         
-        // Wait a moment for the auth state to update
-        setTimeout(() => {
-          window.location.reload();
-        }, 1000);
+        // Create or update profile after successful login
+        try {
+          const { error: profileError } = await supabase
+            .from('profiles')
+            .upsert({
+              user_id: data.user.id,
+              email: actualEmail,
+              username: actualEmail === 'admin@university.edu' ? 'admin' : 
+                       actualEmail === 'coordinator@university.edu' ? 'coordinator' : 
+                       actualEmail.split('@')[0],
+              role: actualEmail === 'admin@university.edu' ? 'admin' : 
+                    actualEmail === 'coordinator@university.edu' ? 'coordinator' : 
+                    'user'
+            }, {
+              onConflict: 'user_id'
+            });
+          
+          if (profileError) {
+            console.error('Profile creation error:', profileError);
+          }
+        } catch (profileError) {
+          console.error('Profile creation exception:', profileError);
+        }
         
         return { success: true };
       }

@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { EventsView } from "@/components/EventsView";
 import { ClubsView } from "@/components/ClubsView";
-import { LogOut, Search, Filter, Shield, Sparkles, Users, Calendar } from "lucide-react";
+import { LogOut, Search, Filter, Shield, Sparkles, Users, Calendar, GraduationCap } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 interface AppLayoutProps {
@@ -62,14 +62,14 @@ export const AppLayout = ({ isAdmin, onRequestAdminLogin }: AppLayoutProps) => {
   }, [isAdminUser]);
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100 dark:from-slate-900 dark:via-blue-900 dark:to-indigo-900">
+    <div className="min-h-screen">
       {/* Header */}
       <header className="sticky top-0 z-50 w-full border-b bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl supports-[backdrop-filter]:bg-white/60 dark:supports-[backdrop-filter]:bg-slate-900/60 shadow-lg">
         <div className="container flex h-16 items-center justify-between">
           <div className="flex items-center space-x-4">
-            <div className="flex items-center space-x-2">
+            <div className="flex items-center space-x-3">
               <div className="w-10 h-10 bg-gradient-to-r from-purple-500 to-blue-500 rounded-xl flex items-center justify-center shadow-lg">
-                <Sparkles className="text-white h-5 w-5" />
+                <GraduationCap className="text-white h-5 w-5" />
               </div>
               <div>
                 <h1 className="text-xl font-bold bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent">
