@@ -14,6 +14,39 @@ export type Database = {
   }
   public: {
     Tables: {
+      authorized_admins: {
+        Row: {
+          approval_order: number
+          created_at: string
+          email: string
+          id: string
+          is_active: boolean
+          name: string
+          role: string
+          updated_at: string
+        }
+        Insert: {
+          approval_order: number
+          created_at?: string
+          email: string
+          id?: string
+          is_active?: boolean
+          name: string
+          role: string
+          updated_at?: string
+        }
+        Update: {
+          approval_order?: number
+          created_at?: string
+          email?: string
+          id?: string
+          is_active?: boolean
+          name?: string
+          role?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       club_formation_requests: {
         Row: {
           charter_document_url: string | null
@@ -103,6 +136,54 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
+      }
+      event_approvals: {
+        Row: {
+          admin_email: string
+          approved_at: string | null
+          comments: string | null
+          created_at: string
+          event_proposal_id: string
+          id: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          admin_email: string
+          approved_at?: string | null
+          comments?: string | null
+          created_at?: string
+          event_proposal_id: string
+          id?: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          admin_email?: string
+          approved_at?: string | null
+          comments?: string | null
+          created_at?: string
+          event_proposal_id?: string
+          id?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "event_approvals_admin_email_fkey"
+            columns: ["admin_email"]
+            isOneToOne: false
+            referencedRelation: "authorized_admins"
+            referencedColumns: ["email"]
+          },
+          {
+            foreignKeyName: "event_approvals_event_proposal_id_fkey"
+            columns: ["event_proposal_id"]
+            isOneToOne: false
+            referencedRelation: "event_proposals"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       event_proposals: {
         Row: {
