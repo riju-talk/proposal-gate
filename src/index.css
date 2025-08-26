@@ -8,7 +8,7 @@
   :root {
     color-scheme: dark;
     
-    /* Dark theme - Matching the uploaded form design */
+    /* Enhanced Dark theme - Clean and modern */
     --background: 222 25% 8%;
     --foreground: 210 30% 95%;
 
@@ -18,9 +18,9 @@
     --popover: 222 20% 12%;
     --popover-foreground: 210 30% 95%;
 
-    --primary: 215 30% 55%;
+    --primary: 217 91% 60%;
     --primary-foreground: 210 30% 95%;
-    --primary-glow: 215 40% 75%;
+    --primary-glow: 217 91% 75%;
 
     --secondary: 222 15% 20%;
     --secondary-foreground: 210 30% 90%;
@@ -28,49 +28,51 @@
     --muted: 222 15% 16%;
     --muted-foreground: 215 20% 60%;
 
-    --accent: 210 25% 65%;
-    --accent-foreground: 222 25% 8%;
+    --accent: 142 76% 36%;
+    --accent-foreground: 210 30% 95%;
 
-    --success: 150 30% 40%;
+    --success: 142 76% 36%;
     --success-foreground: 210 30% 95%;
 
-    --warning: 38 60% 50%;
+    --warning: 38 92% 50%;
     --warning-foreground: 222 25% 8%;
 
-    --destructive: 0 50% 50%;
+    --destructive: 0 84% 60%;
     --destructive-foreground: 210 30% 95%;
 
     --border: 222 15% 22%;
     --input: 222 15% 18%;
-    --ring: 215 30% 55%;
+    --ring: 217 91% 60%;
 
-    --radius: 0.5rem;
+    --radius: 0.75rem;
 
-    /* Custom design tokens */
+    /* Custom design tokens for enhanced aesthetics */
     --dashboard-bg: 222 20% 10%;
     --sidebar-bg: 222 25% 8%;
-    --nav-active: 215 30% 55%;
-    --status-new: 210 25% 65%;
-    --status-approved: 150 30% 40%;
-    --status-rejected: 0 50% 50%;
-
-    /* Dark gradients */
-    --gradient-primary: linear-gradient(135deg, hsl(215 30% 55%), hsl(210 25% 65%));
-    --gradient-success: linear-gradient(135deg, hsl(150 30% 40%), hsl(160 35% 45%));
-    --gradient-card: linear-gradient(145deg, hsl(222 20% 12%), hsl(222 25% 8%));
+    --nav-active: 217 91% 60%;
+    --status-new: 217 91% 60%;
+    --status-approved: 142 76% 36%;
+    --status-rejected: 0 84% 60%;
     
-    /* Dark shadows */
-    --shadow-elegant: 0 10px 25px -5px hsl(var(--primary) / 0.2);
-    --shadow-glow: 0 0 20px hsl(var(--primary-glow) / 0.2);
+    /* Enhanced shadows for depth */
+    --shadow-sm: 0 1px 2px 0 hsl(222 25% 8% / 0.05);
+    --shadow: 0 1px 3px 0 hsl(222 25% 8% / 0.1), 0 1px 2px -1px hsl(222 25% 8% / 0.1);
+    --shadow-md: 0 4px 6px -1px hsl(222 25% 8% / 0.1), 0 2px 4px -2px hsl(222 25% 8% / 0.1);
+    --shadow-lg: 0 10px 15px -3px hsl(222 25% 8% / 0.1), 0 4px 6px -4px hsl(222 25% 8% / 0.1);
+    --shadow-xl: 0 20px 25px -5px hsl(222 25% 8% / 0.1), 0 8px 10px -6px hsl(222 25% 8% / 0.1);
+    --shadow-2xl: 0 25px 50px -12px hsl(222 25% 8% / 0.25);
+    --shadow-inner: inset 0 2px 4px 0 hsl(222 25% 8% / 0.05);
+    --shadow-elegant: 0 10px 25px -5px hsl(var(--primary) / 0.3);
+    --shadow-glow: 0 0 20px hsl(var(--primary-glow) / 0.3);
 
     --sidebar-background: 222 25% 8%;
     --sidebar-foreground: 210 30% 90%;
-    --sidebar-primary: 215 30% 55%;
+    --sidebar-primary: 217 91% 60%;
     --sidebar-primary-foreground: 210 30% 95%;
     --sidebar-accent: 222 15% 16%;
     --sidebar-accent-foreground: 210 30% 90%;
     --sidebar-border: 222 15% 22%;
-    --sidebar-ring: 215 30% 55%;
+    --sidebar-ring: 217 91% 60%;
   }
 }
 
@@ -86,6 +88,33 @@
   body {
     min-height: 100vh;
     @apply text-foreground;
-    background: #111827; /* Very dark blue, consistent with login screen */
+    background: hsl(var(--background));
+  }
+}
+
+@layer components {
+  /* Smooth animations for all interactive elements */
+  .animate-smooth {
+    @apply transition-all duration-300 ease-out;
+  }
+  
+  .hover-lift {
+    @apply transition-transform duration-200 hover:scale-[1.02] hover:-translate-y-1;
+  }
+  
+  .card-enhanced {
+    @apply bg-card/95 backdrop-blur-sm border border-border/50 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300;
+  }
+  
+  .glass-effect {
+    @apply bg-white/5 backdrop-blur-xl border border-white/10;
+  }
+  
+  .text-glow {
+    text-shadow: 0 0 10px hsl(var(--primary) / 0.5);
+  }
+  
+  .button-cool {
+    @apply relative overflow-hidden before:absolute before:inset-0 before:bg-white/10 before:translate-x-[-100%] hover:before:translate-x-0 before:transition-transform before:duration-500;
   }
 }

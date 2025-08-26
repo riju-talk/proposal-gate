@@ -63,19 +63,22 @@ export const AppLayout = ({ isAdmin, onRequestAdminLogin }: AppLayoutProps) => {
 
   return (
     <div className="min-h-screen">
-      {/* Header - no mysterious devil/element above here! */}
-      <header className="sticky top-0 z-50 w-full border-b bg-background backdrop-blur-xl shadow-lg">
-        <div className="container flex h-16 items-center justify-between">
+      {/* Header */}
+      <header className="sticky top-0 z-50 w-full border-b border-border/50 glass-effect shadow-2xl">
+        <div className="container flex h-18 items-center justify-between">
           <div className="flex items-center space-x-4">
-            <div className="flex items-center space-x-3">
-              <div className="w-10 h-10 rounded-xl flex items-center justify-center shadow-lg">
-                <img src="student_council.jpg" alt="Logo" className="h-10 w-10" />
+            <div className="flex items-center space-x-4">
+              <div className="relative group">
+                <div className="w-12 h-12 rounded-2xl flex items-center justify-center shadow-lg overflow-hidden hover-lift animate-smooth">
+                  <img src="student_council.jpg" alt="Logo" className="h-12 w-12 rounded-2xl" />
+                </div>
+                <div className="absolute -inset-0.5 bg-primary/20 rounded-2xl blur opacity-0 group-hover:opacity-50 transition duration-500" />
               </div>
               <div>
-                <h1 className="text-xl font-bold bg-gradient-to-r from-[--primary] to-[--accent] bg-clip-text text-white">
+                <h1 className="text-2xl font-bold text-foreground text-glow">
                   Student Council IIIT-Delhi
                 </h1>
-                <p className="text-xs text-muted-foreground">
+                <p className="text-sm text-muted-foreground font-medium">
                   {isAdminUser ? "Admin Portal" : isCoordinator ? "Coordinator View" : "Public Portal"}
                 </p>
               </div>
@@ -84,25 +87,25 @@ export const AppLayout = ({ isAdmin, onRequestAdminLogin }: AppLayoutProps) => {
 
           <div className="flex items-center space-x-4">
             {/* Search Bar */}
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-primary h-4 w-4" />
+            <div className="relative group">
+              <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-primary h-5 w-5 group-focus-within:text-primary transition-colors" />
               <Input
                 placeholder="Search proposals..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10 w-64 bg-card border-border focus:border-primary"
+                className="pl-12 w-72 h-11 glass-effect border-border/50 focus:border-primary/50 hover:border-border transition-all duration-300 rounded-xl"
               />
             </div>
 
             {/* Filter */}
             <Select value={statusFilter} onValueChange={setStatusFilter}>
-              <SelectTrigger className="w-40 bg-card border-border">
-                <Filter className="h-4 w-4 mr-2 text-primary" />
+              <SelectTrigger className="w-44 h-11 glass-effect border-border/50 hover:border-border transition-all duration-300 rounded-xl">
+                <Filter className="h-5 w-5 mr-2 text-primary" />
                 <SelectValue placeholder="Filter" />
               </SelectTrigger>
-              <SelectContent>
+              <SelectContent className="glass-effect border-border/50 rounded-xl">
                 {availableStatusFilters.map((filter) => (
-                  <SelectItem key={filter.value} value={filter.value}>
+                  <SelectItem key={filter.value} value={filter.value} className="rounded-lg">
                     {filter.label}
                   </SelectItem>
                 ))}
@@ -111,14 +114,14 @@ export const AppLayout = ({ isAdmin, onRequestAdminLogin }: AppLayoutProps) => {
 
             {/* Admin Login / User Info */}
             {user ? (
-              <div className="flex items-center space-x-3">
-                <div className="flex items-center space-x-2 px-3 py-1 bg-primary/10 rounded-full">
+              <div className="flex items-center space-x-4">
+                <div className="flex items-center space-x-3 px-4 py-2 glass-effect rounded-2xl border border-border/30 hover-lift animate-smooth">
                   {isAdminUser ? (
-                    <Shield className="h-4 w-4 text-primary" />
+                    <Shield className="h-5 w-5 text-primary" />
                   ) : (
-                    <Users className="h-4 w-4 text-accent" />
+                    <Users className="h-5 w-5 text-accent" />
                   )}
-                  <span className="text-sm font-medium text-primary">
+                  <span className="text-sm font-bold text-foreground">
                     {user.username}
                   </span>
                 </div>
@@ -126,18 +129,18 @@ export const AppLayout = ({ isAdmin, onRequestAdminLogin }: AppLayoutProps) => {
                   variant="outline"
                   size="sm"
                   onClick={handleLogout}
-                  className="flex items-center space-x-2 border-border hover:bg-primary/20"
+                  className="flex items-center space-x-2 border-border/50 hover:border-destructive/50 hover:bg-destructive/10 hover:text-destructive h-11 px-4 rounded-xl hover-lift animate-smooth"
                 >
                   <LogOut className="h-4 w-4" />
-                  <span>Logout</span>
+                  <span className="font-medium">Logout</span>
                 </Button>
               </div>
             ) : (
               <Button
                 onClick={onRequestAdminLogin}
-                className="bg-primary hover:bg-primary/80 text-primary-foreground shadow-lg"
+                className="button-cool h-11 px-6 rounded-xl shadow-lg hover:shadow-xl font-medium"
               >
-                <Shield className="h-4 w-4 mr-2" />
+                <Shield className="h-5 w-5 mr-2" />
                 Admin Login
               </Button>
             )}
@@ -148,19 +151,19 @@ export const AppLayout = ({ isAdmin, onRequestAdminLogin }: AppLayoutProps) => {
       {/* Main Content */}
       <main className="container py-8">
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-8">
-          <TabsList className="grid w-full grid-cols-2 bg-card backdrop-blur-sm border border-border">
+          <TabsList className="grid w-full grid-cols-2 glass-effect border border-border/30 h-14 rounded-2xl p-2">
             <TabsTrigger 
               value="events" 
-              className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground"
+              className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground h-10 rounded-xl font-medium transition-all duration-300 hover-lift"
             >
-              <Calendar className="h-4 w-4 mr-2" />
+              <Calendar className="h-5 w-5 mr-2" />
               Event Proposals
             </TabsTrigger>
             <TabsTrigger 
               value="clubs"
-              className="data-[state=active]:bg-accent data-[state=active]:text-accent-foreground"
+              className="data-[state=active]:bg-accent data-[state=active]:text-accent-foreground h-10 rounded-xl font-medium transition-all duration-300 hover-lift"
             >
-              <Users className="h-4 w-4 mr-2" />
+              <Users className="h-5 w-5 mr-2" />
               Club Approvals
             </TabsTrigger>
           </TabsList>
@@ -168,22 +171,22 @@ export const AppLayout = ({ isAdmin, onRequestAdminLogin }: AppLayoutProps) => {
           <TabsContent value="events" className="space-y-6">
             {isAdminUser ? (
               <Tabs value={activeStatusTab} onValueChange={setActiveStatusTab}>
-                <TabsList className="grid w-full grid-cols-3 bg-white/50 dark:bg-slate-800/50 backdrop-blur-sm">
+                <TabsList className="grid w-full grid-cols-3 glass-effect border border-border/30 h-12 rounded-xl p-1">
                   <TabsTrigger 
                     value="pending"
-                    className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-orange-400 data-[state=active]:to-red-400 data-[state=active]:text-white"
+                    className="data-[state=active]:bg-warning data-[state=active]:text-warning-foreground h-10 rounded-lg font-medium transition-all duration-300 hover-lift"
                   >
                     Pending Approval
                   </TabsTrigger>
                   <TabsTrigger 
                     value="consideration"
-                    className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-yellow-400 data-[state=active]:to-orange-400 data-[state=active]:text-white"
+                    className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground h-10 rounded-lg font-medium transition-all duration-300 hover-lift"
                   >
                     Under Review
                   </TabsTrigger>
                   <TabsTrigger 
                     value="past"
-                    className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-green-400 data-[state=active]:to-blue-400 data-[state=active]:text-white"
+                    className="data-[state=active]:bg-success data-[state=active]:text-success-foreground h-10 rounded-lg font-medium transition-all duration-300 hover-lift"
                   >
                     Past Events
                   </TabsTrigger>
