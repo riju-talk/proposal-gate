@@ -91,6 +91,22 @@ export const LoginPage = ({ onBack }: LoginPageProps) => {
           <div className="space-y-2">
             <h1 className="text-4xl font-bold text-foreground">Student Council IIIT-Delhi</h1>
             <p className="text-muted-foreground text-xl">Admin Portal Access</p>
+            <div className="mt-4 p-4 bg-card/50 rounded-lg border border-border/30">
+              <div className="grid grid-cols-2 gap-4 text-center">
+                <div className="flex flex-col items-center space-y-1">
+                  <div className="w-8 h-8 bg-primary/20 rounded-full flex items-center justify-center">
+                    <span className="text-primary font-bold text-sm">SC</span>
+                  </div>
+                  <span className="text-xs text-muted-foreground">Student Council</span>
+                </div>
+                <div className="flex flex-col items-center space-y-1">
+                  <div className="w-8 h-8 bg-secondary/20 rounded-full flex items-center justify-center">
+                    <span className="text-secondary-foreground font-bold text-sm">AP</span>
+                  </div>
+                  <span className="text-xs text-muted-foreground">Approval Portal</span>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
 

@@ -137,13 +137,32 @@ export const useAuthProvider = () => {
     try {
       setIsLoading(true);
       
-      // Map common usernames to emails for convenience
-      const emailMap: { [key: string]: string } = {
-        'admin': 'admin@university.edu',
-        'coordinator': 'coordinator@university.edu'
-      };
-      
-      const actualEmail = emailMap[email.toLowerCase()] || email;
+      // Check if email is in authorized admins list
+      const { data: authorizedAdmin, error: checkError } = await supabase
+        .from('authorized_admins')
+        .select('email, is_active')
+        .eq('email', email.toLowerCase())
+        .eq('is_active', true)
+        .maybeSingle();
+
+      if (checkError) {
+        console.error('Error checking authorized admin:', checkError);
+        setIsLoading(false);
+        return { 
+          success: false, 
+          error: 'Failed to verify authorization' 
+        };
+      }
+
+      if (!authorizedAdmin) {
+        setIsLoading(false);
+        return { 
+          success: false, 
+          error: 'Unauthorized admin - Only authorized personnel can access this system' 
+        };
+      }
+
+      const actualEmail = authorizedAdmin.email;
       
       const { error } = await supabase.auth.signInWithOtp({
         email: actualEmail,

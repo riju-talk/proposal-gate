@@ -2,7 +2,9 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Textarea } from '@/components/ui/textarea';
+import { Separator } from '@/components/ui/separator';
 import { EventProposal } from '@/hooks/useEventProposals';
+import { EventApprovalTracker } from './EventApprovalTracker';
 import { 
   Calendar, 
   Clock, 
@@ -184,6 +186,11 @@ export const ProposalDetailsModal = ({
               </div>
             </div>
           )}
+
+          <Separator className="my-6" />
+          
+          {/* Approval Tracker */}
+          <EventApprovalTracker eventId={proposal.id} />
 
           <DialogFooter className="flex items-center justify-between pt-6 border-t border-purple-200 dark:border-purple-700">
             {showActions && (
