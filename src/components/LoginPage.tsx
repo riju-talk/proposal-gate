@@ -82,31 +82,28 @@ export const LoginPage = ({ onBack }: LoginPageProps) => {
         )}
         
         {/* Header */}
-        <div className="text-center space-y-6">
+        <div className="text-center space-y-4">
           <div className="flex justify-center">
-            <div className="relative group">
-              <div className="bg-card/80 p-8 rounded-3xl shadow-2xl border border-border/30 hover-lift animate-smooth">
-                <img src="/student_council.jpg" alt="Logo" className="h-28 w-28 rounded-2xl" />
-              </div>
-              <div className="absolute -inset-0.5 bg-primary/20 rounded-3xl blur opacity-30 group-hover:opacity-50 transition duration-1000 animate-pulse" />
+            <div className="bg-transparent p-6 rounded-2xl shadow-lg border border-border/20">
+              <img src="/student_council.jpg" alt="Logo" className="h-24 w-24" />
             </div>
           </div>
-          <div className="space-y-4">
-            <h1 className="text-5xl font-bold text-foreground text-glow">Student Council IIIT-Delhi</h1>
-            <p className="text-muted-foreground text-xl font-medium">Admin Portal Access</p>
-            <div className="mt-6 p-6 glass-effect rounded-2xl">
-              <div className="grid grid-cols-2 gap-6 text-center">
-                <div className="flex flex-col items-center space-y-2 group">
-                  <div className="w-12 h-12 bg-primary/20 rounded-2xl flex items-center justify-center group-hover:bg-primary/30 transition-colors duration-300 border border-primary/30">
-                    <span className="text-primary font-bold text-lg">SC</span>
+          <div className="space-y-2">
+            <h1 className="text-4xl font-bold text-foreground">Student Council IIIT-Delhi</h1>
+            <p className="text-muted-foreground text-xl">Admin Portal Access</p>
+            <div className="mt-4 p-4 bg-card/50 rounded-lg border border-border/30">
+              <div className="grid grid-cols-2 gap-4 text-center">
+                <div className="flex flex-col items-center space-y-1">
+                  <div className="w-8 h-8 bg-primary/20 rounded-full flex items-center justify-center">
+                    <span className="text-primary font-bold text-sm">SC</span>
                   </div>
-                  <span className="text-sm text-muted-foreground font-medium">Student Council</span>
+                  <span className="text-xs text-muted-foreground">Student Council</span>
                 </div>
-                <div className="flex flex-col items-center space-y-2 group">
-                  <div className="w-12 h-12 bg-accent/20 rounded-2xl flex items-center justify-center group-hover:bg-accent/30 transition-colors duration-300 border border-accent/30">
-                    <span className="text-accent font-bold text-lg">AP</span>
+                <div className="flex flex-col items-center space-y-1">
+                  <div className="w-8 h-8 bg-secondary/20 rounded-full flex items-center justify-center">
+                    <span className="text-secondary-foreground font-bold text-sm">AP</span>
                   </div>
-                  <span className="text-sm text-muted-foreground font-medium">Approval Portal</span>
+                  <span className="text-xs text-muted-foreground">Approval Portal</span>
                 </div>
               </div>
             </div>
@@ -114,13 +111,11 @@ export const LoginPage = ({ onBack }: LoginPageProps) => {
         </div>
 
         {/* Login Card */}
-        <Card className="card-enhanced hover-lift">
-          <CardHeader className="space-y-3 text-center">
-            <div className="flex items-center justify-center gap-3 mb-2">
-              <div className="p-2 bg-primary/10 rounded-xl border border-primary/20">
-                <Mail className="h-6 w-6 text-primary" />
-              </div>
-              <CardTitle className="text-3xl font-bold text-card-foreground">
+        <Card className="shadow-lg border border-border/20 bg-card/95 backdrop-blur-sm">
+          <CardHeader className="space-y-1 text-center">
+            <div className="flex items-center justify-center gap-2 mb-2">
+              <Mail className="h-5 w-5 text-primary" />
+              <CardTitle className="text-2xl font-semibold text-card-foreground">
                 {isLinkSent ? 'Check Your Email' : 'Sign In'}
               </CardTitle>
             </div>
@@ -157,43 +152,43 @@ export const LoginPage = ({ onBack }: LoginPageProps) => {
 
                   <Button 
                     type="submit" 
-                    className="w-full h-12 button-cool shadow-lg hover:shadow-xl" 
+                    className="w-full h-11" 
                     disabled={isLoading}
                   >
                     {isLoading ? (
                       <div className="flex items-center gap-2">
-                        <div className="w-5 h-5 border-2 border-primary-foreground/30 border-t-primary-foreground rounded-full animate-spin" />
-                        <span className="font-medium">Sending Magic Link...</span>
+                        <div className="w-4 h-4 border-2 border-primary-foreground/30 border-t-primary-foreground rounded-full animate-spin" />
+                        Sending Magic Link...
                       </div>
                     ) : (
-                      <span className="font-medium">Send Magic Link</span>
+                      "Send Magic Link"
                     )}
                   </Button>
                 </form>
 
                 {/* Quick Login Options */}
-                <div className="pt-6 border-t border-border/50">
-                  <p className="text-sm text-muted-foreground text-center mb-4 font-medium">Quick Login:</p>
-                  <div className="grid grid-cols-2 gap-3">
+                <div className="pt-4 border-t border-border">
+                  <p className="text-xs text-muted-foreground text-center mb-3">Quick Login:</p>
+                  <div className="grid grid-cols-2 gap-2">
                     <Button
                       variant="outline"
                       size="sm"
                       onClick={() => handleQuickLogin('admin')}
                       disabled={isLoading}
-                      className="h-12 hover-lift animate-smooth border-primary/30 hover:border-primary/60 hover:bg-primary/10"
+                      className="h-10"
                     >
-                      <Mail className="h-5 w-5 mr-2" />
-                      <span className="font-medium">Admin</span>
+                      <Mail className="h-4 w-4 mr-2" />
+                      Admin
                     </Button>
                     <Button
                       variant="outline"
                       size="sm"
                       onClick={() => handleQuickLogin('coordinator')}
                       disabled={isLoading}
-                      className="h-12 hover-lift animate-smooth border-accent/30 hover:border-accent/60 hover:bg-accent/10"
+                      className="h-10"
                     >
-                      <Users className="h-5 w-5 mr-2" />
-                      <span className="font-medium">Coordinator</span>
+                      <Users className="h-4 w-4 mr-2" />
+                      Coordinator
                     </Button>
                   </div>
                 </div>
