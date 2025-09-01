@@ -4,6 +4,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { EventApprovalTracker } from "@/components/EventApprovalTracker";
+import { PdfViewer } from "@/components/PdfViewer";
 import { 
   Calendar, 
   Clock, 
@@ -43,6 +44,7 @@ export const ProposalDetailsModal = ({
 }: ProposalDetailsModalProps) => {
   const [comments, setComments] = useState("");
   const [isUpdating, setIsUpdating] = useState(false);
+  const [showPdfViewer, setShowPdfViewer] = useState(false);
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -77,10 +79,8 @@ export const ProposalDetailsModal = ({
     setIsUpdating(false);
   };
 
-  const handleViewPdf = async () => {
-    if (proposal.pdf_document_url) {
-      await openPdfInNewTab(proposal.pdf_document_url);
-    }
+  const handleViewPdf = () => {
+    setShowPdfViewer(true);
   };
 
   return (
@@ -191,7 +191,7 @@ export const ProposalDetailsModal = ({
                 onClick={handleViewPdf}
                 className="flex items-center gap-2"
               >
-                <ExternalLink className="h-4 w-4" />
+                <FileText className="h-4 w-4" />
                 View PDF Document
               </Button>
             </div>
@@ -283,6 +283,16 @@ export const ProposalDetailsModal = ({
             </div>
           )}
         </div>
+
+        {/* PDF Viewer */}
+        {proposal.pdf_document_url && (
+          <PdfViewer
+            pdfPath={proposal.pdf_document_url}
+            isOpen={showPdfViewer}
+            onClose={() => setShowPdfViewer(false)}
+            title={`${proposal.event_name} - Supporting Document`}
+          />
+        )}
       </DialogContent>
     </Dialog>
   );
