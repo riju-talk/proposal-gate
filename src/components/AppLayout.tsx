@@ -219,7 +219,7 @@ export const AppLayout = ({ isAdmin, onRequestAdminLogin }: AppLayoutProps) => {
             ) : (
               <EventsView 
                 searchTerm={searchTerm}
-                statusFilter={isCoordinator ? statusFilter : "approved"}
+                statusFilter={isCoordinator ? statusFilter : "all"}
                 isAdmin={false}
                 showActions={false}
               />
