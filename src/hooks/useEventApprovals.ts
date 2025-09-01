@@ -33,11 +33,12 @@ export const useEventApprovals = (eventId?: string) => {
     const fetchData = async () => {
       setIsLoading(true);
       
-      // Fetch authorized admins
+      // Fetch authorized admins (exclude developer role)
       const { data: admins, error: adminsError } = await supabase
         .from('authorized_admins')
         .select('*')
         .eq('is_active', true)
+        .neq('role', 'developer')
         .order('approval_order', { ascending: true });
 
       if (adminsError) {

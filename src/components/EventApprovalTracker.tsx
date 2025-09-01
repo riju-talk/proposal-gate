@@ -95,11 +95,14 @@ export const EventApprovalTracker = ({ eventId }: EventApprovalTrackerProps) => 
     );
   }
 
-  const overallStatus = approvals.every(a => a.status === 'approved') 
+  // Filter out developer role for status calculation
+  const relevantApprovals = approvals.filter(a => a.admin_role !== 'developer');
+  
+  const overallStatus = relevantApprovals.length > 0 && relevantApprovals.every(a => a.status === 'approved') 
     ? 'fully_approved' 
-    : approvals.some(a => a.status === 'rejected') 
+    : relevantApprovals.some(a => a.status === 'rejected') 
     ? 'rejected' 
-    : 'pending';
+    : 'under_consideration';
 
   return (
     <Card>
@@ -108,12 +111,32 @@ export const EventApprovalTracker = ({ eventId }: EventApprovalTrackerProps) => 
           Approval Status
           {overallStatus === 'fully_approved' && <CheckCircle className="h-5 w-5 text-green-500" />}
           {overallStatus === 'rejected' && <XCircle className="h-5 w-5 text-red-500" />}
-          {overallStatus === 'pending' && <Clock className="h-5 w-5 text-yellow-500" />}
+          {overallStatus === 'under_consideration' && <Clock className="h-5 w-5 text-yellow-500" />}
         </CardTitle>
       </CardHeader>
       <CardContent>
         <div className="space-y-6">
-          {approvals.map((approval) => {
+          {/* Overall Status Badge */}
+          <div className="text-center p-4 border rounded-lg">
+            <div className="flex items-center justify-center gap-2 mb-2">
+              {overallStatus === 'fully_approved' && <CheckCircle className="h-6 w-6 text-green-500" />}
+              {overallStatus === 'rejected' && <XCircle className="h-6 w-6 text-red-500" />}
+              {overallStatus === 'under_consideration' && <Clock className="h-6 w-6 text-yellow-500" />}
+              <h3 className="text-lg font-semibold">
+                {overallStatus === 'fully_approved' ? 'Fully Approved' : 
+                 overallStatus === 'rejected' ? 'Rejected' : 'Under Consideration'}
+              </h3>
+            </div>
+            <p className="text-sm text-muted-foreground">
+              {overallStatus === 'fully_approved' 
+                ? 'All required approvals have been received'
+                : overallStatus === 'rejected'
+                ? 'This proposal has been rejected'
+                : 'Awaiting approvals from required authorities'}
+            </p>
+          </div>
+
+          {relevantApprovals.map((approval) => {
             const { canApprove: canUserApprove, reason } = canApprove(user?.email || '', eventId);
             const isCurrentUserApproval = approval.admin_email === user?.email;
             const canCurrentUserApprove = isCurrentUserApproval && canUserApprove && approval.status === 'pending';
