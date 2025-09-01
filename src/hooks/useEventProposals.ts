@@ -67,7 +67,10 @@ export const useEventProposals = (statusFilter?: string) => {
         setIsLoading(false);
         return;
       }
+      console.log('Fetched proposals from DB:', data);
+      console.log('Applied status filter:', statusFilter);
       const mappedProposals = data.map(mapDatabaseToProposal);
+      console.log('Mapped proposals:', mappedProposals);
       setProposals(mappedProposals);
       setIsLoading(false);
     };
