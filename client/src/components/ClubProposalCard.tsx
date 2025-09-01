@@ -1,7 +1,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Users, Mail, Phone, FileText, CheckCircle, AlertCircle } from "lucide-react";
+import { Users, Mail, Phone, FileText, CheckCircle, AlertCircle, XCircle, Sparkles } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 
 interface ClubFormationRequest {
@@ -35,13 +35,13 @@ export const ClubProposalCard = ({
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'approved':
-        return 'bg-success text-success-foreground';
+        return 'bg-gradient-to-r from-green-500 to-emerald-500 text-white shadow-lg';
       case 'rejected':
-        return 'bg-destructive text-destructive-foreground';
+        return 'bg-gradient-to-r from-red-500 to-pink-500 text-white shadow-lg';
       case 'under_consideration':
-        return 'bg-warning text-warning-foreground';
+        return 'bg-gradient-to-r from-yellow-500 to-orange-500 text-white shadow-lg';
       default:
-        return 'bg-accent text-accent-foreground';
+        return 'bg-gradient-to-r from-blue-500 to-purple-500 text-white shadow-lg';
     }
   };
 
@@ -52,33 +52,33 @@ export const ClubProposalCard = ({
       case 'rejected':
         return 'Rejected';
       case 'under_consideration':
-        return 'Under Consideration';
+        return 'Under Review';
       default:
         return 'Pending';
     }
   };
 
-  const handleMarkForConsideration = async () => {
-    await onStatusUpdate(clubRequest.id, 'under_consideration', 'Marked for further review');
-  };
-
-  const handleApprove = async () => {
-    await onStatusUpdate(clubRequest.id, 'approved', 'Club formation approved');
-  };
 
   return (
-    <Card className="hover:shadow-lg transition-shadow duration-200">
-      <CardHeader className="pb-3">
+    <Card className="group hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1 bg-gradient-to-br from-white to-orange-50 dark:from-slate-800 dark:to-orange-900/20 border border-orange-200 dark:border-orange-700 overflow-hidden">
+      <div className="absolute inset-0 bg-gradient-to-r from-orange-500/5 to-red-500/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+      
+      <CardHeader className="pb-3 relative z-10">
         <div className="flex items-start justify-between">
-          <div className="space-y-1">
-            <CardTitle className="text-xl">{clubRequest.club_name}</CardTitle>
-            <div className="flex items-center gap-2 text-sm text-muted-foreground">
-              <span>Proposed by {clubRequest.proposed_by_name}</span>
+          <div className="space-y-2 flex-1">
+            <CardTitle className="text-xl font-bold bg-gradient-to-r from-orange-600 to-red-600 bg-clip-text text-transparent group-hover:from-orange-700 group-hover:to-red-700 transition-all duration-300">
+              {clubRequest.club_name}
+            </CardTitle>
+            <div className="flex items-center gap-3 text-sm text-muted-foreground">
+              <div className="flex items-center gap-1">
+                <Sparkles className="h-4 w-4 text-orange-400" />
+                <span className="font-medium">Proposed by {clubRequest.proposed_by_name}</span>
+              </div>
               <span>•</span>
               <span>{formatDistanceToNow(new Date(clubRequest.created_at))} ago</span>
             </div>
           </div>
-          <Badge className={`${getStatusColor(clubRequest.status)} font-medium`}>
+          <Badge className={`${getStatusColor(clubRequest.status)} border-0 font-medium shadow-lg`}>
             {getStatusText(clubRequest.status)}
           </Badge>
         </div>
@@ -144,25 +144,34 @@ export const ClubProposalCard = ({
           </div>
         )}
         
-        {showActions && clubRequest.status === 'pending' && (
-          <div className="flex items-center justify-end gap-2 pt-4">
+        {showActions && (
+          <div className="flex items-center justify-end gap-2 pt-4 border-t border-orange-200 dark:border-orange-700">
             <Button
               variant="outline"
               size="sm"
-              onClick={handleMarkForConsideration}
-              className="flex items-center gap-2"
-            >
-              <AlertCircle className="h-4 w-4" />
-              Mark for Review
-            </Button>
-            <Button
-              variant="default"
-              size="sm"
-              onClick={handleApprove}
-              className="flex items-center gap-2"
+              onClick={() => onStatusUpdate(clubRequest.id, 'approved', 'Club formation approved')}
+              className="flex items-center gap-2 border-green-200 hover:bg-green-50 hover:border-green-300 text-green-600 hover:text-green-700 transition-all duration-200"
             >
               <CheckCircle className="h-4 w-4" />
               Approve
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => onStatusUpdate(clubRequest.id, 'under_consideration', 'Marked for further review')}
+              className="flex items-center gap-2 border-orange-200 hover:bg-orange-50 hover:border-orange-300 text-orange-600 hover:text-orange-700 transition-all duration-200"
+            >
+              <AlertCircle className="h-4 w-4" />
+              Under Review
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => onStatusUpdate(clubRequest.id, 'rejected', 'Club formation rejected')}
+              className="flex items-center gap-2 border-red-200 hover:bg-red-50 hover:border-red-300 text-red-600 hover:text-red-700 transition-all duration-200"
+            >
+              <XCircle className="h-4 w-4" />
+              Reject
             </Button>
           </div>
         )}

@@ -33,7 +33,10 @@ export const PdfViewer = ({ pdfPath, isOpen, onClose, title = 'PDF Document' }: 
   // Set pdf worker on client only (react-pdf recommends this)
   useEffect(() => {
     if (typeof window !== 'undefined') {
-      pdfjs.GlobalWorkerOptions.workerSrc = `https://unpkg.com/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.js`;
+      pdfjs.GlobalWorkerOptions.workerSrc = new URL(
+        'pdfjs-dist/build/pdf.worker.min.js',
+        import.meta.url,
+      ).toString();
     }
   }, []);
 

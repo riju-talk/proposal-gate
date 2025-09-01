@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { apiClient } from '@/lib/api';
+import { supabase } from '@/integrations/supabase/client';
 
 export interface EventProposal {
   id: string;
@@ -52,7 +52,16 @@ export const useEventProposals = (statusFilter?: string) => {
 
   useEffect(() => {
     const fetchProposals = async () => {
-      const { data, error } = await apiClient.getEventProposals();
+      let query = supabase
+        .from('event_proposals')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (statusFilter && statusFilter !== 'all') {
+        query = query.eq('status', statusFilter);
+      }
+
+      const { data, error } = await query;
       if (error) {
         console.error('Error fetching proposals:', error);
         setIsLoading(false);
@@ -60,13 +69,7 @@ export const useEventProposals = (statusFilter?: string) => {
       }
       console.log('Fetched proposals from DB:', data);
       console.log('Applied status filter:', statusFilter);
-      
-      let filteredData = data || [];
-      if (statusFilter && statusFilter !== 'all') {
-        filteredData = filteredData.filter((proposal: any) => proposal.status === statusFilter);
-      }
-      
-      const mappedProposals = filteredData.map(mapDatabaseToProposal);
+      const mappedProposals = data.map(mapDatabaseToProposal);
       console.log('Mapped proposals:', mappedProposals);
       setProposals(mappedProposals);
       setIsLoading(false);
@@ -76,7 +79,13 @@ export const useEventProposals = (statusFilter?: string) => {
   }, [statusFilter]);
 
   const updateProposalStatus = async (id: string, status: 'approved' | 'rejected' | 'under_consideration', comments: string) => {
-    const { error } = await apiClient.updateEventProposal(id, { status });
+    const { error } = await supabase
+      .from('event_proposals')
+      .update({ 
+        status,
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', id);
     
     if (error) {
       console.error('Error updating proposal:', error);

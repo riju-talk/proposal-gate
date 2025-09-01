@@ -14,7 +14,8 @@ import {
   Eye,
   CheckCircle,
   Sparkles,
-  AlertCircle
+  AlertCircle,
+  XCircle
 } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { EventProposal } from "@/hooks/useEventProposals";
@@ -58,13 +59,6 @@ export const EventProposalCard = ({
     }
   };
 
-  const handleMarkForIdeation = async () => {
-    await onStatusUpdate(proposal.id, 'under_consideration', 'Marked for further ideation and review');
-  };
-
-  const handleApprove = async () => {
-    await onStatusUpdate(proposal.id, 'approved', 'Event proposal approved');
-  };
 
   return (
     <Card className="group hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1 bg-gradient-to-br from-white to-purple-50 dark:from-slate-800 dark:to-purple-900/20 border border-purple-200 dark:border-purple-700 overflow-hidden">
@@ -155,24 +149,34 @@ export const EventProposalCard = ({
             View Details
           </Button>
           
-          {showActions && proposal.status === 'pending' && (
+          {showActions && (
             <div className="flex items-center gap-2">
               <Button
                 variant="outline"
                 size="sm"
-                onClick={handleMarkForIdeation}
-                className="flex items-center gap-2 border-orange-200 hover:bg-orange-50 hover:border-orange-300 text-orange-600 hover:text-orange-700 transition-all duration-200"
-              >
-                <AlertCircle className="h-4 w-4" />
-                Mark for Ideation
-              </Button>
-              <Button
-                size="sm"
-                onClick={handleApprove}
-                className="flex items-center gap-2 bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600 text-white shadow-lg transition-all duration-200"
+                onClick={() => onStatusUpdate(proposal.id, 'approved', 'Event proposal approved')}
+                className="flex items-center gap-2 border-green-200 hover:bg-green-50 hover:border-green-300 text-green-600 hover:text-green-700 transition-all duration-200"
               >
                 <CheckCircle className="h-4 w-4" />
                 Approve
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => onStatusUpdate(proposal.id, 'under_consideration', 'Marked for further review')}
+                className="flex items-center gap-2 border-orange-200 hover:bg-orange-50 hover:border-orange-300 text-orange-600 hover:text-orange-700 transition-all duration-200"
+              >
+                <AlertCircle className="h-4 w-4" />
+                Under Review
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => onStatusUpdate(proposal.id, 'rejected', 'Event proposal rejected')}
+                className="flex items-center gap-2 border-red-200 hover:bg-red-50 hover:border-red-300 text-red-600 hover:text-red-700 transition-all duration-200"
+              >
+                <XCircle className="h-4 w-4" />
+                Reject
               </Button>
             </div>
           )}

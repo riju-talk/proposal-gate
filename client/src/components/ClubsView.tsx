@@ -1,5 +1,5 @@
 import { useState, useMemo, useEffect } from "react";
-import { apiClient } from "@/lib/api";
+import { supabase } from "@/integrations/supabase/client";
 import { ClubProposalCard } from "@/components/ClubProposalCard";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -40,9 +40,12 @@ export const ClubsView = ({ searchTerm, statusFilter, isAdmin, showActions }: Cl
 
   const fetchClubRequests = async () => {
     try {
-      const { data, error } = await apiClient.getClubFormationRequests();
+      const { data, error } = await supabase
+        .from('club_formation_requests')
+        .select('*')
+        .order('created_at', { ascending: false });
 
-      if (error) throw new Error(error);
+      if (error) throw error;
       setClubRequests(data || []);
     } catch (error) {
       console.error('Error fetching club requests:', error);
@@ -58,9 +61,12 @@ export const ClubsView = ({ searchTerm, statusFilter, isAdmin, showActions }: Cl
 
   const updateClubStatus = async (id: string, status: 'approved' | 'rejected' | 'under_consideration', comments: string) => {
     try {
-      const { error } = await apiClient.updateClubFormationRequestStatus(id, status);
+      const { error } = await supabase
+        .from('club_formation_requests')
+        .update({ status, updated_at: new Date().toISOString() })
+        .eq('id', id);
 
-      if (error) throw new Error(error);
+      if (error) throw error;
 
       setClubRequests(prev => 
         prev.map(request => 

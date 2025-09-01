@@ -239,46 +239,54 @@ export const ProposalDetailsModal = ({
           </div>
 
           {/* Admin Actions */}
-          {showActions && proposal.status === 'pending' && (
-            <div className="border-t pt-4 space-y-4">
-              <div>
-                <label className="block text-sm font-medium mb-2">Comments</label>
-                <Textarea
-                  value={comments}
-                  onChange={(e) => setComments(e.target.value)}
-                  placeholder="Add your comments about this proposal..."
-                  className="min-h-[100px]"
-                />
-              </div>
-              
-              <div className="flex items-center gap-2">
-                <Button
-                  onClick={() => handleStatusUpdate('approved')}
-                  disabled={isUpdating}
-                  className="bg-green-600 hover:bg-green-700"
-                >
-                  <CheckCircle className="h-4 w-4 mr-2" />
-                  {isUpdating ? 'Updating...' : 'Approve'}
-                </Button>
+          {showActions && (
+            <div className="border-t pt-6 space-y-4">
+              <div className="bg-gradient-to-r from-purple-50 to-blue-50 dark:from-purple-900/20 dark:to-blue-900/20 p-6 rounded-lg border border-purple-200 dark:border-purple-700">
+                <div className="text-center mb-4">
+                  <h3 className="text-lg font-semibold text-purple-700 dark:text-purple-300 mb-2">Admin Review Panel</h3>
+                  <p className="text-sm text-muted-foreground">Take action on this event proposal</p>
+                </div>
                 
-                <Button
-                  onClick={() => handleStatusUpdate('under_consideration')}
-                  disabled={isUpdating}
-                  variant="outline"
-                  className="border-yellow-300 text-yellow-700 hover:bg-yellow-50"
-                >
-                  <AlertCircle className="h-4 w-4 mr-2" />
-                  Mark for Review
-                </Button>
-                
-                <Button
-                  onClick={() => handleStatusUpdate('rejected')}
-                  disabled={isUpdating}
-                  variant="destructive"
-                >
-                  <XCircle className="h-4 w-4 mr-2" />
-                  {isUpdating ? 'Updating...' : 'Reject'}
-                </Button>
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-sm font-medium mb-2 text-purple-700 dark:text-purple-300">Comments & Notes</label>
+                    <Textarea
+                      value={comments}
+                      onChange={(e) => setComments(e.target.value)}
+                      placeholder="Add your comments about this proposal..."
+                      className="min-h-[100px] border-purple-200 dark:border-purple-700 focus:border-purple-400 dark:focus:border-purple-500"
+                    />
+                  </div>
+                  
+                  <div className="grid grid-cols-3 gap-3">
+                    <Button
+                      onClick={() => handleStatusUpdate('approved')}
+                      disabled={isUpdating}
+                      className="flex-1 bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600 text-white shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105"
+                    >
+                      <CheckCircle className="h-4 w-4 mr-2" />
+                      {isUpdating ? 'Updating...' : 'Approve'}
+                    </Button>
+                    
+                    <Button
+                      onClick={() => handleStatusUpdate('under_consideration')}
+                      disabled={isUpdating}
+                      className="flex-1 bg-gradient-to-r from-yellow-500 to-orange-500 hover:from-yellow-600 hover:to-orange-600 text-white shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105"
+                    >
+                      <AlertCircle className="h-4 w-4 mr-2" />
+                      Under Review
+                    </Button>
+                    
+                    <Button
+                      onClick={() => handleStatusUpdate('rejected')}
+                      disabled={isUpdating}
+                      className="flex-1 bg-gradient-to-r from-red-500 to-pink-500 hover:from-red-600 hover:to-pink-600 text-white shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105"
+                    >
+                      <XCircle className="h-4 w-4 mr-2" />
+                      {isUpdating ? 'Updating...' : 'Reject'}
+                    </Button>
+                  </div>
+                </div>
               </div>
             </div>
           )}
