@@ -1,10 +1,9 @@
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
-import { Textarea } from '@/components/ui/textarea';
-import { Separator } from '@/components/ui/separator';
-import { EventProposal } from '@/hooks/useEventProposals';
-import { EventApprovalTracker } from './EventApprovalTracker';
+
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Textarea } from "@/components/ui/textarea";
+import { EventApprovalTracker } from "@/components/EventApprovalTracker";
 import { 
   Calendar, 
   Clock, 
@@ -15,228 +14,274 @@ import {
   Mail, 
   Phone, 
   FileText,
-  Check,
-  X,
+  Target,
+  List,
+  CheckCircle,
+  XCircle,
   AlertCircle,
-  Sparkles
-} from 'lucide-react';
-import { useState } from 'react';
-import { formatDistanceToNow } from 'date-fns';
+  ExternalLink
+} from "lucide-react";
+import { formatDistanceToNow } from "date-fns";
+import { EventProposal } from "@/hooks/useEventProposals";
+import { useState } from "react";
+import { openPdfInNewTab } from "@/utils/pdfUtils";
 
 interface ProposalDetailsModalProps {
-  proposal: EventProposal | null;
+  proposal: EventProposal;
   isOpen: boolean;
   onClose: () => void;
-  onStatusUpdate: (id: string, status: 'approved' | 'rejected' | 'under_consideration', comments: string) => Promise<void>;
   showActions: boolean;
+  onStatusUpdate: (id: string, status: 'approved' | 'rejected' | 'under_consideration', comments: string) => Promise<void>;
 }
 
 export const ProposalDetailsModal = ({ 
   proposal, 
   isOpen, 
   onClose, 
-  onStatusUpdate,
-  showActions 
+  showActions, 
+  onStatusUpdate 
 }: ProposalDetailsModalProps) => {
-  const [comments, setComments] = useState('');
-
-  if (!proposal) return null;
+  const [comments, setComments] = useState("");
+  const [isUpdating, setIsUpdating] = useState(false);
 
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'approved':
-        return 'bg-gradient-to-r from-green-500 to-emerald-500 text-white shadow-lg';
+        return 'bg-green-100 text-green-800 border-green-200';
       case 'rejected':
-        return 'bg-gradient-to-r from-red-500 to-pink-500 text-white shadow-lg';
+        return 'bg-red-100 text-red-800 border-red-200';
       case 'under_consideration':
-        return 'bg-gradient-to-r from-yellow-500 to-orange-500 text-white shadow-lg';
+        return 'bg-yellow-100 text-yellow-800 border-yellow-200';
       default:
-        return 'bg-gradient-to-r from-blue-500 to-purple-500 text-white shadow-lg';
+        return 'bg-blue-100 text-blue-800 border-blue-200';
     }
   };
 
-  const getStatusText = (status: string) => {
+  const getStatusIcon = (status: string) => {
     switch (status) {
       case 'approved':
-        return 'Approved';
+        return <CheckCircle className="h-4 w-4" />;
       case 'rejected':
-        return 'Rejected';
+        return <XCircle className="h-4 w-4" />;
       case 'under_consideration':
-        return 'Under Review';
+        return <AlertCircle className="h-4 w-4" />;
       default:
-        return 'Pending';
+        return <Clock className="h-4 w-4" />;
     }
   };
 
-  const handleApprove = async () => {
-    await onStatusUpdate(proposal.id, 'approved', comments);
-    onClose();
+  const handleStatusUpdate = async (status: 'approved' | 'rejected' | 'under_consideration') => {
+    setIsUpdating(true);
+    await onStatusUpdate(proposal.id, status, comments);
+    setComments("");
+    setIsUpdating(false);
   };
 
-  const handleReject = async () => {
-    await onStatusUpdate(proposal.id, 'rejected', comments);
-    onClose();
+  const handleViewPdf = async () => {
+    if (proposal.pdf_document_url) {
+      await openPdfInNewTab(proposal.pdf_document_url);
+    }
   };
-
-  const handleMarkForConsideration = async () => {
-    await onStatusUpdate(proposal.id, 'under_consideration', comments);
-    onClose();
-  };
-
-  const InfoRow = ({ icon: Icon, label, value, iconColor }: { icon: any, label: string, value: string | number, iconColor?: string }) => (
-    <div className="flex items-start gap-3 p-4 bg-gradient-to-r from-purple-50 to-blue-50 dark:from-purple-900/20 dark:to-blue-900/20 rounded-xl border border-purple-100 dark:border-purple-800">
-      <Icon className={`h-5 w-5 ${iconColor || 'text-purple-500'} mt-0.5 flex-shrink-0`} />
-      <div className="flex-1 min-w-0">
-        <p className="text-sm font-medium text-foreground">{label}</p>
-        <p className="text-sm text-muted-foreground break-words">{value}</p>
-      </div>
-    </div>
-  );
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto bg-white/95 dark:bg-slate-900/95 backdrop-blur-xl border border-purple-200 dark:border-purple-700">
+      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <div className="flex items-start justify-between gap-4">
-            <div className="flex-1">
-              <DialogTitle className="text-2xl font-bold bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent">
-                {proposal.event_name}
-              </DialogTitle>
-              <p className="text-muted-foreground mt-1 flex items-center gap-2">
-                <Sparkles className="h-4 w-4 text-purple-400" />
-                {proposal.event_type}
-              </p>
-            </div>
-            <Badge className={`${getStatusColor(proposal.status)} border-0 font-medium shadow-lg`}>
-              {getStatusText(proposal.status)}
+          <div className="flex items-center justify-between">
+            <DialogTitle className="text-2xl font-bold">{proposal.event_name}</DialogTitle>
+            <Badge className={`${getStatusColor(proposal.status)} flex items-center gap-1`}>
+              {getStatusIcon(proposal.status)}
+              {proposal.status.charAt(0).toUpperCase() + proposal.status.slice(1).replace('_', ' ')}
             </Badge>
           </div>
         </DialogHeader>
 
         <div className="space-y-6">
-          {/* Event Description */}
-          <div className="space-y-2">
-            <h3 className="font-semibold text-lg text-purple-700 dark:text-purple-300">Event Description</h3>
-            <p className="text-muted-foreground leading-relaxed bg-gradient-to-r from-purple-50 to-blue-50 dark:from-purple-900/20 dark:to-blue-900/20 p-4 rounded-xl border border-purple-100 dark:border-purple-800">
-              {proposal.description}
-            </p>
-          </div>
+          {/* Basic Information */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="space-y-3">
+              <div className="flex items-center gap-2">
+                <Calendar className="h-5 w-5 text-purple-500" />
+                <div>
+                  <p className="font-semibold">Event Date</p>
+                  <p className="text-muted-foreground">{new Date(proposal.event_date).toLocaleDateString()}</p>
+                </div>
+              </div>
+              
+              <div className="flex items-center gap-2">
+                <Clock className="h-5 w-5 text-blue-500" />
+                <div>
+                  <p className="font-semibold">Time</p>
+                  <p className="text-muted-foreground">{proposal.start_time} - {proposal.end_time}</p>
+                </div>
+              </div>
+              
+              <div className="flex items-center gap-2">
+                <MapPin className="h-5 w-5 text-green-500" />
+                <div>
+                  <p className="font-semibold">Venue</p>
+                  <p className="text-muted-foreground">{proposal.venue}</p>
+                </div>
+              </div>
+            </div>
 
-          {/* Event Details Grid */}
-          <div className="space-y-4">
-            <h3 className="font-semibold text-lg text-purple-700 dark:text-purple-300">Event Details</h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <InfoRow icon={Calendar} label="Event Date" value={new Date(proposal.event_date).toLocaleDateString()} iconColor="text-purple-500" />
-              <InfoRow icon={Clock} label="Time" value={`${proposal.start_time} - ${proposal.end_time}`} iconColor="text-blue-500" />
-              <InfoRow icon={MapPin} label="Venue" value={proposal.venue} iconColor="text-green-500" />
-              <InfoRow icon={Users} label="Expected Participants" value={proposal.expected_participants} iconColor="text-orange-500" />
+            <div className="space-y-3">
+              <div className="flex items-center gap-2">
+                <Users className="h-5 w-5 text-orange-500" />
+                <div>
+                  <p className="font-semibold">Expected Participants</p>
+                  <p className="text-muted-foreground">{proposal.expected_participants}</p>
+                </div>
+              </div>
+              
               {proposal.budget_estimate && (
-                <InfoRow icon={DollarSign} label="Budget Estimate" value={`₹${proposal.budget_estimate.toLocaleString()}`} iconColor="text-emerald-500" />
+                <div className="flex items-center gap-2">
+                  <DollarSign className="h-5 w-5 text-emerald-500" />
+                  <div>
+                    <p className="font-semibold">Budget Estimate</p>
+                    <p className="text-muted-foreground">₹{proposal.budget_estimate.toLocaleString()}</p>
+                  </div>
+                </div>
               )}
+              
+              <div>
+                <p className="font-semibold text-sm text-muted-foreground">Event Type</p>
+                <Badge variant="outline">{proposal.event_type}</Badge>
+              </div>
             </div>
           </div>
 
-          {/* Organizer Information */}
-          <div className="space-y-4">
-            <h3 className="font-semibold text-lg text-purple-700 dark:text-purple-300">Organizer Information</h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <InfoRow icon={User} label="Organizer Name" value={proposal.organizer_name} iconColor="text-indigo-500" />
-              <InfoRow icon={Mail} label="Email Address" value={proposal.organizer_email} iconColor="text-pink-500" />
-              {proposal.organizer_phone && (
-                <InfoRow icon={Phone} label="Phone Number" value={proposal.organizer_phone} iconColor="text-teal-500" />
-              )}
-            </div>
+          {/* Description */}
+          <div>
+            <h3 className="text-lg font-semibold mb-2">Description</h3>
+            <p className="text-muted-foreground leading-relaxed">{proposal.description}</p>
           </div>
+
+          {/* Objectives */}
+          {proposal.objectives && (
+            <div>
+              <div className="flex items-center gap-2 mb-2">
+                <Target className="h-5 w-5 text-blue-500" />
+                <h3 className="text-lg font-semibold">Objectives</h3>
+              </div>
+              <p className="text-muted-foreground leading-relaxed">{proposal.objectives}</p>
+            </div>
+          )}
 
           {/* Additional Requirements */}
           {proposal.additional_requirements && (
-            <div className="space-y-2">
-              <h3 className="font-semibold text-lg text-purple-700 dark:text-purple-300">Additional Requirements</h3>
-              <p className="text-muted-foreground leading-relaxed bg-gradient-to-r from-purple-50 to-blue-50 dark:from-purple-900/20 dark:to-blue-900/20 p-4 rounded-xl border border-purple-100 dark:border-purple-800">
-                {proposal.additional_requirements}
-              </p>
+            <div>
+              <div className="flex items-center gap-2 mb-2">
+                <List className="h-5 w-5 text-purple-500" />
+                <h3 className="text-lg font-semibold">Additional Requirements</h3>
+              </div>
+              <p className="text-muted-foreground leading-relaxed">{proposal.additional_requirements}</p>
             </div>
           )}
 
-          {/* Submission Info */}
-          <div className="bg-gradient-to-r from-slate-50 to-gray-50 dark:from-slate-800/50 dark:to-gray-800/50 p-4 rounded-xl border border-slate-200 dark:border-slate-700">
-            <p className="text-sm text-muted-foreground">
-              <strong>Submitted:</strong> {formatDistanceToNow(new Date(proposal.created_at), { addSuffix: true })}
-            </p>
-            {proposal.updated_at !== proposal.created_at && (
-              <p className="text-sm text-muted-foreground mt-1">
-                <strong>Last Updated:</strong> {formatDistanceToNow(new Date(proposal.updated_at), { addSuffix: true })}
-              </p>
-            )}
+          {/* PDF Document */}
+          {proposal.pdf_document_url && (
+            <div>
+              <div className="flex items-center gap-2 mb-2">
+                <FileText className="h-5 w-5 text-red-500" />
+                <h3 className="text-lg font-semibold">Supporting Document</h3>
+              </div>
+              <Button
+                variant="outline"
+                onClick={handleViewPdf}
+                className="flex items-center gap-2"
+              >
+                <ExternalLink className="h-4 w-4" />
+                View PDF Document
+              </Button>
+            </div>
+          )}
+
+          {/* Organizer Information */}
+          <div>
+            <h3 className="text-lg font-semibold mb-3">Organizer Information</h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="flex items-center gap-2">
+                <User className="h-5 w-5 text-indigo-500" />
+                <div>
+                  <p className="font-semibold">Name</p>
+                  <p className="text-muted-foreground">{proposal.organizer_name}</p>
+                </div>
+              </div>
+              
+              <div className="flex items-center gap-2">
+                <Mail className="h-5 w-5 text-pink-500" />
+                <div>
+                  <p className="font-semibold">Email</p>
+                  <p className="text-muted-foreground">{proposal.organizer_email}</p>
+                </div>
+              </div>
+              
+              {proposal.organizer_phone && (
+                <div className="flex items-center gap-2">
+                  <Phone className="h-5 w-5 text-green-500" />
+                  <div>
+                    <p className="font-semibold">Phone</p>
+                    <p className="text-muted-foreground">{proposal.organizer_phone}</p>
+                  </div>
+                </div>
+              )}
+            </div>
           </div>
 
-          {/* PDF Viewer */}
-          {proposal.pdf_document_url && (
-            <div className="mt-6">
-              <h3 className="text-lg font-semibold mb-4 text-purple-700 dark:text-purple-300 flex items-center gap-2">
-                <FileText className="h-5 w-5" />
-                Event Proposal Document
-              </h3>
-              <div className="border border-purple-200 dark:border-purple-700 rounded-xl overflow-hidden shadow-lg">
-                <iframe
-                  src={proposal.pdf_document_url}
-                  className="w-full h-[500px]"
-                  title="Event Proposal PDF"
-                />
-              </div>
-            </div>
-          )}
-
-          <Separator className="my-6" />
-          
           {/* Approval Tracker */}
           <EventApprovalTracker eventId={proposal.id} />
 
-          <DialogFooter className="flex items-center justify-between pt-6 border-t border-purple-200 dark:border-purple-700">
-            {showActions && (
-              <>
-                <div className="flex items-center space-x-2">
-                  <Textarea
-                    placeholder="Add comments (optional)"
-                    value={comments}
-                    onChange={(e) => setComments(e.target.value)}
-                    className="min-w-[300px] bg-white/50 dark:bg-slate-800/50 border-purple-200 dark:border-purple-700"
-                  />
-                </div>
-                <div className="flex items-center space-x-2">
-                  <Button variant="outline" onClick={onClose} className="border-purple-200 dark:border-purple-700">
-                    Close
-                  </Button>
-                  <Button 
-                    onClick={handleMarkForConsideration}
-                    className="bg-gradient-to-r from-yellow-500 to-orange-500 hover:from-yellow-600 hover:to-orange-600 text-white shadow-lg"
-                  >
-                    <Sparkles className="h-4 w-4 mr-2" />
-                    Mark for Ideation
-                  </Button>
-                  <Button 
-                    onClick={handleReject}
-                    className="bg-gradient-to-r from-red-500 to-pink-500 hover:from-red-600 hover:to-pink-600 text-white shadow-lg"
-                  >
-                    <X className="h-4 w-4 mr-2" />
-                    Reject
-                  </Button>
-                  <Button 
-                    onClick={handleApprove}
-                    className="bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600 text-white shadow-lg"
-                  >
-                    <Check className="h-4 w-4 mr-2" />
-                    Approve
-                  </Button>
-                </div>
-              </>
-            )}
-            {!showActions && (
-              <Button variant="outline" onClick={onClose} className="border-purple-200 dark:border-purple-700">
-                Close
-              </Button>
-            )}
-          </DialogFooter>
+          {/* Metadata */}
+          <div className="text-sm text-muted-foreground border-t pt-4">
+            <p>Created {formatDistanceToNow(new Date(proposal.created_at))} ago</p>
+            <p>Last updated {formatDistanceToNow(new Date(proposal.updated_at))} ago</p>
+          </div>
+
+          {/* Admin Actions */}
+          {showActions && proposal.status === 'pending' && (
+            <div className="border-t pt-4 space-y-4">
+              <div>
+                <label className="block text-sm font-medium mb-2">Comments</label>
+                <Textarea
+                  value={comments}
+                  onChange={(e) => setComments(e.target.value)}
+                  placeholder="Add your comments about this proposal..."
+                  className="min-h-[100px]"
+                />
+              </div>
+              
+              <div className="flex items-center gap-2">
+                <Button
+                  onClick={() => handleStatusUpdate('approved')}
+                  disabled={isUpdating}
+                  className="bg-green-600 hover:bg-green-700"
+                >
+                  <CheckCircle className="h-4 w-4 mr-2" />
+                  {isUpdating ? 'Updating...' : 'Approve'}
+                </Button>
+                
+                <Button
+                  onClick={() => handleStatusUpdate('under_consideration')}
+                  disabled={isUpdating}
+                  variant="outline"
+                  className="border-yellow-300 text-yellow-700 hover:bg-yellow-50"
+                >
+                  <AlertCircle className="h-4 w-4 mr-2" />
+                  Mark for Review
+                </Button>
+                
+                <Button
+                  onClick={() => handleStatusUpdate('rejected')}
+                  disabled={isUpdating}
+                  variant="destructive"
+                >
+                  <XCircle className="h-4 w-4 mr-2" />
+                  {isUpdating ? 'Updating...' : 'Reject'}
+                </Button>
+              </div>
+            </div>
+          )}
         </div>
       </DialogContent>
     </Dialog>

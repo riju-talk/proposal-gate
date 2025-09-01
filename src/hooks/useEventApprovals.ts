@@ -56,8 +56,7 @@ export const useEventApprovals = (eventId?: string) => {
             *,
             authorized_admins!inner(name, role, approval_order)
           `)
-          .eq('event_proposal_id', eventId)
-          .order('authorized_admins.approval_order', { ascending: true });
+          .eq('event_proposal_id', eventId);
 
         if (approvalsError) {
           console.error('Error fetching approvals:', approvalsError);
@@ -65,7 +64,12 @@ export const useEventApprovals = (eventId?: string) => {
           return;
         }
 
-        const mappedApprovals = approvalsData?.map((approval: any) => ({
+        // Sort the data by approval_order after fetching
+        const sortedApprovals = approvalsData?.sort((a: any, b: any) => 
+          a.authorized_admins.approval_order - b.authorized_admins.approval_order
+        );
+
+        const mappedApprovals = sortedApprovals?.map((approval: any) => ({
           ...approval,
           admin_name: approval.authorized_admins.name,
           admin_role: approval.authorized_admins.role,
