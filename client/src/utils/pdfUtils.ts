@@ -1,29 +1,19 @@
 
-import { supabase } from '@/integrations/supabase/client';
-
+// For now, we'll return the original path since we don't have file storage implemented
+// In a real implementation, you'd integrate with your file storage service
 export const getPdfUrl = async (pdfPath: string): Promise<string | null> => {
   try {
     console.log('Getting PDF URL for path:', pdfPath);
     
-    // Extract the file path from the full URL if needed
-    const filePath = pdfPath.includes('event-proposals/') 
-      ? pdfPath.split('event-proposals/')[1] 
-      : pdfPath;
-    
-    console.log('Extracted file path:', filePath);
-    
-    // Get a signed URL for the PDF
-    const { data, error } = await supabase.storage
-      .from('event-proposals')
-      .createSignedUrl(filePath, 60 * 60); // 1 hour expiry
-    
-    if (error) {
-      console.error('Error creating signed URL:', error);
+    // For demo purposes, return the original path
+    // In production, you'd implement actual file storage (S3, etc.)
+    if (!pdfPath) {
+      console.log('No PDF path provided');
       return null;
     }
     
-    console.log('Generated signed URL:', data.signedUrl);
-    return data.signedUrl;
+    console.log('Returning PDF path:', pdfPath);
+    return pdfPath;
   } catch (error) {
     console.error('Error in getPdfUrl:', error);
     return null;

@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { supabase } from '@/integrations/supabase/client';
+import { apiClient } from '@/lib/api';
 
 export interface Club {
   id: string;
@@ -20,11 +20,7 @@ export const useClubs = () => {
 
   useEffect(() => {
     const fetchClubs = async () => {
-      const { data, error } = await supabase
-        .from('clubs')
-        .select('*')
-        .eq('is_active', true)
-        .order('created_at', { ascending: false });
+      const { data, error } = await apiClient.getClubs();
 
       if (error) {
         console.error('Error fetching clubs:', error);

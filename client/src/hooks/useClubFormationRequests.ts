@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { supabase } from '@/integrations/supabase/client';
+import { apiClient } from '@/lib/api';
 
 export interface ClubFormationRequest {
   id: string;
@@ -24,22 +24,19 @@ export const useClubFormationRequests = (statusFilter?: string) => {
 
   useEffect(() => {
     const fetchRequests = async () => {
-      let query = supabase
-        .from('club_formation_requests')
-        .select('*')
-        .order('created_at', { ascending: false });
-
-      if (statusFilter && statusFilter !== 'all') {
-        query = query.eq('status', statusFilter);
-      }
-
-      const { data, error } = await query;
+      const { data, error } = await apiClient.getClubFormationRequests();
       if (error) {
         console.error('Error fetching club requests:', error);
         setIsLoading(false);
         return;
       }
-      setRequests((data || []).map(item => ({
+      
+      let filteredData = data || [];
+      if (statusFilter && statusFilter !== 'all') {
+        filteredData = filteredData.filter((request: any) => request.status === statusFilter);
+      }
+      
+      setRequests(filteredData.map((item: any) => ({
         ...item,
         status: item.status as 'pending' | 'approved' | 'rejected' | 'under_consideration'
       })));
@@ -50,13 +47,7 @@ export const useClubFormationRequests = (statusFilter?: string) => {
   }, [statusFilter]);
 
   const updateRequestStatus = async (id: string, status: 'approved' | 'rejected' | 'under_consideration', comments: string) => {
-    const { error } = await supabase
-      .from('club_formation_requests')
-      .update({ 
-        status,
-        updated_at: new Date().toISOString()
-      })
-      .eq('id', id);
+    const { error } = await apiClient.updateClubFormationRequestStatus(id, status);
     
     if (error) {
       console.error('Error updating request:', error);

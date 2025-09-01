@@ -1,8 +1,8 @@
-import { supabase } from '@/integrations/supabase/client';
+import { apiClient } from '@/lib/api';
 
 export const createAdminUsers = async () => {
   try {
-    const { data, error } = await supabase.functions.invoke('create-admin-users');
+    const { data, error } = await apiClient.createAdminUsers();
     
     if (error) {
       console.error('Error creating admin users:', error);

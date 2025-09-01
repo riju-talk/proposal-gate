@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { supabase } from '@/integrations/supabase/client';
+import { apiClient } from '@/lib/api';
 
 export interface EventApproval {
   id: string;
@@ -34,12 +34,7 @@ export const useEventApprovals = (eventId?: string) => {
       setIsLoading(true);
       
       // Fetch authorized admins (exclude developer role)
-      const { data: admins, error: adminsError } = await supabase
-        .from('authorized_admins')
-        .select('*')
-        .eq('is_active', true)
-        .neq('role', 'developer')
-        .order('approval_order', { ascending: true });
+      const { data: admins, error: adminsError } = await apiClient.getAuthorizedAdmins();
 
       if (adminsError) {
         console.error('Error fetching authorized admins:', adminsError);
@@ -47,17 +42,15 @@ export const useEventApprovals = (eventId?: string) => {
         return;
       }
 
-      setAuthorizedAdmins(admins || []);
+      const filteredAdmins = (admins || []).filter((admin: any) => 
+        admin.is_active && admin.role !== 'developer'
+      ).sort((a: any, b: any) => a.approval_order - b.approval_order);
+      
+      setAuthorizedAdmins(filteredAdmins);
 
       // Fetch approvals if eventId is provided
       if (eventId) {
-        const { data: approvalsData, error: approvalsError } = await supabase
-          .from('event_approvals')
-          .select(`
-            *,
-            authorized_admins!inner(name, role, approval_order)
-          `)
-          .eq('event_proposal_id', eventId);
+        const { data: approvalsData, error: approvalsError } = await apiClient.getEventApprovals(eventId);
 
         if (approvalsError) {
           console.error('Error fetching approvals:', approvalsError);
@@ -65,17 +58,16 @@ export const useEventApprovals = (eventId?: string) => {
           return;
         }
 
-        // Sort the data by approval_order after fetching
-        const sortedApprovals = approvalsData?.sort((a: any, b: any) => 
-          a.authorized_admins.approval_order - b.authorized_admins.approval_order
-        );
-
-        const mappedApprovals = sortedApprovals?.map((approval: any) => ({
-          ...approval,
-          admin_name: approval.authorized_admins.name,
-          admin_role: approval.authorized_admins.role,
-          approval_order: approval.authorized_admins.approval_order
-        })) || [];
+        // Map admin data to approvals
+        const mappedApprovals = (approvalsData || []).map((approval: any) => {
+          const admin = filteredAdmins.find((a: any) => a.email === approval.admin_email);
+          return {
+            ...approval,
+            admin_name: admin?.name || approval.admin_email,
+            admin_role: admin?.role || 'unknown',
+            approval_order: admin?.approval_order || 999
+          };
+        }).sort((a: any, b: any) => a.approval_order - b.approval_order);
 
         setApprovals(mappedApprovals);
       }
@@ -92,20 +84,16 @@ export const useEventApprovals = (eventId?: string) => {
     status: 'approved' | 'rejected', 
     comments?: string
   ) => {
-    const { error } = await supabase
-      .from('event_approvals')
-      .update({ 
-        status,
-        comments,
-        approved_at: status === 'approved' ? new Date().toISOString() : null,
-        updated_at: new Date().toISOString()
-      })
-      .eq('event_proposal_id', eventProposalId)
-      .eq('admin_email', adminEmail);
+    const { error } = await apiClient.updateEventApprovalByProposalAndAdmin(
+      eventProposalId, 
+      adminEmail, 
+      status, 
+      comments
+    );
     
     if (error) {
       console.error('Error updating approval:', error);
-      return { success: false, error: error.message };
+      return { success: false, error };
     }
 
     // Update local state
