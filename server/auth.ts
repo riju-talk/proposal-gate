@@ -1,6 +1,8 @@
 import crypto from 'crypto';
 import nodemailer from 'nodemailer';
-import { storage } from './storage';
+import { db } from './db';
+import { authorizedAdmins } from '@shared/schema';
+import { eq } from 'drizzle-orm';
 
 interface OTPSession {
   email: string;
@@ -15,7 +17,7 @@ const otpSessions = new Map<string, OTPSession>();
 // Email transporter configuration
 const createTransporter = () => {
   // Using Gmail SMTP (free tier)
-  return nodemailer.createTransporter({
+  return nodemailer.createTransport({
     service: 'gmail',
     auth: {
       user: process.env.SMTP_USER || 'your-email@gmail.com',
@@ -31,8 +33,8 @@ export const generateOTP = (): string => {
 export const sendOTP = async (email: string): Promise<{ success: boolean; error?: string }> => {
   try {
     // Check if user is authorized admin
-    const admin = await storage.getAuthorizedAdmin(email);
-    if (!admin || !admin.isActive) {
+    const admin = await db.select().from(authorizedAdmins).where(eq(authorizedAdmins.email, email)).limit(1);
+    if (!admin.length || !admin[0].isActive) {
       return { success: false, error: 'Unauthorized: Only authorized admins can access this system' };
     }
 
@@ -87,8 +89,12 @@ export const sendOTP = async (email: string): Promise<{ success: boolean; error?
       `
     };
 
-    await transporter.sendMail(mailOptions);
-    console.log(`OTP sent to ${email}: ${otp}`); // For development - remove in production
+    // In development, just log OTP to console instead of sending email
+    if (process.env.NODE_ENV === 'development' || !process.env.SMTP_USER) {
+      console.log(`🔐 OTP for ${email}: ${otp} (expires in 10 minutes)`);
+    } else {
+      await transporter.sendMail(mailOptions);
+    }
 
     return { success: true };
   } catch (error) {
@@ -124,16 +130,16 @@ export const verifyOTP = async (email: string, inputOTP: string): Promise<{ succ
     }
 
     // Success - get admin details
-    const admin = await storage.getAuthorizedAdmin(email);
+    const admin = await db.select().from(authorizedAdmins).where(eq(authorizedAdmins.email, email)).limit(1);
     otpSessions.delete(email); // Clean up session
 
     return { 
       success: true, 
-      admin: {
-        email: admin?.email,
-        name: admin?.name,
-        role: admin?.role
-      }
+      admin: admin.length ? {
+        email: admin[0].email,
+        name: admin[0].name,
+        role: admin[0].role
+      } : null
     };
   } catch (error) {
     console.error('Error verifying OTP:', error);

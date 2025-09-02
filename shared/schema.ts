@@ -1,5 +1,4 @@
 import { pgTable, text, serial, integer, boolean, timestamp, uuid, varchar, json, numeric, pgSchema } from "drizzle-orm/pg-core";
-import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 import { sql } from "drizzle-orm";
 
@@ -178,35 +177,35 @@ export const users = pgTable("users", {
   password: text("password").notNull(),
 });
 
-// Schemas for validation
-export const insertProfileSchema = createInsertSchema(profiles).pick({
-  email: true,
-  username: true,
-  fullName: true,
-  role: true,
+// Schemas for validation using Zod directly
+export const insertProfileSchema = z.object({
+  email: z.string().email(),
+  username: z.string().min(1),
+  fullName: z.string().optional(),
+  role: z.string().default("user"),
 });
 
-export const insertEventProposalSchema = createInsertSchema(eventProposals).pick({
-  eventName: true,
-  eventType: true,
-  description: true,
-  eventDate: true,
-  startTime: true,
-  endTime: true,
-  venue: true,
-  expectedParticipants: true,
-  budgetEstimate: true,
-  objectives: true,
-  additionalRequirements: true,
-  organizerName: true,
-  organizerEmail: true,
-  organizerPhone: true,
-  pdfDocumentUrl: true,
+export const insertEventProposalSchema = z.object({
+  eventName: z.string().min(1),
+  eventType: z.string().min(1),
+  description: z.string().min(1),
+  eventDate: z.string().min(1),
+  startTime: z.string().min(1),
+  endTime: z.string().min(1),
+  venue: z.string().min(1),
+  expectedParticipants: z.number().int().positive(),
+  budgetEstimate: z.string().optional(),
+  objectives: z.string().optional(),
+  additionalRequirements: z.string().optional(),
+  organizerName: z.string().min(1),
+  organizerEmail: z.string().email(),
+  organizerPhone: z.string().optional(),
+  pdfDocumentUrl: z.string().optional(),
 });
 
-export const insertUserSchema = createInsertSchema(users).pick({
-  username: true,
-  password: true,
+export const insertUserSchema = z.object({
+  username: z.string().min(1),
+  password: z.string().min(1),
 });
 
 // Export types

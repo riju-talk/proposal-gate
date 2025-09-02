@@ -5,6 +5,7 @@ import { insertEventProposalSchema, insertProfileSchema } from "@shared/schema";
 import { z } from "zod";
 import { sendOTP, verifyOTP } from "./auth";
 import { securityMiddleware, otpRateLimit, verifyRateLimit, requireAdmin } from "./middleware";
+import { generateJWT, setAuthCookie, clearAuthCookie } from "./jwt";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Apply security middleware
@@ -42,14 +43,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const result = await verifyOTP(email, otp);
       
-      if (result.success) {
-        // Generate a simple session token (in production, use JWT)
-        const sessionToken = Buffer.from(`${email}:${Date.now()}`).toString('base64');
+      if (result.success && result.admin) {
+        // Generate JWT token and set HTTP-only cookie
+        const token = generateJWT(result.admin);
+        setAuthCookie(res, token);
         
         res.json({ 
           success: true,
-          admin: result.admin,
-          token: sessionToken
+          admin: result.admin
         });
       } else {
         res.status(400).json({ error: result.error });
@@ -290,6 +291,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json(publicAdmins);
     } catch (error) {
       console.error("Get authorized admins error:", error);
+      res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
+  // Logout endpoint
+  app.post("/api/auth/logout", (req: Request, res: Response) => {
+    clearAuthCookie(res);
+    res.json({ success: true, message: "Logged out successfully" });
+  });
+
+  // Create admin users endpoint
+  app.post("/api/create-admin-users", async (req: Request, res: Response) => {
+    try {
+      const results = await storage.createInitialAdmins();
+      res.json({ results });
+    } catch (error) {
+      console.error("Create admin users error:", error);
       res.status(500).json({ error: "Internal server error" });
     }
   });

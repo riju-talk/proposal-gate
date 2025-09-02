@@ -1,14 +1,19 @@
-import { supabase } from '@/integrations/supabase/client';
-
+// Admin users creation is now handled via API
 export const createAdminUsers = async () => {
   try {
-    const { data, error } = await supabase.functions.invoke('create-admin-users');
+    const response = await fetch('/api/create-admin-users', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    });
     
-    if (error) {
-      console.error('Error creating admin users:', error);
+    if (!response.ok) {
+      console.error('Error creating admin users');
       return false;
     }
     
+    const data = await response.json();
     console.log('Admin users created:', data);
     return true;
   } catch (error) {

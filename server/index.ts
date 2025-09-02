@@ -1,4 +1,5 @@
 import express, { type Request, Response, NextFunction } from "express";
+import cookieParser from 'cookie-parser';
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
 
@@ -9,6 +10,7 @@ app.set('trust proxy', 1);
 
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: false, limit: '10mb' }));
+app.use(cookieParser());
 
 // Request logging middleware
 app.use((req, res, next) => {
@@ -60,11 +62,12 @@ app.use((req, res, next) => {
     serveStatic(app);
   }
 
-  // Start server
-  const port = parseInt(process.env.PORT || "5000");
+  // Start Express server on port 3000 for API, Vite will proxy to it
+  const port = parseInt(process.env.API_PORT || "3000");
   server.listen(port, "0.0.0.0", () => {
-    log(`🚀 Server running on port ${port}`);
+    log(`🚀 Express API Server running on port ${port}`);
     log(`📧 SMTP configured: ${process.env.SMTP_USER ? 'Yes' : 'No (using console logs)'}`);
     log(`🔒 Environment: ${app.get("env")}`);
+    console.log("✅ API Server started successfully with database and routes");
   });
 })();

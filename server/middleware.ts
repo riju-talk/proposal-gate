@@ -3,6 +3,7 @@ import rateLimit from 'express-rate-limit';
 import helmet from 'helmet';
 import cors from 'cors';
 import { storage } from './storage';
+import { authenticateJWT } from './jwt';
 
 // Rate limiting for OTP requests
 export const otpRateLimit = rateLimit({
@@ -43,36 +44,8 @@ export const securityMiddleware = [
   }),
 ];
 
-// Admin authentication middleware
-export const requireAdmin = async (req: Request, res: Response, next: NextFunction) => {
-  try {
-    const authHeader = req.headers.authorization;
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
-      return res.status(401).json({ error: 'No authorization token provided' });
-    }
-
-    const token = authHeader.substring(7);
-    
-    // In a real app, you'd verify JWT token here
-    // For now, we'll use a simple session-based approach
-    const adminEmail = req.headers['x-admin-email'] as string;
-    
-    if (!adminEmail) {
-      return res.status(401).json({ error: 'Admin email required' });
-    }
-
-    const admin = await storage.getAuthorizedAdmin(adminEmail);
-    if (!admin || !admin.isActive || admin.role === 'developer') {
-      return res.status(403).json({ error: 'Unauthorized access' });
-    }
-
-    req.user = admin;
-    next();
-  } catch (error) {
-    console.error('Auth middleware error:', error);
-    res.status(500).json({ error: 'Authentication failed' });
-  }
-};
+// Admin authentication middleware using JWT
+export const requireAdmin = authenticateJWT;
 
 // Extend Request type
 declare global {

@@ -84,6 +84,9 @@ export interface IStorage {
   
   // Mess hostel committee operations
   getAllMessHostelCommittee(): Promise<MessHostelCommittee[]>;
+  
+  // Admin initialization
+  createInitialAdmins(): Promise<any[]>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -222,6 +225,43 @@ export class DatabaseStorage implements IStorage {
   // Mess hostel committee operations
   async getAllMessHostelCommittee(): Promise<MessHostelCommittee[]> {
     return await db.select().from(messHostelCommittee);
+  }
+
+  // Admin initialization
+  async createInitialAdmins(): Promise<any[]> {
+    const adminsToCreate = [
+      {
+        email: 'admin@university.edu',
+        name: 'System Administrator',
+        role: 'admin',
+        approvalOrder: 1,
+        isActive: true
+      },
+      {
+        email: 'coordinator@university.edu',
+        name: 'Event Coordinator',
+        role: 'coordinator',
+        approvalOrder: 2,
+        isActive: true
+      }
+    ];
+
+    const results = [];
+    for (const admin of adminsToCreate) {
+      try {
+        // Check if admin already exists
+        const existingAdmin = await this.getAuthorizedAdmin(admin.email);
+        if (existingAdmin) {
+          results.push({ email: admin.email, error: 'A user with this email address has already been registered' });
+        } else {
+          const newAdmin = await db.insert(authorizedAdmins).values(admin).returning();
+          results.push({ email: admin.email, success: true, admin: newAdmin[0] });
+        }
+      } catch (error) {
+        results.push({ email: admin.email, error: (error as Error).message });
+      }
+    }
+    return results;
   }
 }
 
