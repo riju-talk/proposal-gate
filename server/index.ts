@@ -1,3 +1,6 @@
+import * as dotenv from 'dotenv';
+dotenv.config();
+
 import express, { type Request, Response, NextFunction } from "express";
 import cookieParser from 'cookie-parser';
 import { registerRoutes } from "./routes";

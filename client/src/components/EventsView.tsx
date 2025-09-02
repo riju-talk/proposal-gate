@@ -5,7 +5,7 @@ import { ProposalDetailsModal } from "@/components/ProposalDetailsModal";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { EventProposal } from "@/hooks/useEventProposals";
-import { Calendar, Search, Filter } from "lucide-react";
+import { Calendar, Search } from "lucide-react";
 
 interface EventsViewProps {
   searchTerm: string;

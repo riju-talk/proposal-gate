@@ -1,8 +1,7 @@
 import type { Express, Request, Response } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { insertEventProposalSchema, insertProfileSchema } from "@shared/schema";
-import { z } from "zod";
+import { insertEventProposalSchema } from "@shared/schema";
 import { sendOTP, verifyOTP } from "./auth";
 import { securityMiddleware, otpRateLimit, verifyRateLimit, requireAdmin } from "./middleware";
 import { generateJWT, setAuthCookie, clearAuthCookie } from "./jwt";
@@ -65,9 +64,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/event-proposals/public", async (req: Request, res: Response) => {
     try {
       const proposals = await storage.getAllEventProposals();
-      // Only return approved proposals for public view
-      const publicProposals = proposals.filter(p => p.status === 'approved');
-      res.json(publicProposals);
+      console.log(proposals);
+      res.json({body: proposals});
     } catch (error) {
       console.error("Get public event proposals error:", error);
       res.status(500).json({ error: "Internal server error" });
@@ -299,17 +297,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/auth/logout", (req: Request, res: Response) => {
     clearAuthCookie(res);
     res.json({ success: true, message: "Logged out successfully" });
-  });
-
-  // Create admin users endpoint
-  app.post("/api/create-admin-users", async (req: Request, res: Response) => {
-    try {
-      const results = await storage.createInitialAdmins();
-      res.json({ results });
-    } catch (error) {
-      console.error("Create admin users error:", error);
-      res.status(500).json({ error: "Internal server error" });
-    }
   });
 
   // Health check endpoint

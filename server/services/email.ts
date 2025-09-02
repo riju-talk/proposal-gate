@@ -1,4 +1,4 @@
-import nodemailer from 'nodemailer';
+git import nodemailer from 'nodemailer';
 import { generateToken } from '../utils/jwt';
 import { eq } from 'drizzle-orm';
 import { db } from '../db';

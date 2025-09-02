@@ -1,6 +1,3 @@
-
-import { supabase } from '@/integrations/supabase/client';
-
 export const getPdfUrl = async (pdfPath: string): Promise<string | null> => {
   try {
     console.log('Getting PDF URL for path:', pdfPath);
@@ -24,7 +21,7 @@ export const getPdfUrl = async (pdfPath: string): Promise<string | null> => {
     console.log('Extracted file path:', filePath);
     
     // Get a signed URL for the PDF
-    const { data, error } = await supabase.storage
+    const { data, error } = aw
       .from('event-proposals')
       .createSignedUrl(filePath, 60 * 60); // 1 hour expiry
     
