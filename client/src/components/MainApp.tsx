@@ -44,7 +44,7 @@ export const MainApp = () => {
   return (
     <div className="min-h-screen bg-background">
       <AppLayout 
-        isAdmin={!!user} 
+        userRole={user ? 'admin' : 'public'}
         onRequestAdminLogin={() => setShowAdminLogin(true)} 
       />
     </div>
