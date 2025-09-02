@@ -5,16 +5,17 @@ import { ProposalDetailsModal } from "@/components/ProposalDetailsModal";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { EventProposal } from "@/hooks/useEventProposals";
+import { Calendar, Search, Filter } from "lucide-react";
 
 interface EventsViewProps {
   searchTerm: string;
   statusFilter: string;
-  isAdmin: boolean;
+  userRole: 'admin' | 'coordinator' | 'public';
   showActions: boolean;
 }
 
-export const EventsView = ({ searchTerm, statusFilter, isAdmin, showActions }: EventsViewProps) => {
-  const { proposals, isLoading, updateProposalStatus } = useEventProposals(statusFilter);
+export const EventsView = ({ searchTerm, statusFilter, userRole, showActions }: EventsViewProps) => {
+  const { proposals, isLoading, updateProposalStatus } = useEventProposals(statusFilter, userRole);
   const [selectedProposal, setSelectedProposal] = useState<EventProposal | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
 
@@ -23,17 +24,12 @@ export const EventsView = ({ searchTerm, statusFilter, isAdmin, showActions }: E
       const matchesSearch = 
         proposal.event_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
         proposal.organizer_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        proposal.description.toLowerCase().includes(searchTerm.toLowerCase());
+        proposal.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        proposal.venue.toLowerCase().includes(searchTerm.toLowerCase());
       
-      const matchesStatus = statusFilter === "all" || 
-        (statusFilter === "pending" && proposal.status === "pending") ||
-        (statusFilter === "approved" && proposal.status === "approved") ||
-        (statusFilter === "rejected" && proposal.status === "rejected") ||
-        (statusFilter === "under_consideration" && proposal.status === "under_consideration");
-      
-      return matchesSearch && matchesStatus;
+      return matchesSearch;
     });
-  }, [proposals, searchTerm, statusFilter]);
+  }, [proposals, searchTerm]);
 
   const handleViewDetails = (proposal: EventProposal) => {
     setSelectedProposal(proposal);
@@ -51,31 +47,51 @@ export const EventsView = ({ searchTerm, statusFilter, isAdmin, showActions }: E
 
   if (isLoading) {
     return (
-      <div className="space-y-4">
-        {[...Array(3)].map((_, i) => (
-          <Card key={i}>
-            <CardHeader>
-              <Skeleton className="h-6 w-3/4" />
-              <Skeleton className="h-4 w-1/2" />
-            </CardHeader>
-            <CardContent>
-              <Skeleton className="h-4 w-full mb-2" />
-              <Skeleton className="h-4 w-2/3" />
-            </CardContent>
-          </Card>
-        ))}
+      <div className="space-y-6">
+        <div className="text-center py-8">
+          <div className="inline-flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-purple-500/20 to-blue-500/20 rounded-full border border-purple-500/30">
+            <div className="w-4 h-4 border-2 border-purple-400 border-t-transparent rounded-full animate-spin" />
+            <span className="text-purple-300 font-medium">Loading events...</span>
+          </div>
+        </div>
+        <div className="grid gap-4">
+          {[...Array(3)].map((_, i) => (
+            <Card key={i} className="bg-white/5 backdrop-blur-sm border-white/10">
+              <CardHeader>
+                <Skeleton className="h-6 w-3/4 bg-white/10" />
+                <Skeleton className="h-4 w-1/2 bg-white/10" />
+              </CardHeader>
+              <CardContent>
+                <Skeleton className="h-4 w-full mb-2 bg-white/10" />
+                <Skeleton className="h-4 w-2/3 bg-white/10" />
+              </CardContent>
+            </Card>
+          ))}
+        </div>
       </div>
     );
   }
 
   if (filteredProposals.length === 0) {
     return (
-      <Card>
-        <CardContent className="text-center py-8">
-          <CardTitle className="text-muted-foreground mb-2">No proposals found</CardTitle>
-          <CardDescription>
-            {searchTerm ? "Try adjusting your search criteria" : "No proposals match the current filters"}
-          </CardDescription>
+      <Card className="bg-white/5 backdrop-blur-sm border-white/10">
+        <CardContent className="text-center py-12">
+          <div className="flex flex-col items-center gap-4">
+            <div className="w-16 h-16 bg-gradient-to-br from-purple-500/20 to-blue-500/20 rounded-full flex items-center justify-center">
+              {searchTerm ? <Search className="h-8 w-8 text-purple-400" /> : <Calendar className="h-8 w-8 text-purple-400" />}
+            </div>
+            <div>
+              <CardTitle className="text-white mb-2">
+                {searchTerm ? "No matching events found" : "No events found"}
+              </CardTitle>
+              <CardDescription className="text-purple-200">
+                {searchTerm 
+                  ? "Try adjusting your search criteria or filters" 
+                  : "No events match the current filters"
+                }
+              </CardDescription>
+            </div>
+          </div>
         </CardContent>
       </Card>
     );
@@ -83,7 +99,7 @@ export const EventsView = ({ searchTerm, statusFilter, isAdmin, showActions }: E
 
   return (
     <>
-      <div className="grid gap-4">
+      <div className="grid gap-6">
         {filteredProposals.map((proposal) => (
           <EventProposalCard
             key={proposal.id}
@@ -91,6 +107,7 @@ export const EventsView = ({ searchTerm, statusFilter, isAdmin, showActions }: E
             onViewDetails={handleViewDetails}
             showActions={showActions}
             onStatusUpdate={handleStatusUpdate}
+            userRole={userRole}
           />
         ))}
       </div>

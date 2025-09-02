@@ -71,6 +71,7 @@ export interface IStorage {
   getAllClubFormationRequests(): Promise<ClubFormationRequest[]>;
   getClubFormationRequest(id: string): Promise<ClubFormationRequest | undefined>;
   createClubFormationRequest(request: Omit<ClubFormationRequest, 'id' | 'createdAt' | 'updatedAt'>): Promise<ClubFormationRequest>;
+  updateClubFormationRequestStatus(id: string, status: string): Promise<ClubFormationRequest | undefined>;
   
   // Student representative operations
   getAllStudentRepresentatives(): Promise<StudentRepresentative[]>;
@@ -198,6 +199,11 @@ export class DatabaseStorage implements IStorage {
     return result[0];
   }
 
+  async updateClubFormationRequestStatus(id: string, status: string): Promise<ClubFormationRequest | undefined> {
+    const result = await db.update(clubFormationRequests).set({ status }).where(eq(clubFormationRequests.id, id)).returning();
+    return result[0];
+  }
+
   // Student representative operations
   async getAllStudentRepresentatives(): Promise<StudentRepresentative[]> {
     return await db.select().from(studentRepresentatives);
@@ -217,118 +223,7 @@ export class DatabaseStorage implements IStorage {
   async getAllMessHostelCommittee(): Promise<MessHostelCommittee[]> {
     return await db.select().from(messHostelCommittee);
   }
-
-  // Create admin users (migrated from Supabase edge function)
-  async createAdminUsers() {
-    const adminUsers = [
-      {
-        email: "admin@university.edu",
-        name: "Admin User",
-        role: "admin"
-      },
-      {
-        email: "coordinator@university.edu", 
-        name: "Coordinator User",
-        role: "coordinator"
-      }
-    ];
-
-    const results = [];
-    
-    for (const adminUser of adminUsers) {
-      try {
-        // Check if profile exists
-        const existing = await this.getProfileByEmail(adminUser.email);
-        
-        if (existing) {
-          results.push({
-            email: adminUser.email,
-            success: true,
-            profile_id: existing.id,
-            message: "Already exists"
-          });
-        } else {
-          // Create new profile
-          const profile = await this.createProfile({
-            username: adminUser.email.split('@')[0],
-            email: adminUser.email,
-            fullName: adminUser.name,
-            role: adminUser.role
-          });
-          
-          results.push({
-            email: adminUser.email,
-            success: true,
-            profile_id: profile.id,
-            message: "Created successfully"
-          });
-        }
-      } catch (error) {
-        console.error(`Error creating admin user ${adminUser.email}:`, error);
-        results.push({
-          email: adminUser.email,
-          success: false,
-          error: error instanceof Error ? error.message : 'Unknown error'
-        });
-      }
-    }
-    
-    return results;
-  }
 }
 
-// Keep the old memory storage for backward compatibility
-export class MemStorage implements IStorage {
-  private users: Map<number, User>;
-  currentId: number;
-
-  constructor() {
-    this.users = new Map();
-    this.currentId = 1;
-  }
-
-  async getUser(id: number): Promise<User | undefined> {
-    return this.users.get(id);
-  }
-
-  async getUserByUsername(username: string): Promise<User | undefined> {
-    return Array.from(this.users.values()).find(
-      (user) => user.username === username,
-    );
-  }
-
-  async createUser(insertUser: InsertUser): Promise<User> {
-    const id = this.currentId++;
-    const user: User = { ...insertUser, id };
-    this.users.set(id, user);
-    return user;
-  }
-
-  // Stub implementations for new methods to maintain compatibility
-  async getProfile(): Promise<Profile | undefined> { return undefined; }
-  async getProfileByEmail(): Promise<Profile | undefined> { return undefined; }
-  async createProfile(): Promise<Profile> { throw new Error('Not implemented'); }
-  async updateProfile(): Promise<Profile | undefined> { return undefined; }
-  async getAllEventProposals(): Promise<EventProposal[]> { return []; }
-  async getEventProposal(): Promise<EventProposal | undefined> { return undefined; }
-  async createEventProposal(): Promise<EventProposal> { throw new Error('Not implemented'); }
-  async updateEventProposalStatus(): Promise<EventProposal | undefined> { return undefined; }
-  async getAllAuthorizedAdmins(): Promise<AuthorizedAdmin[]> { return []; }
-  async getAuthorizedAdmin(): Promise<AuthorizedAdmin | undefined> { return undefined; }
-  async getEventApprovals(): Promise<EventApproval[]> { return []; }
-  async createEventApproval(): Promise<EventApproval> { throw new Error('Not implemented'); }
-  async updateEventApproval(): Promise<EventApproval | undefined> { return undefined; }
-  async getAllClubs(): Promise<Club[]> { return []; }
-  async getClub(): Promise<Club | undefined> { return undefined; }
-  async createClub(): Promise<Club> { throw new Error('Not implemented'); }
-  async getAllClubFormationRequests(): Promise<ClubFormationRequest[]> { return []; }
-  async getClubFormationRequest(): Promise<ClubFormationRequest | undefined> { return undefined; }
-  async createClubFormationRequest(): Promise<ClubFormationRequest> { throw new Error('Not implemented'); }
-  async getAllStudentRepresentatives(): Promise<StudentRepresentative[]> { return []; }
-  async getAllImportantContacts(): Promise<ImportantContact[]> { return []; }
-  async getAllHostelInfo(): Promise<HostelInfo[]> { return []; }
-  async getAllMessHostelCommittee(): Promise<MessHostelCommittee[]> { return []; }
-}
-
-// Use database storage by default
+// Use database storage
 export const storage = new DatabaseStorage();

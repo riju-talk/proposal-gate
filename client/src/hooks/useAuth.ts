@@ -1,21 +1,18 @@
 import { createContext, useContext, useState, useEffect } from 'react';
-import { supabase } from '@/integrations/supabase/client';
-import type { Session, User as SupabaseUser } from '@supabase/supabase-js';
 
 interface User {
-  id: string;
-  username: string;
   email: string;
-  role?: string;
+  name: string;
+  role: string;
 }
 
 interface AuthContextType {
   user: User | null;
-  session: Session | null;
-  signInWithMagicLink: (email: string) => Promise<{ success: boolean; error?: string }>;
-  logout: () => Promise<void>;
+  sendOTP: (email: string) => Promise<{ success: boolean; error?: string }>;
+  verifyOTP: (email: string, otp: string) => Promise<{ success: boolean; error?: string }>;
+  logout: () => void;
   isLoading: boolean;
-  isLinkSent: boolean;
+  isOTPSent: boolean;
 }
 
 export const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -30,204 +27,122 @@ export const useAuth = () => {
 
 export const useAuthProvider = () => {
   const [user, setUser] = useState<User | null>(null);
-  const [session, setSession] = useState<Session | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const [isLinkSent, setIsLinkSent] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [isOTPSent, setIsOTPSent] = useState(false);
 
+  // Check for existing session on mount
   useEffect(() => {
-    let mounted = true;
-
-    // --- Supabase Magic Link Hash Handler ---
-    const hash = window.location.hash;
-    if (hash && hash.includes('access_token')) {
-      // Parse the hash into key-value pairs
-      const params = Object.fromEntries(new URLSearchParams(hash.slice(1)));
-      // Required by supabase-js@2.x for session restore
-      if (params['access_token'] && params['refresh_token']) {
-        supabase.auth.setSession({
-          access_token: params['access_token'],
-          refresh_token: params['refresh_token'],
-        });
-        window.location.hash = '';
+    const savedUser = localStorage.getItem('admin_user');
+    const savedToken = localStorage.getItem('admin_token');
+    
+    if (savedUser && savedToken) {
+      try {
+        setUser(JSON.parse(savedUser));
+      } catch (error) {
+        console.error('Error parsing saved user:', error);
+        localStorage.removeItem('admin_user');
+        localStorage.removeItem('admin_token');
       }
     }
-
-    // Set up auth state listener first
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
-        console.log('Auth state change:', event, session?.user?.email);
-        
-        if (!mounted) return;
-        
-        setSession(session);
-        
-        if (session?.user) {
-          // Defer profile fetching to avoid deadlock
-          setTimeout(async () => {
-            if (!mounted) return;
-            
-            try {
-              const { data: profile, error } = await supabase
-                .from('profiles')
-                .select('*')
-                .eq('user_id', session.user.id)
-                .maybeSingle();
-              
-              if (error) {
-                console.error('Profile fetch error:', error);
-                // Create a default user object if profile doesn't exist
-                setUser({
-                  id: session.user.id,
-                  username: session.user.email?.split('@')[0] || 'user',
-                  email: session.user.email || '',
-                  role: 'user'
-                });
-              } else if (profile && mounted) {
-                setUser({
-                  id: profile.user_id || session.user.id,
-                  username: profile.username || session.user.email?.split('@')[0] || 'user',
-                  email: (profile.email || session.user.email) ?? '',
-                  role: profile.role || 'user'
-                });
-              } else if (mounted) {
-                // If no profile found, create a default user object
-                setUser({
-                  id: session.user.id,
-                  username: session.user.email?.split('@')[0] || 'user',
-                  email: session.user.email || '',
-                  role: 'user'
-                });
-              }
-            } catch (error) {
-              console.error('Profile fetch exception:', error);
-              // Fallback to basic user info
-              setUser({
-                id: session.user.id,
-                username: session.user.email?.split('@')[0] || 'user',
-                email: session.user.email || '',
-                role: 'user'
-              });
-            }
-          }, 0);
-        } else {
-          setUser(null);
-        }
-        
-        if (mounted) {
-          setIsLoading(false);
-        }
-      }
-    );
-
-    // Check for existing session
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      if (mounted) {
-        setSession(session);
-        setIsLoading(false);
-      }
-    });
-
-    return () => {
-      mounted = false;
-      subscription.unsubscribe();
-    };
   }, []);
 
-  const signInWithMagicLink = async (email: string): Promise<{ success: boolean; error?: string }> => {
+  const sendOTP = async (email: string): Promise<{ success: boolean; error?: string }> => {
     try {
       setIsLoading(true);
       
-      // Check if email is in authorized admins list
-      const { data: authorizedAdmin, error: checkError } = await supabase
-        .from('authorized_admins')
-        .select('email, is_active')
-        .eq('email', email.toLowerCase())
-        .eq('is_active', true)
-        .maybeSingle();
-
-      if (checkError) {
-        console.error('Error checking authorized admin:', checkError);
-        setIsLoading(false);
-        return { 
-          success: false, 
-          error: 'Failed to verify authorization' 
-        };
+      // Handle shortcuts
+      let actualEmail = email;
+      if (email === 'admin') {
+        actualEmail = 'admin@university.edu';
+      } else if (email === 'coordinator') {
+        actualEmail = 'coordinator@university.edu';
       }
-
-      if (!authorizedAdmin) {
-        setIsLoading(false);
-        return { 
-          success: false, 
-          error: 'Unauthorized admin - Only authorized personnel can access this system' 
-        };
-      }
-
-      const actualEmail = authorizedAdmin.email;
       
-      const { error } = await supabase.auth.signInWithOtp({
-        email: actualEmail,
-        options: {
-          emailRedirectTo: window.location.origin,
-          shouldCreateUser: true,
-          data: {
-            username: email.includes('@') ? email.split('@')[0] : email,
-            role: actualEmail === 'admin@university.edu' ? 'admin' : 
-                  actualEmail === 'coordinator@university.edu' ? 'coordinator' : 
-                  'user'
-          }
-        }
+      const response = await fetch('/api/auth/send-otp', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ email: actualEmail }),
       });
 
-      if (error) {
-        console.error('Magic link send error:', error);
-        setIsLinkSent(false);
-        return { 
-          success: false, 
-          error: error.message || 'Failed to send magic link' 
-        };
+      const data = await response.json();
+      
+      if (response.ok) {
+        setIsOTPSent(true);
+        return { success: true };
+      } else {
+        return { success: false, error: data.error || 'Failed to send OTP' };
       }
-
-      setIsLinkSent(true);
-      return { success: true };
     } catch (error) {
-      console.error('Magic link send exception:', error);
-      setIsLinkSent(false);
-      return { 
-        success: false, 
-        error: 'An unexpected error occurred' 
-      };
+      console.error('Send OTP error:', error);
+      return { success: false, error: 'Network error. Please try again.' };
     } finally {
       setIsLoading(false);
     }
   };
-  
-  const logout = async () => {
+
+  const verifyOTP = async (email: string, otp: string): Promise<{ success: boolean; error?: string }> => {
     try {
       setIsLoading(true);
-      await supabase.auth.signOut();
-      setUser(null);
-      setSession(null);
-      setIsLinkSent(false);
-      // Ensure Supabase completely clears session from storage too
-      localStorage.clear();
-      sessionStorage.clear();
-      // Wait for the auth state change to propagate before reload
-      setTimeout(() => {
-        window.location.reload();
-      }, 250);
+      
+      // Handle shortcuts
+      let actualEmail = email;
+      if (email === 'admin') {
+        actualEmail = 'admin@university.edu';
+      } else if (email === 'coordinator') {
+        actualEmail = 'coordinator@university.edu';
+      }
+      
+      const response = await fetch('/api/auth/verify-otp', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ email: actualEmail, otp }),
+      });
+
+      const data = await response.json();
+      
+      if (response.ok && data.success) {
+        const adminUser = {
+          email: data.admin.email,
+          name: data.admin.name,
+          role: data.admin.role
+        };
+        
+        setUser(adminUser);
+        setIsOTPSent(false);
+        
+        // Save session
+        localStorage.setItem('admin_user', JSON.stringify(adminUser));
+        localStorage.setItem('admin_token', data.token);
+        
+        return { success: true };
+      } else {
+        return { success: false, error: data.error || 'Invalid OTP' };
+      }
     } catch (error) {
-      console.error('Logout error:', error);
+      console.error('Verify OTP error:', error);
+      return { success: false, error: 'Network error. Please try again.' };
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const logout = () => {
+    setUser(null);
+    setIsOTPSent(false);
+    localStorage.removeItem('admin_user');
+    localStorage.removeItem('admin_token');
   };
 
   return {
     user,
-    session,
-    signInWithMagicLink,
+    sendOTP,
+    verifyOTP,
     logout,
     isLoading,
-    isLinkSent
+    isOTPSent
   };
 };

@@ -2,86 +2,64 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Event Proposal Dashboard Design System */
+/* Modern Event Proposal Dashboard Design System */
 
 @layer base {
   :root {
     color-scheme: dark;
     
-    /* IIIT Delhi Student Council Color Scheme - Based on uploaded screenshot */
-    --background: 222 84% 5%;      /* Very dark blue-gray background */
-    --foreground: 210 40% 98%;     /* Near white text */
+    /* IIIT Delhi Student Council Color Scheme - Modern Dark Theme */
+    --background: 222 84% 4%;        /* Very dark blue-gray background */
+    --foreground: 210 40% 98%;       /* Near white text */
 
-    --card: 220 13% 9%;            /* Darker card background */
-    --card-foreground: 210 40% 95%; /* Light text on cards */
+    --card: 220 13% 8%;              /* Dark card background with transparency */
+    --card-foreground: 210 40% 95%;  /* Light text on cards */
 
-    --popover: 220 13% 9%;
+    --popover: 220 13% 8%;
     --popover-foreground: 210 40% 95%;
 
-    --primary: 180 100% 70%;       /* Bright teal/cyan accent */
-    --primary-foreground: 222 84% 5%; /* Dark text on teal */
-    --primary-glow: 180 100% 80%;  /* Lighter teal for glow effects */
+    --primary: 200 100% 70%;         /* Bright cyan accent */
+    --primary-foreground: 222 84% 4%; /* Dark text on cyan */
+    --primary-glow: 200 100% 80%;    /* Lighter cyan for glow effects */
 
-    --secondary: 217 19% 12%;      /* Slightly lighter background */
-    --secondary-foreground: 210 40% 90%;
+    --secondary: 280 100% 70%;       /* Purple accent */
+    --secondary-foreground: 222 84% 4%;
 
-    --muted: 217 19% 8%;          /* Darker muted backgrounds */
+    --muted: 217 19% 6%;            /* Darker muted backgrounds */
     --muted-foreground: 217 10% 55%; /* Muted text */
 
-    --accent: 180 100% 70%;        /* Matching primary teal */
-    --accent-foreground: 222 84% 5%;
+    --accent: 320 100% 70%;          /* Pink accent */
+    --accent-foreground: 222 84% 4%;
 
-    --success: 142 76% 36%;        /* Green for success states */
+    --success: 142 76% 36%;          /* Green for success states */
     --success-foreground: 210 40% 98%;
 
-    --warning: 38 92% 50%;         /* Orange for warnings */
-    --warning-foreground: 222 84% 5%;
+    --warning: 38 92% 50%;           /* Orange for warnings */
+    --warning-foreground: 222 84% 4%;
 
-    --destructive: 0 84% 60%;      /* Red for destructive actions */
+    --destructive: 0 84% 60%;        /* Red for destructive actions */
     --destructive-foreground: 210 40% 98%;
 
-    --border: 217 19% 15%;         /* Subtle borders */
-    --input: 217 19% 12%;          /* Input backgrounds */
-    --ring: 180 100% 70%;          /* Focus rings in teal */
+    --border: 217 19% 12%;           /* Subtle borders */
+    --input: 217 19% 10%;            /* Input backgrounds */
+    --ring: 200 100% 70%;            /* Focus rings in cyan */
 
-    --radius: 0.5rem;
+    --radius: 0.75rem;
 
-    /* Custom IIIT Delhi design tokens */
-    --dashboard-bg: 222 84% 4%;    /* Even darker dashboard background */
-    --sidebar-bg: 217 19% 8%;      /* Sidebar background */
-    --nav-active: 180 100% 70%;    /* Active navigation teal */
-    --status-new: 217 91% 60%;     /* Blue for new items */
-    --status-approved: 142 76% 36%; /* Green for approved */
-    --status-rejected: 0 84% 60%;  /* Red for rejected */
-
-    /* IIIT Delhi gradients with teal accents */
-    --gradient-primary: linear-gradient(135deg, hsl(180 100% 70%), hsl(180 100% 80%));
+    /* Custom gradients */
+    --gradient-primary: linear-gradient(135deg, hsl(200 100% 70%), hsl(280 100% 70%));
     --gradient-success: linear-gradient(135deg, hsl(142 76% 36%), hsl(142 76% 46%));
-    --gradient-card: linear-gradient(145deg, hsl(220 13% 9%), hsl(217 19% 12%));
-    --gradient-hero: linear-gradient(135deg, hsl(222 84% 5%) 0%, hsl(217 19% 8%) 50%, hsl(180 100% 70% / 0.1) 100%);
+    --gradient-card: linear-gradient(145deg, hsl(220 13% 8% / 0.8), hsl(217 19% 10% / 0.9));
+    --gradient-hero: linear-gradient(135deg, hsl(222 84% 4%) 0%, hsl(217 19% 6%) 50%, hsl(200 100% 70% / 0.1) 100%);
     
-    /* Sophisticated shadows with teal glow */
-    --shadow-elegant: 0 10px 25px -5px hsl(180 100% 70% / 0.15);
-    --shadow-glow: 0 0 30px hsl(180 100% 70% / 0.25);
+    /* Sophisticated shadows with colored glows */
+    --shadow-elegant: 0 10px 25px -5px hsl(200 100% 70% / 0.15);
+    --shadow-glow: 0 0 30px hsl(200 100% 70% / 0.25);
     --shadow-card: 0 4px 12px -2px hsl(222 84% 4% / 0.5);
-
-    /* Sidebar variables for consistency */
-    --sidebar-background: 217 19% 8%;
-    --sidebar-foreground: 210 40% 90%;
-    --sidebar-primary: 180 100% 70%;
-    --sidebar-primary-foreground: 222 84% 5%;
-    --sidebar-accent: 217 19% 12%;
-    --sidebar-accent-foreground: 210 40% 90%;
-    --sidebar-border: 217 19% 15%;
-    --sidebar-ring: 180 100% 70%;
   }
 }
 
 @layer base {
-  :root {
-    color-scheme: dark;
-  }
-  
   * {
     @apply border-border;
   }
@@ -89,6 +67,75 @@
   body {
     min-height: 100vh;
     @apply text-foreground;
-    background: hsl(var(--background)); /* Use CSS variable instead of hardcoded value */
+    background: linear-gradient(135deg, hsl(222 84% 4%) 0%, hsl(217 19% 6%) 50%, hsl(200 100% 70% / 0.05) 100%);
+    background-attachment: fixed;
+  }
+
+  /* Custom scrollbar */
+  ::-webkit-scrollbar {
+    width: 8px;
+  }
+
+  ::-webkit-scrollbar-track {
+    background: hsl(var(--muted));
+  }
+
+  ::-webkit-scrollbar-thumb {
+    background: hsl(var(--primary) / 0.5);
+    border-radius: 4px;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    background: hsl(var(--primary) / 0.7);
+  }
+}
+
+@layer components {
+  /* Glass morphism effect */
+  .glass {
+    background: rgba(255, 255, 255, 0.05);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+  }
+
+  /* Gradient text */
+  .gradient-text {
+    background: linear-gradient(135deg, hsl(var(--primary)), hsl(var(--secondary)));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  /* Animated gradient background */
+  .animated-gradient {
+    background: linear-gradient(-45deg, #ee7752, #e73c7e, #23a6d5, #23d5ab);
+    background-size: 400% 400%;
+    animation: gradient 15s ease infinite;
+  }
+
+  @keyframes gradient {
+    0% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+    100% { background-position: 0% 50%; }
+  }
+
+  /* Floating animation */
+  .float {
+    animation: float 6s ease-in-out infinite;
+  }
+
+  @keyframes float {
+    0%, 100% { transform: translateY(0px); }
+    50% { transform: translateY(-20px); }
+  }
+
+  /* Pulse glow effect */
+  .pulse-glow {
+    animation: pulse-glow 2s ease-in-out infinite alternate;
+  }
+
+  @keyframes pulse-glow {
+    from { box-shadow: 0 0 20px hsl(var(--primary) / 0.3); }
+    to { box-shadow: 0 0 30px hsl(var(--primary) / 0.6); }
   }
 }

@@ -6,15 +6,15 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { EventsView } from "@/components/EventsView";
 import { ClubsView } from "@/components/ClubsView";
-import { LogOut, Search, Filter, Shield, Sparkles, Users, Calendar, GraduationCap } from "lucide-react";
+import { LogOut, Search, Filter, Shield, Users, Calendar, GraduationCap, Sparkles } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 interface AppLayoutProps {
-  isAdmin: boolean;
+  userRole: 'admin' | 'coordinator' | 'public';
   onRequestAdminLogin: () => void;
 }
 
-export const AppLayout = ({ isAdmin, onRequestAdminLogin }: AppLayoutProps) => {
+export const AppLayout = ({ userRole, onRequestAdminLogin }: AppLayoutProps) => {
   const { user, logout } = useAuth();
   const { toast } = useToast();
   const [searchTerm, setSearchTerm] = useState("");
@@ -24,7 +24,7 @@ export const AppLayout = ({ isAdmin, onRequestAdminLogin }: AppLayoutProps) => {
 
   const handleLogout = async () => {
     try {
-      await logout();
+      logout();
       toast({
         title: "Logged out successfully",
         description: "You have been logged out of the admin panel.",
@@ -38,13 +38,9 @@ export const AppLayout = ({ isAdmin, onRequestAdminLogin }: AppLayoutProps) => {
     }
   };
 
-  const userRole = user?.role;
-  const isCoordinator = userRole === 'coordinator';
-  const isAdminUser = userRole === 'admin';
-
   // Filter options based on user role
   const availableStatusFilters = useMemo(() => {
-    if (isAdminUser) {
+    if (userRole === 'admin') {
       return [
         { value: "all", label: "All" },
         { value: "pending", label: "Pending" },
@@ -59,25 +55,41 @@ export const AppLayout = ({ isAdmin, onRequestAdminLogin }: AppLayoutProps) => {
         { value: "approved", label: "Approved" }
       ];
     }
-  }, [isAdminUser]);
+  }, [userRole]);
+
+  const getRoleDisplay = () => {
+    switch (userRole) {
+      case 'admin':
+        return { icon: Shield, text: user?.name || 'Admin', color: 'text-cyan-400' };
+      case 'coordinator':
+        return { icon: Users, text: 'Coordinator View', color: 'text-purple-400' };
+      default:
+        return { icon: GraduationCap, text: 'Public Portal', color: 'text-green-400' };
+    }
+  };
+
+  const roleDisplay = getRoleDisplay();
 
   return (
-    <div className="min-h-screen">
-      {/* Header - no mysterious devil/element above here! */}
-      <header className="sticky top-0 z-50 w-full border-b bg-background backdrop-blur-xl shadow-lg">
+    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900">
+      {/* Header */}
+      <header className="sticky top-0 z-50 w-full border-b border-white/10 bg-black/20 backdrop-blur-xl shadow-2xl">
         <div className="container flex h-16 items-center justify-between">
           <div className="flex items-center space-x-4">
             <div className="flex items-center space-x-3">
-              <div className="w-10 h-10 rounded-xl flex items-center justify-center shadow-lg">
-                <img src="student_council.jpg" alt="Logo" className="h-10 w-10" />
+              <div className="w-10 h-10 rounded-xl flex items-center justify-center shadow-lg bg-white/10 backdrop-blur-sm border border-white/20">
+                <img src="/student_council.jpg" alt="Logo" className="h-8 w-8 rounded-lg" />
               </div>
               <div>
-              <h1 className="text-xl font-bold text-primary">
-                Student Council IIIT-Delhi
-              </h1>
-                <p className="text-xs text-muted-foreground">
-                  {isAdminUser ? "Admin Portal" : isCoordinator ? "Coordinator View" : "Public Portal"}
-                </p>
+                <h1 className="text-xl font-bold bg-gradient-to-r from-cyan-400 to-purple-400 bg-clip-text text-transparent">
+                  Student Council IIIT-Delhi
+                </h1>
+                <div className="flex items-center gap-1">
+                  <roleDisplay.icon className={`h-3 w-3 ${roleDisplay.color}`} />
+                  <p className={`text-xs font-medium ${roleDisplay.color}`}>
+                    {roleDisplay.text}
+                  </p>
+                </div>
               </div>
             </div>
           </div>
@@ -85,48 +97,44 @@ export const AppLayout = ({ isAdmin, onRequestAdminLogin }: AppLayoutProps) => {
           <div className="flex items-center space-x-4">
             {/* Search Bar */}
             <div className="relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-primary h-4 w-4" />
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-cyan-400 h-4 w-4" />
               <Input
                 placeholder="Search proposals..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10 w-64 bg-card border-border focus:border-primary"
+                className="pl-10 w-64 bg-white/5 border-white/20 text-white placeholder:text-white/50 focus:border-cyan-400 backdrop-blur-sm"
               />
             </div>
 
             {/* Filter */}
             <Select value={statusFilter} onValueChange={setStatusFilter}>
-              <SelectTrigger className="w-40 bg-card border-border">
-                <Filter className="h-4 w-4 mr-2 text-primary" />
+              <SelectTrigger className="w-40 bg-white/5 border-white/20 text-white backdrop-blur-sm">
+                <Filter className="h-4 w-4 mr-2 text-purple-400" />
                 <SelectValue placeholder="Filter" />
               </SelectTrigger>
-              <SelectContent>
+              <SelectContent className="bg-slate-800 border-white/20">
                 {availableStatusFilters.map((filter) => (
-                  <SelectItem key={filter.value} value={filter.value}>
+                  <SelectItem key={filter.value} value={filter.value} className="text-white hover:bg-white/10">
                     {filter.label}
                   </SelectItem>
                 ))}
               </SelectContent>
             </Select>
 
-            {/* Admin Login / User Info */}
+            {/* User Info / Login */}
             {user ? (
               <div className="flex items-center space-x-3">
-                <div className="flex items-center space-x-2 px-3 py-1 bg-primary/10 rounded-full">
-                  {isAdminUser ? (
-                    <Shield className="h-4 w-4 text-primary" />
-                  ) : (
-                    <Users className="h-4 w-4 text-accent" />
-                  )}
-                  <span className="text-sm font-medium text-primary">
-                    {user.username}
+                <div className="flex items-center space-x-2 px-4 py-2 bg-white/10 backdrop-blur-sm rounded-full border border-white/20">
+                  <Shield className="h-4 w-4 text-cyan-400" />
+                  <span className="text-sm font-medium text-white">
+                    {user.name}
                   </span>
                 </div>
                 <Button
                   variant="outline"
                   size="sm"
                   onClick={handleLogout}
-                  className="flex items-center space-x-2 border-border hover:bg-primary/20"
+                  className="flex items-center space-x-2 bg-white/5 border-white/20 text-white hover:bg-white/10 hover:border-red-400 transition-all duration-300"
                 >
                   <LogOut className="h-4 w-4" />
                   <span>Logout</span>
@@ -135,7 +143,7 @@ export const AppLayout = ({ isAdmin, onRequestAdminLogin }: AppLayoutProps) => {
             ) : (
               <Button
                 onClick={onRequestAdminLogin}
-                className="bg-primary hover:bg-primary/80 text-primary-foreground shadow-lg"
+                className="bg-gradient-to-r from-cyan-500 to-purple-500 hover:from-cyan-600 hover:to-purple-600 text-white shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105"
               >
                 <Shield className="h-4 w-4 mr-2" />
                 Admin Login
@@ -148,17 +156,17 @@ export const AppLayout = ({ isAdmin, onRequestAdminLogin }: AppLayoutProps) => {
       {/* Main Content */}
       <main className="container py-8">
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-8">
-          <TabsList className="grid w-full grid-cols-2 bg-card backdrop-blur-sm border border-border">
+          <TabsList className="grid w-full grid-cols-2 bg-white/5 backdrop-blur-sm border border-white/10 p-1">
             <TabsTrigger 
               value="events" 
-              className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground"
+              className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-purple-500 data-[state=active]:to-blue-500 data-[state=active]:text-white text-white/70 transition-all duration-300"
             >
               <Calendar className="h-4 w-4 mr-2" />
               Event Proposals
             </TabsTrigger>
             <TabsTrigger 
               value="clubs"
-              className="data-[state=active]:bg-accent data-[state=active]:text-accent-foreground"
+              className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-orange-500 data-[state=active]:to-red-500 data-[state=active]:text-white text-white/70 transition-all duration-300"
             >
               <Users className="h-4 w-4 mr-2" />
               Club Approvals
@@ -166,24 +174,24 @@ export const AppLayout = ({ isAdmin, onRequestAdminLogin }: AppLayoutProps) => {
           </TabsList>
 
           <TabsContent value="events" className="space-y-6">
-            {isAdminUser ? (
+            {userRole === 'admin' ? (
               <Tabs value={activeStatusTab} onValueChange={setActiveStatusTab}>
-                <TabsList className="grid w-full grid-cols-3 bg-white/50 dark:bg-slate-800/50 backdrop-blur-sm">
+                <TabsList className="grid w-full grid-cols-3 bg-white/5 backdrop-blur-sm border border-white/10 p-1">
                   <TabsTrigger 
                     value="pending"
-                    className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-orange-400 data-[state=active]:to-red-400 data-[state=active]:text-white"
+                    className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-orange-500 data-[state=active]:to-red-500 data-[state=active]:text-white text-white/70 transition-all duration-300"
                   >
                     Pending Approval
                   </TabsTrigger>
                   <TabsTrigger 
-                    value="consideration"
-                    className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-yellow-400 data-[state=active]:to-orange-400 data-[state=active]:text-white"
+                    value="under_consideration"
+                    className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-yellow-500 data-[state=active]:to-orange-500 data-[state=active]:text-white text-white/70 transition-all duration-300"
                   >
                     Under Review
                   </TabsTrigger>
                   <TabsTrigger 
-                    value="past"
-                    className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-green-400 data-[state=active]:to-blue-400 data-[state=active]:text-white"
+                    value="approved"
+                    className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-green-500 data-[state=active]:to-blue-500 data-[state=active]:text-white text-white/70 transition-all duration-300"
                   >
                     Past Events
                   </TabsTrigger>
@@ -193,25 +201,25 @@ export const AppLayout = ({ isAdmin, onRequestAdminLogin }: AppLayoutProps) => {
                   <EventsView 
                     searchTerm={searchTerm}
                     statusFilter="pending"
-                    isAdmin={isAdminUser}
+                    userRole={userRole}
                     showActions={true}
                   />
                 </TabsContent>
                 
-                <TabsContent value="consideration">
+                <TabsContent value="under_consideration">
                   <EventsView 
                     searchTerm={searchTerm}
                     statusFilter="under_consideration"
-                    isAdmin={isAdminUser}
+                    userRole={userRole}
                     showActions={true}
                   />
                 </TabsContent>
                 
-                <TabsContent value="past">
+                <TabsContent value="approved">
                   <EventsView 
                     searchTerm={searchTerm}
                     statusFilter="approved"
-                    isAdmin={isAdminUser}
+                    userRole={userRole}
                     showActions={false}
                   />
                 </TabsContent>
@@ -219,8 +227,8 @@ export const AppLayout = ({ isAdmin, onRequestAdminLogin }: AppLayoutProps) => {
             ) : (
               <EventsView 
                 searchTerm={searchTerm}
-                statusFilter={isCoordinator ? statusFilter : "all"}
-                isAdmin={false}
+                statusFilter={statusFilter}
+                userRole={userRole}
                 showActions={false}
               />
             )}
@@ -230,8 +238,8 @@ export const AppLayout = ({ isAdmin, onRequestAdminLogin }: AppLayoutProps) => {
             <ClubsView 
               searchTerm={searchTerm}
               statusFilter={statusFilter}
-              isAdmin={isAdminUser}
-              showActions={isAdminUser}
+              userRole={userRole}
+              showActions={userRole === 'admin'}
             />
           </TabsContent>
         </Tabs>

@@ -1,5 +1,4 @@
 import { useState, useEffect } from 'react';
-import { supabase } from '@/integrations/supabase/client';
 
 export interface EventProposal {
   id: string;
@@ -23,87 +22,104 @@ export interface EventProposal {
   updated_at: string;
 }
 
-// Database mapping function - returning raw data
-const mapDatabaseToProposal = (dbRow: any): EventProposal => ({
-  id: dbRow.id,
-  event_name: dbRow.event_name,
-  event_type: dbRow.event_type,
-  description: dbRow.description,
-  event_date: dbRow.event_date,
-  start_time: dbRow.start_time,
-  end_time: dbRow.end_time,
-  venue: dbRow.venue,
-  expected_participants: dbRow.expected_participants,
-  budget_estimate: dbRow.budget_estimate || 0,
-  organizer_name: dbRow.organizer_name,
-  organizer_email: dbRow.organizer_email,
-  organizer_phone: dbRow.organizer_phone || '',
-  objectives: dbRow.objectives || '',
-  additional_requirements: dbRow.additional_requirements || '',
-  pdf_document_url: dbRow.pdf_document_url,
-  status: dbRow.status,
-  created_at: dbRow.created_at,
-  updated_at: dbRow.updated_at
-});
-
-export const useEventProposals = (statusFilter?: string) => {
+export const useEventProposals = (statusFilter?: string, userRole: 'admin' | 'coordinator' | 'public' = 'public') => {
   const [proposals, setProposals] = useState<EventProposal[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     const fetchProposals = async () => {
-      let query = supabase
-        .from('event_proposals')
-        .select('*')
-        .order('created_at', { ascending: false });
+      try {
+        let endpoint = '/api/event-proposals/public'; // Default for public users
+        
+        if (userRole === 'admin') {
+          endpoint = '/api/event-proposals';
+        } else if (userRole === 'coordinator') {
+          endpoint = '/api/event-proposals/coordinator';
+        }
 
-      if (statusFilter && statusFilter !== 'all') {
-        query = query.eq('status', statusFilter);
-      }
+        const headers: HeadersInit = {
+          'Content-Type': 'application/json',
+        };
 
-      const { data, error } = await query;
-      if (error) {
+        // Add auth headers for admin requests
+        if (userRole === 'admin') {
+          const token = localStorage.getItem('admin_token');
+          const adminUser = localStorage.getItem('admin_user');
+          
+          if (token && adminUser) {
+            const user = JSON.parse(adminUser);
+            headers['Authorization'] = `Bearer ${token}`;
+            headers['x-admin-email'] = user.email;
+          }
+        }
+
+        const response = await fetch(endpoint, { headers });
+        
+        if (!response.ok) {
+          throw new Error('Failed to fetch proposals');
+        }
+
+        const data = await response.json();
+        
+        // Apply client-side filtering if needed
+        let filteredData = data;
+        if (statusFilter && statusFilter !== 'all') {
+          filteredData = data.filter((p: EventProposal) => p.status === statusFilter);
+        }
+        
+        setProposals(filteredData);
+      } catch (error) {
         console.error('Error fetching proposals:', error);
+        setProposals([]);
+      } finally {
         setIsLoading(false);
-        return;
       }
-      console.log('Fetched proposals from DB:', data);
-      console.log('Applied status filter:', statusFilter);
-      const mappedProposals = data.map(mapDatabaseToProposal);
-      console.log('Mapped proposals:', mappedProposals);
-      setProposals(mappedProposals);
-      setIsLoading(false);
     };
 
     fetchProposals();
-  }, [statusFilter]);
+  }, [statusFilter, userRole]);
 
   const updateProposalStatus = async (id: string, status: 'approved' | 'rejected' | 'under_consideration', comments: string) => {
-    const { error } = await supabase
-      .from('event_proposals')
-      .update({ 
-        status,
-        updated_at: new Date().toISOString()
-      })
-      .eq('id', id);
-    
-    if (error) {
-      console.error('Error updating proposal:', error);
-      return;
-    }
+    try {
+      const token = localStorage.getItem('admin_token');
+      const adminUser = localStorage.getItem('admin_user');
+      
+      if (!token || !adminUser) {
+        throw new Error('Not authenticated');
+      }
 
-    // Update local state
-    setProposals(prev => 
-      prev.map(proposal => 
-        proposal.id === id 
-          ? { 
-              ...proposal, 
-              status, 
-              updated_at: new Date().toISOString()
-            }
-          : proposal
-      )
-    );
+      const user = JSON.parse(adminUser);
+      
+      const response = await fetch(`/api/event-proposals/${id}/status`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+          'x-admin-email': user.email,
+        },
+        body: JSON.stringify({ status, comments }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to update proposal status');
+      }
+
+      // Update local state
+      setProposals(prev => 
+        prev.map(proposal => 
+          proposal.id === id 
+            ? { 
+                ...proposal, 
+                status, 
+                updated_at: new Date().toISOString()
+              }
+            : proposal
+        )
+      );
+    } catch (error) {
+      console.error('Error updating proposal status:', error);
+      throw error;
+    }
   };
 
   return {
