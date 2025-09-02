@@ -42,8 +42,7 @@ export const MainApp = () => {
 
   // Show main app - everyone can access, but with different permissions
   return (
-    <div className="min-h-screen bg-slate-700">
-      
+    <div className="min-h-screen bg-background">
       <AppLayout 
         isAdmin={!!user} 
         onRequestAdminLogin={() => setShowAdminLogin(true)} 

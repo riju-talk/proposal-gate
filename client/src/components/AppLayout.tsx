@@ -72,9 +72,9 @@ export const AppLayout = ({ isAdmin, onRequestAdminLogin }: AppLayoutProps) => {
                 <img src="student_council.jpg" alt="Logo" className="h-10 w-10" />
               </div>
               <div>
-                <h1 className="text-xl font-bold bg-gradient-to-r from-[--primary] to-[--accent] bg-clip-text text-white">
-                  Student Council IIIT-Delhi
-                </h1>
+              <h1 className="text-xl font-bold text-primary">
+                Student Council IIIT-Delhi
+              </h1>
                 <p className="text-xs text-muted-foreground">
                   {isAdminUser ? "Admin Portal" : isCoordinator ? "Coordinator View" : "Public Portal"}
                 </p>
