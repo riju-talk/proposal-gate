@@ -115,10 +115,10 @@ export const useEventApprovals = (eventId?: string) => {
           ? { 
               ...approval, 
               status, 
-              comments,
+              comments: comments || null,
               approved_at: status === 'approved' ? new Date().toISOString() : null,
               updated_at: new Date().toISOString()
-            }
+            } as EventApproval
           : approval
       )
     );

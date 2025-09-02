@@ -250,7 +250,6 @@ export class DatabaseStorage implements IStorage {
         } else {
           // Create new profile
           const profile = await this.createProfile({
-            userId: crypto.randomUUID(),
             username: adminUser.email.split('@')[0],
             email: adminUser.email,
             fullName: adminUser.name,

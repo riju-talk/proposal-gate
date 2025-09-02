@@ -41,6 +41,11 @@ export const useClubFormationRequests = (statusFilter?: string) => {
       }
       setRequests((data || []).map(item => ({
         ...item,
+        proposed_by_phone: item.proposed_by_phone || undefined,
+        faculty_advisor: item.faculty_advisor || undefined,
+        initial_members: item.initial_members || undefined,
+        proposed_activities: item.proposed_activities || undefined,
+        charter_document_url: item.charter_document_url || undefined,
         status: item.status as 'pending' | 'approved' | 'rejected' | 'under_consideration'
       })));
       setIsLoading(false);

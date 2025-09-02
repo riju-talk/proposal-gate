@@ -31,7 +31,12 @@ export const useClubs = () => {
         setIsLoading(false);
         return;
       }
-      setClubs(data || []);
+      setClubs((data || []).map(club => ({
+        ...club,
+        description: club.description || undefined,
+        channel_links: club.channel_links || undefined,
+        is_active: club.is_active ?? true
+      })));
       setIsLoading(false);
     };
 

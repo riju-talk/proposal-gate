@@ -132,7 +132,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const approval = await storage.updateEventApproval(req.params.id, {
         status,
         comments,
-        approvedAt: status === "approved" ? new Date().toISOString() : null,
+        approvedAt: status === "approved" ? new Date(new Date().toISOString()) : null,
       });
       if (!approval) {
         return res.status(404).json({ error: "Event approval not found" });
@@ -161,7 +161,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const updatedApproval = await storage.updateEventApproval(approval.id, {
         status,
         comments,
-        approvedAt: status === "approved" ? new Date().toISOString() : null,
+        approvedAt: status === "approved" ? new Date(new Date().toISOString()) : null,
       });
       
       if (!updatedApproval) {

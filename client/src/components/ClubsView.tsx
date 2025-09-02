@@ -46,7 +46,15 @@ export const ClubsView = ({ searchTerm, statusFilter, isAdmin, showActions }: Cl
         .order('created_at', { ascending: false });
 
       if (error) throw error;
-      setClubRequests(data || []);
+      setClubRequests((data || []).map(item => ({
+        ...item,
+        proposed_by_phone: item.proposed_by_phone || undefined,
+        faculty_advisor: item.faculty_advisor || undefined,
+        initial_members: item.initial_members || undefined,
+        proposed_activities: item.proposed_activities || undefined,
+        charter_document_url: item.charter_document_url || undefined,
+        status: item.status || 'pending'
+      })));
     } catch (error) {
       console.error('Error fetching club requests:', error);
       toast({

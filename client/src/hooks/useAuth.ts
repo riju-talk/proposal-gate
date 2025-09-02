@@ -85,9 +85,9 @@ export const useAuthProvider = () => {
               } else if (profile && mounted) {
                 setUser({
                   id: profile.user_id,
-                  username: profile.username,
-                  email: profile.email,
-                  role: profile.role
+                  username: profile.username || session.user.email?.split('@')[0] || 'user',
+                  email: profile.email || session.user.email || '',
+                  role: profile.role || undefined
                 });
               } else if (mounted) {
                 // If no profile found, create a default user object

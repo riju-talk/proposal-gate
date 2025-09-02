@@ -71,6 +71,9 @@ export const PdfViewer = ({ pdfPath, isOpen, onClose, title = 'PDF Document' }: 
         // Try to fetch the PDF bytes (ArrayBuffer). This lets PDF.js read the file
         // without doing its own cross-origin URL fetch which can fail due to CORS.
         try {
+          if (!url) {
+            throw new Error('No PDF URL available');
+          }
           const res = await fetch(url, { signal: controller.signal, mode: 'cors' });
           if (!mounted) return;
           if (!res.ok) throw new Error(`Failed to fetch PDF: ${res.status}`);
@@ -118,7 +121,7 @@ export const PdfViewer = ({ pdfPath, isOpen, onClose, title = 'PDF Document' }: 
     return () => ro.disconnect();
   }, [isOpen]);
 
-  const onDocumentLoadSuccess = (pdf: PDFDocumentProxy) => {
+  const onDocumentLoadSuccess = (pdf: any) => {
     setNumPages(pdf.numPages);
     setPageNumber(1);
     setLoading(false);
