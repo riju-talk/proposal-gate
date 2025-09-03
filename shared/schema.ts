@@ -33,6 +33,7 @@ export const profiles = pgTable("profiles", {
   username: text("username").notNull(),
   fullName: text("full_name"),
   role: text("role").notNull().default("user"),
+  approvalOrder: integer("approval_order"),
   isEmailVerified: boolean("is_email_verified").notNull().default(false),
   lastLoginAt: timestamp("last_login_at"),
   createdAt: timestamp("created_at").notNull().defaultNow(),

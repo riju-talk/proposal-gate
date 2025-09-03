@@ -1,6 +1,6 @@
-import { and, eq } from 'drizzle-orm';
+import { and, eq, sql } from 'drizzle-orm';
 import { db } from '../db';
-import { profiles, userSessions } from '@shared/schema';
+import { profiles, userSessions, authorizedAdmins } from '@shared/schema';
 import { generateToken } from '../utils/jwt';
 import { addDays } from 'date-fns';
 
@@ -9,7 +9,7 @@ export interface UserProfile {
   email: string;
   username: string;
   fullName: string | null;
-  role: string;
+  role: 'user' | 'admin';
   isEmailVerified: boolean;
   lastLoginAt: Date | null;
   createdAt: Date;
@@ -25,7 +25,17 @@ export interface AuthResponse {
  */
 export const getUserByEmail = async (email: string): Promise<UserProfile | null> => {
   const [user] = await db
-    .select()
+    .select({
+      id: profiles.id,
+      email: profiles.email,
+      username: profiles.username,
+      fullName: profiles.fullName,
+      role: profiles.role,
+      isEmailVerified: profiles.isEmailVerified,
+      lastLoginAt: profiles.lastLoginAt,
+      createdAt: profiles.createdAt,
+      updatedAt: profiles.updatedAt
+    })
     .from(profiles)
     .where(eq(profiles.email, email))
     .limit(1);
@@ -38,7 +48,17 @@ export const getUserByEmail = async (email: string): Promise<UserProfile | null>
  */
 export const getUserById = async (userId: string): Promise<UserProfile | null> => {
   const [user] = await db
-    .select()
+    .select({
+      id: profiles.id,
+      email: profiles.email,
+      username: profiles.username,
+      fullName: profiles.fullName,
+      role: profiles.role,
+      isEmailVerified: profiles.isEmailVerified,
+      lastLoginAt: profiles.lastLoginAt,
+      createdAt: profiles.createdAt,
+      updatedAt: profiles.updatedAt
+    })
     .from(profiles)
     .where(eq(profiles.id, userId))
     .limit(1);
@@ -50,7 +70,18 @@ export const getUserById = async (userId: string): Promise<UserProfile | null> =
  * Create a new user session
  */
 export const createUserSession = async (userId: string, userAgent?: string, ipAddress?: string) => {
-  const token = generateToken({ userId });
+  // First get the user to include email and role in the token
+  const user = await getUserById(userId);
+  if (!user) {
+    throw new Error('User not found');
+  }
+
+  const token = generateToken({ 
+    userId,
+    email: user.email,
+    role: user.role 
+  });
+  
   const expiresAt = addDays(new Date(), 7); // 7 days session
 
   await db.insert(userSessions).values({
@@ -171,6 +202,31 @@ export const getAllUsers = async (): Promise<Omit<UserProfile, 'password'>[]> =>
 /**
  * Delete a user (admin only)
  */
-export const deleteUser = async (userId: string): Promise<void> => {
+export async function deleteUser(userId: string): Promise<void> {
   await db.delete(profiles).where(eq(profiles.id, userId));
+}
+
+/**
+ * Get all admin users from authorized_admins table
+ */
+export const getAdmins = async () => {
+  try {
+    const admins = await db
+      .select({
+        id: authorizedAdmins.id,
+        email: authorizedAdmins.email,
+        name: authorizedAdmins.name,
+        role: authorizedAdmins.role,
+        approvalOrder: authorizedAdmins.approvalOrder,
+        isActive: authorizedAdmins.isActive,
+      })
+      .from(authorizedAdmins)
+      .where(eq(authorizedAdmins.isActive, true))
+      .orderBy(authorizedAdmins.approvalOrder);
+
+    return admins;
+  } catch (error) {
+    console.error('Error fetching admins:', error);
+    throw new Error('Failed to fetch admin users');
+  }
 };

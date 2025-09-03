@@ -1,9 +1,13 @@
 import { Router } from 'express';
 import { z } from 'zod';
-import { authenticateUser, authorizeRole, validateRequest } from '../middleware/auth';
+import { eq, and } from 'drizzle-orm';
+import { authenticateUser, authorizeRole, validateRequest, optionalAuth } from '../middleware/auth';
 import * as eventService from '../services/event';
 import * as emailService from '../services/email';
+import * as userService from '../services/user';
 import { eventStatuses } from '../services/event';
+import { db } from '../db';
+import { eventApprovals, profiles } from '@shared/schema';
 
 const router = Router();
 
@@ -44,6 +48,82 @@ router.post(
   }
 );
 
+// Get event approvals
+router.get('/:eventId/approvals', authenticateUser, async (req, res) => {
+  try {
+    const { eventId } = req.params;
+    
+    // Get all approvals for the event
+    const approvals = await db
+      .select({
+        id: eventApprovals.id,
+        event_proposal_id: eventApprovals.eventProposalId,
+        admin_email: eventApprovals.adminEmail,
+        status: eventApprovals.status,
+        comments: eventApprovals.comments,
+        created_at: eventApprovals.createdAt,
+        updated_at: eventApprovals.updatedAt,
+        admin_name: profiles.fullName,
+        admin_role: profiles.role,
+        approval_order: profiles.approvalOrder
+      })
+      .from(eventApprovals)
+      .leftJoin(profiles, eq(eventApprovals.adminEmail, profiles.email))
+      .where(eq(eventApprovals.eventProposalId, eventId))
+      .orderBy(profiles.approvalOrder);
+
+    res.json(approvals);
+  } catch (error) {
+    console.error('Error fetching event approvals:', error);
+    res.status(500).json({ error: 'Failed to fetch event approvals' });
+  }
+});
+
+// Update approval status
+router.put('/:eventId/approvals/:approvalId', authenticateUser, async (req, res) => {
+  try {
+    const { eventId, approvalId } = req.params;
+    const { status, comments } = req.body;
+    const userEmail = req.user?.email;
+
+    if (!status || !['approved', 'rejected', 'pending'].includes(status)) {
+      return res.status(400).json({ error: 'Invalid status' });
+    }
+
+    // Get the approval
+    const [approval] = await db
+      .select()
+      .from(eventApprovals)
+      .where(eq(eventApprovals.id, approvalId));
+
+    if (!approval) {
+      return res.status(404).json({ error: 'Approval not found' });
+    }
+
+    // Verify the user is the admin for this approval
+    if (approval.adminEmail !== userEmail) {
+      return res.status(403).json({ error: 'Not authorized to update this approval' });
+    }
+
+    // Update the approval
+    const [updatedApproval] = await db
+      .update(eventApprovals)
+      .set({
+        status,
+        comments: comments || null,
+        updatedAt: new Date(),
+        ...(status === 'approved' && { approvedAt: new Date() })
+      })
+      .where(eq(eventApprovals.id, approvalId))
+      .returning();
+
+    res.json(updatedApproval);
+  } catch (error) {
+    console.error('Error updating approval:', error);
+    res.status(500).json({ error: 'Failed to update approval' });
+  }
+});
+
 // Get all events with pagination and filtering
 router.get('/', authenticateUser, async (req, res) => {
   try {
@@ -74,6 +154,35 @@ router.get('/', authenticateUser, async (req, res) => {
   } catch (error) {
     console.error('Get events error:', error);
     res.status(500).json({ error: 'Failed to fetch events' });
+  }
+});
+
+// Get event approval status (public)
+router.get('/:id/approval-status', optionalAuth, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const event = await eventService.getEventById(id);
+    
+    if (!event) {
+      return res.status(404).json({ error: 'Event not found' });
+    }
+
+    // Return only the approval status and comments (no sensitive data)
+    const approvalStatus = {
+      status: event.status,
+      approvals: event.approvals.map(approval => ({
+        adminName: approval.admin.name,
+        adminRole: approval.admin.role,
+        status: approval.status,
+        comments: approval.comments,
+        approvedAt: approval.approvedAt
+      }))
+    };
+
+    res.json(approvalStatus);
+  } catch (error) {
+    console.error('Error fetching approval status:', error);
+    res.status(500).json({ error: 'Failed to fetch approval status' });
   }
 });
 

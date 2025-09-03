@@ -69,6 +69,39 @@ export const authorizeRole = (roles: string[]) => {
   };
 };
 
+export const optionalAuth = async (req: Request, res: Response, next: NextFunction) => {
+  const authHeader = req.headers.authorization;
+  
+  if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    return next();
+  }
+
+  try {
+    const token = authHeader.split(' ')[1];
+    const decoded = verifyToken(token);
+    
+    // Verify user exists in database
+    const [user] = await db
+      .select()
+      .from(profiles)
+      .where(eq(profiles.email, decoded.email))
+      .limit(1);
+    
+    if (user) {
+      req.user = {
+        id: user.id,
+        email: user.email,
+        role: user.role,
+      };
+    }
+  } catch (error) {
+    // If token is invalid, just continue without user
+    console.error('Optional auth error:', error);
+  }
+  
+  next();
+};
+
 export const validateRequest = (schema: z.ZodSchema) => {
   return (req: Request, res: Response, next: NextFunction) => {
     try {

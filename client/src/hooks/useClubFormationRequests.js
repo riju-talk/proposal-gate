@@ -1,25 +1,8 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 
-export interface ClubFormationRequest {
-  id: string;
-  club_name: string;
-  club_description: string;
-  club_objectives: string;
-  proposed_by_name: string;
-  proposed_by_email: string;
-  proposed_by_phone?: string;
-  faculty_advisor?: string;
-  initial_members?: string[];
-  proposed_activities?: string;
-  charter_document_url?: string;
-  status: 'pending' | 'approved' | 'rejected' | 'under_consideration';
-  created_at: string;
-  updated_at: string;
-}
-
-export const useClubFormationRequests = (statusFilter?: string) => {
-  const [requests, setRequests] = useState<ClubFormationRequest[]>([]);
+export const useClubFormationRequests = (statusFilter) => {
+  const [requests, setRequests] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
@@ -46,7 +29,7 @@ export const useClubFormationRequests = (statusFilter?: string) => {
         initial_members: item.initial_members || undefined,
         proposed_activities: item.proposed_activities || undefined,
         charter_document_url: item.charter_document_url || undefined,
-        status: item.status as 'pending' | 'approved' | 'rejected' | 'under_consideration'
+        status: item.status
       })));
       setIsLoading(false);
     };
@@ -54,7 +37,7 @@ export const useClubFormationRequests = (statusFilter?: string) => {
     fetchRequests();
   }, [statusFilter]);
 
-  const updateRequestStatus = async (id: string, status: 'approved' | 'rejected' | 'under_consideration', comments: string) => {
+  const updateRequestStatus = async (id, status, comments) => {
     const { error } = await supabase
       .from('club_formation_requests')
       .update({ 

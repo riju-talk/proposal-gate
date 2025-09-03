@@ -1,4 +1,4 @@
-export const getPdfUrl = async (pdfPath: string): Promise<string | null> => {
+export const getPdfUrl = async (pdfPath) => {
   try {
     console.log('Getting PDF URL for path:', pdfPath);
     
@@ -38,7 +38,7 @@ export const getPdfUrl = async (pdfPath: string): Promise<string | null> => {
   }
 };
 
-export const openPdfInNewTab = async (pdfPath: string) => {
+export const openPdfInNewTab = async (pdfPath) => {
   const signedUrl = await getPdfUrl(pdfPath);
   if (signedUrl) {
     window.open(signedUrl, '_blank');

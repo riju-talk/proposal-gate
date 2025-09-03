@@ -5,10 +5,18 @@ import { insertEventProposalSchema } from "@shared/schema";
 import { sendOTP, verifyOTP } from "./auth";
 import { securityMiddleware, otpRateLimit, verifyRateLimit, requireAdmin } from "./middleware";
 import { generateJWT, setAuthCookie, clearAuthCookie } from "./jwt";
+import adminRoutes from "./routes/admin.routes";
+import publicRoutes from "./routes/public.routes";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Apply security middleware
   app.use(securityMiddleware);
+
+  // Register public routes (no authentication required)
+  app.use('/api', publicRoutes);
+  
+  // Register admin routes (requires authentication)
+  app.use('/api', adminRoutes);
 
   // Authentication routes
   app.post("/api/auth/send-otp", otpRateLimit, async (req: Request, res: Response) => {

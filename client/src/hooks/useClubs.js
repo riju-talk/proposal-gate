@@ -1,21 +1,8 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 
-export interface Club {
-  id: string;
-  name: string;
-  description?: string;
-  coordinator_names: string;
-  coordinator_emails: string;
-  avatar_url: string;
-  channel_links?: string;
-  is_active: boolean;
-  created_at: string;
-  updated_at: string;
-}
-
 export const useClubs = () => {
-  const [clubs, setClubs] = useState<Club[]>([]);
+  const [clubs, setClubs] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
