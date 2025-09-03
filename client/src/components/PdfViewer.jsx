@@ -1,129 +1,43 @@
-'use client';
-
-import { useState, useEffect, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { Document, Page, pdfjs } from 'react-pdf';
 import { Button } from '@/components/ui/button';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { ChevronLeft, ChevronRight, ZoomIn, ZoomOut, Download } from 'lucide-react';
-import { getPdfUrl } from '@/utils/pdfUtils';
+import { ZoomIn, ZoomOut, Download, Loader2 } from 'lucide-react';
 
-export const PdfViewer = ({ pdfPath, isOpen, onClose, title = 'PDF Document' }) => {
-  const [numPages, setNumPages] = useState(0);
+// Configure PDF.js worker
+pdfjs.GlobalWorkerOptions.workerSrc = `//unpkg.com/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.js`;
+
+export const PdfViewer = ({ file, className = '' }) => {
+  const [numPages, setNumPages] = useState(null);
   const [pageNumber, setPageNumber] = useState(1);
   const [scale, setScale] = useState(1.0);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-
-  // signed URL (from your getPdfUrl) and optionally fetched ArrayBuffer
-  const [signedUrl, setSignedUrl] = useState(null);
-  const [pdfArrayBuffer, setPdfArrayBuffer] = useState(null);
-
-  // measure container width for responsive Page rendering
   const containerRef = useRef(null);
-  const [pageWidth, setPageWidth] = useState(undefined);
+  const [containerWidth, setContainerWidth] = useState(0);
 
-  // Set pdf worker on client only (react-pdf recommends this)
+  // Update container width on resize
   useEffect(() => {
-    if (typeof window !== 'undefined') {
-      pdfjs.GlobalWorkerOptions.workerSrc = new URL(
-        'pdfjs-dist/build/pdf.worker.min.js',
-        import.meta.url,
-      ).toString();
-    }
-  }, []);
-
-  // load signed URL and try to fetch ArrayBuffer (falls back to using URL)
-  useEffect(() => {
-    let mounted = true;
-    const controller = new AbortController();
-
-    // reset when closed
-    if (!isOpen) {
-      setSignedUrl(null);
-      setPdfArrayBuffer(null);
-      setPageNumber(1);
-      setScale(1.0);
-      return;
-    }
-
-    const loadPdf = async () => {
-      if (!pdfPath) {
-        setError('No PDF path provided');
-        return;
-      }
-
-      setLoading(true);
-      setError(null);
-
-      try {
-        // Get the signed URL
-        const url = await getPdfUrl(pdfPath);
-        if (!mounted) return;
-        
-        setSignedUrl(url);
-        
-        // Try to fetch the PDF as ArrayBuffer for better handling
-        try {
-          const response = await fetch(url, { signal: controller.signal });
-          if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
-          
-          const arrayBuffer = await response.arrayBuffer();
-          if (mounted) {
-            setPdfArrayBuffer(arrayBuffer);
-          }
-        } catch (fetchError) {
-          console.warn('Could not fetch PDF as ArrayBuffer, falling back to URL mode', fetchError);
-          // Continue with URL mode if ArrayBuffer fetch fails
-        }
-      } catch (err) {
-        console.error('Error loading PDF:', err);
-        if (mounted) {
-          setError('Failed to load PDF. Please try again later.');
-        }
-      } finally {
-        if (mounted) {
-          setLoading(false);
-        }
-      }
-    };
-
-    if (isOpen) {
-      loadPdf();
-    }
-
-    return () => {
-      mounted = false;
-      controller.abort();
-    };
-  }, [pdfPath, isOpen]);
-
-  // Update page width when container resizes
-  useEffect(() => {
-    if (!isOpen || !containerRef.current) return;
-
     const updateWidth = () => {
       if (containerRef.current) {
-        setPageWidth(containerRef.current.offsetWidth * 0.9); // 90% of container width
+        setContainerWidth(containerRef.current.offsetWidth);
       }
     };
 
-    // Initial width
     updateWidth();
-
-    // Add resize observer
-    const resizeObserver = new ResizeObserver(updateWidth);
-    resizeObserver.observe(containerRef.current);
-
-    return () => {
-      if (containerRef.current) {
-        resizeObserver.unobserve(containerRef.current);
-      }
-    };
-  }, [isOpen]);
+    window.addEventListener('resize', updateWidth);
+    return () => window.removeEventListener('resize', updateWidth);
+  }, []);
 
   const onDocumentLoadSuccess = ({ numPages }) => {
     setNumPages(numPages);
-    setPageNumber(1);
+    setLoading(false);
+    setError(null);
+  };
+
+  const onDocumentLoadError = (error) => {
+    console.error('Error loading PDF:', error);
+    setError('Failed to load PDF. Please try again.');
+    setLoading(false);
   };
 
   const goToPrevPage = () => {
@@ -135,145 +49,137 @@ export const PdfViewer = ({ pdfPath, isOpen, onClose, title = 'PDF Document' }) 
   };
 
   const zoomIn = () => {
-    setScale(prevScale => Math.min(prevScale + 0.2, 2.0));
+    setScale(prevScale => Math.min(prevScale + 0.25, 2.5));
   };
 
   const zoomOut = () => {
-    setScale(prevScale => Math.max(prevScale - 0.2, 0.5));
+    setScale(prevScale => Math.max(prevScale - 0.25, 0.5));
   };
 
-  const handleDownload = () => {
-    if (!signedUrl) return;
+  const downloadPdf = () => {
+    if (!file) return;
     
     const link = document.createElement('a');
-    link.href = signedUrl;
-    link.download = pdfPath.split('/').pop() || 'document.pdf';
+    link.href = typeof file === 'string' ? file : URL.createObjectURL(file);
+    link.download = 'document.pdf';
+    link.target = '_blank';
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
   };
 
+  if (!file) {
+    return (
+      <div className={`flex items-center justify-center border rounded-md p-8 bg-muted/50 ${className}`}>
+        <p className="text-muted-foreground">No PDF file provided</p>
+      </div>
+    );
+  }
+
   return (
-    <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-[90vw] max-h-[90vh] flex flex-col p-0 overflow-hidden">
-        <DialogHeader className="px-6 pt-6 pb-2 border-b">
-          <div className="flex items-center justify-between">
-            <DialogTitle className="text-lg">{title}</DialogTitle>
-            <div className="flex items-center space-x-2">
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={handleDownload}
-                title="Download PDF"
-              >
-                <Download className="h-5 w-5" />
-              </Button>
-            </div>
-          </div>
-        </DialogHeader>
-        
-        <div className="flex-1 overflow-auto p-6" ref={containerRef}>
-          {loading ? (
-            <div className="flex items-center justify-center h-64">
-              <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
-            </div>
-          ) : error ? (
-            <div className="flex flex-col items-center justify-center h-64 text-destructive">
-              <p className="mb-4">{error}</p>
-              <Button variant="outline" onClick={onClose}>
-                Close
-              </Button>
-            </div>
-          ) : (
-            <div className="flex flex-col items-center">
-              <div className="mb-4">
-                <Document
-                  file={pdfArrayBuffer || signedUrl}
-                  onLoadSuccess={onDocumentLoadSuccess}
-                  loading={
-                    <div className="flex items-center justify-center h-64">
-                      <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
-                    </div>
-                  }
-                  error={
-                    <div className="text-destructive p-4">
-                      Failed to load PDF. The file may be corrupted or the link may be invalid.
-                    </div>
-                  }
-                >
-                  <Page 
-                    pageNumber={pageNumber} 
-                    width={pageWidth} 
-                    scale={scale}
-                    renderTextLayer={false}
-                    renderAnnotationLayer={false}
-                    loading={
-                      <div className="flex items-center justify-center h-64">
-                        <div className="animate-pulse">Loading page...</div>
-                      </div>
-                    }
-                  />
-                </Document>
-              </div>
-              
-              {numPages > 0 && (
-                <div className="flex items-center justify-between w-full mt-4 px-4 py-2 border-t">
-                  <div className="flex items-center space-x-2">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={zoomOut}
-                      disabled={scale <= 0.5}
-                      aria-label="Zoom out"
-                    >
-                      <ZoomOut className="h-4 w-4" />
-                    </Button>
-                    <span className="text-sm w-12 text-center">{Math.round(scale * 100)}%</span>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={zoomIn}
-                      disabled={scale >= 2.0}
-                      aria-label="Zoom in"
-                    >
-                      <ZoomIn className="h-4 w-4" />
-                    </Button>
-                  </div>
-                  
-                  <div className="flex items-center space-x-2">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={goToPrevPage}
-                      disabled={pageNumber <= 1}
-                      aria-label="Previous page"
-                    >
-                      <ChevronLeft className="h-4 w-4" />
-                    </Button>
-                    <span className="text-sm">
-                      Page {pageNumber} of {numPages}
-                    </span>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={goToNextPage}
-                      disabled={pageNumber >= numPages}
-                      aria-label="Next page"
-                    >
-                      <ChevronRight className="h-4 w-4" />
-                    </Button>
-                  </div>
-                  
-                  <div className="w-20">
-                    {/* Empty div for layout balance */}
-                  </div>
-                </div>
-              )}
-            </div>
-          )}
+    <div 
+      ref={containerRef}
+      className={`border rounded-md overflow-hidden bg-background ${className}`}
+    >
+      <div className="border-b p-2 flex items-center justify-between bg-muted/50">
+        <div className="flex items-center space-x-2">
+          <Button 
+            variant="ghost" 
+            size="sm" 
+            onClick={zoomOut}
+            disabled={scale <= 0.5}
+            title="Zoom Out"
+          >
+            <ZoomOut className="h-4 w-4" />
+          </Button>
+          <span className="text-sm text-muted-foreground">
+            {Math.round(scale * 100)}%
+          </span>
+          <Button 
+            variant="ghost" 
+            size="sm" 
+            onClick={zoomIn}
+            disabled={scale >= 2.5}
+            title="Zoom In"
+          >
+            <ZoomIn className="h-4 w-4" />
+          </Button>
         </div>
-      </DialogContent>
-    </Dialog>
+
+        <div className="flex items-center space-x-2">
+          <Button 
+            variant="ghost" 
+            size="sm" 
+            onClick={downloadPdf}
+            title="Download PDF"
+          >
+            <Download className="h-4 w-4 mr-1" />
+            <span>Download</span>
+          </Button>
+        </div>
+      </div>
+
+      <div className="overflow-auto p-4 flex flex-col items-center">
+        {loading && (
+          <div className="flex flex-col items-center justify-center p-8">
+            <Loader2 className="h-8 w-8 animate-spin text-muted-foreground mb-2" />
+            <p className="text-sm text-muted-foreground">Loading PDF...</p>
+          </div>
+        )}
+
+        {error && (
+          <div className="text-center p-8 text-destructive">
+            <p>{error}</p>
+          </div>
+        )}
+
+        <div style={{ transform: `scale(${scale})`, transformOrigin: 'top center' }}>
+          <Document
+            file={file}
+            onLoadSuccess={onDocumentLoadSuccess}
+            onLoadError={onDocumentLoadError}
+            loading={
+              <div className="flex items-center justify-center p-8">
+                <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+              </div>
+            }
+          >
+            <Page 
+              pageNumber={pageNumber} 
+              width={containerWidth ? Math.min(containerWidth - 64, 800) : 600}
+              renderTextLayer={false}
+              renderAnnotationLayer={false}
+            />
+          </Document>
+        </div>
+      </div>
+
+      {numPages > 1 && (
+        <div className="border-t p-2 flex items-center justify-between bg-muted/50">
+          <div className="text-sm text-muted-foreground">
+            Page {pageNumber} of {numPages}
+          </div>
+          <div className="flex space-x-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={goToPrevPage}
+              disabled={pageNumber <= 1}
+            >
+              Previous
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={goToNextPage}
+              disabled={pageNumber >= numPages}
+            >
+              Next
+            </Button>
+          </div>
+        </div>
+      )}
+    </div>
   );
 };
 

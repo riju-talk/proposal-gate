@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -6,96 +6,74 @@ import { Textarea } from '@/components/ui/textarea';
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
 import { CheckCircle, XCircle, Clock, AlertCircle, MessageSquare } from 'lucide-react';
-import { usePublicApprovalStatus } from '@/hooks/usePublicApprovalStatus';
-import { useEventApprovals } from '@/hooks/useEventApprovals';
 
-export const EventApprovalTracker = ({ eventId }) => {
-  const { data: publicApprovalStatus, isLoading } = usePublicApprovalStatus(eventId);
+export const EventApprovalTracker = ({ eventId, showActions = true }) => {
   const { user } = useAuth();
   const { toast } = useToast();
+  const [approvals, setApprovals] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   const [comments, setComments] = useState({});
   const [approving, setApproving] = useState(null);
-  
-  // For admin actions, we still need the full approvals data
-  const { approvals, updateApprovalStatus, canApprove } = useEventApprovals(eventId);
-  
-  // Get the current user's email for permission checks
-  const currentUserEmail = user?.email || '';
-  
-  // Use public data when available, fallback to local state
-  const relevantApprovals = publicApprovalStatus?.approvals || [];
-  const overallStatus = publicApprovalStatus?.status || 'pending';
-  
-  // Helper function to check if the current user can approve for a specific admin
-  const canCurrentUserApprove = (adminEmail) => {
-    if (!user || currentUserEmail !== adminEmail) return false;
-    return canApprove(adminEmail);
-  };
 
-  const handleApprove = async (adminEmail) => {
-    if (!eventId) return;
+  useEffect(() => {
+    const fetchApprovals = async () => {
+      try {
+        setLoading(true);
+        // Replace with your actual API endpoint
+        const response = await fetch(`/api/events/${eventId}/approvals`);
+        if (!response.ok) {
+          throw new Error('Failed to fetch approvals');
+        }
+        const data = await response.json();
+        setApprovals(data);
+      } catch (err) {
+        console.error('Error fetching approvals:', err);
+        setError(err.message);
+      } finally {
+        setLoading(false);
+      }
+    };
 
-    // Check if the current user can approve
-    const canApproveResult = canApprove(adminEmail);
-    if (!canApproveResult) {
-      alert('You are not authorized to approve at this time. Please ensure all previous approvers have approved.');
-      return;
+    if (eventId) {
+      fetchApprovals();
     }
-    
-    setApproving(adminEmail);
+  }, [eventId]);
+
+  const handleApprove = async (approvalId, status, comment = '') => {
     try {
-      await updateApprovalStatus(adminEmail, 'approved', comments[adminEmail] || '');
+      setApproving(approvalId);
+      // Replace with your actual API endpoint
+      const response = await fetch(`/api/events/approvals/${approvalId}`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          status,
+          comment,
+          updatedBy: user?.id,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to update approval status');
+      }
+
+      const updatedApproval = await response.json();
+      setApproals(prev => 
+        prev.map(a => a.id === updatedApproval.id ? updatedApproval : a)
+      );
       
       toast({
-        title: 'Approval submitted',
-        description: 'Your approval has been recorded.',
+        title: 'Success',
+        description: 'Approval status updated successfully',
       });
-      
-      // Clear the comment for this admin
-      setComments(prev => ({
-        ...prev,
-        [adminEmail]: ''
-      }));
-    } catch (error) {
-      console.error('Error approving:', error);
+    } catch (err) {
+      console.error('Error updating approval:', err);
       toast({
         title: 'Error',
-        description: 'Failed to submit approval. Please try again.',
-        variant: 'destructive',
-      });
-    } finally {
-      setApproving(null);
-    }
-  };
-
-  const handleReject = async (adminEmail) => {
-    if (!eventId) return;
-    
-    // Check if the current user can approve
-    const canApproveResult = canApprove(adminEmail);
-    if (!canApproveResult) {
-      alert('You are not authorized to reject at this time.');
-      return;
-    }
-    
-    if (!comments[adminEmail]?.trim()) {
-      alert('Please provide a reason for rejection.');
-      return;
-    }
-    
-    setApproving(adminEmail);
-    try {
-      await updateApprovalStatus(adminEmail, 'rejected', comments[adminEmail]);
-      
-      toast({
-        title: 'Rejection submitted',
-        description: 'Your rejection has been recorded.',
-      });
-    } catch (error) {
-      console.error('Error rejecting:', error);
-      toast({
-        title: 'Error',
-        description: 'Failed to submit rejection. Please try again.',
+        description: 'Failed to update approval status',
         variant: 'destructive',
       });
     } finally {
@@ -104,176 +82,118 @@ export const EventApprovalTracker = ({ eventId }) => {
   };
 
   const getStatusBadge = (status) => {
-    switch (status) {
+    switch (status?.toLowerCase()) {
       case 'approved':
         return (
-          <Badge className="bg-green-100 text-green-800 hover:bg-green-100">
-            <CheckCircle className="h-3.5 w-3.5 mr-1.5" />
+          <Badge className="bg-green-100 text-green-800">
+            <CheckCircle className="w-4 h-4 mr-1" />
             Approved
           </Badge>
         );
       case 'rejected':
         return (
-          <Badge className="bg-red-100 text-red-800 hover:bg-red-100">
-            <XCircle className="h-3.5 w-3.5 mr-1.5" />
+          <Badge className="bg-red-100 text-red-800">
+            <XCircle className="w-4 h-4 mr-1" />
             Rejected
           </Badge>
         );
       case 'pending':
-        return (
-          <Badge variant="outline" className="text-muted-foreground">
-            <Clock className="h-3.5 w-3.5 mr-1.5" />
-            Pending
-          </Badge>
-        );
       default:
         return (
-          <Badge variant="outline" className="text-muted-foreground">
-            <AlertCircle className="h-3.5 w-3.5 mr-1.5" />
-            {status}
+          <Badge variant="outline">
+            <Clock className="w-4 h-4 mr-1" />
+            Pending
           </Badge>
         );
     }
   };
 
-  if (isLoading) {
+  if (loading) {
     return (
-      <Card className="w-full max-w-3xl mx-auto">
+      <Card>
         <CardHeader>
-          <CardTitle className="text-lg">Loading approval status...</CardTitle>
+          <CardTitle>Loading approvals...</CardTitle>
         </CardHeader>
-        <CardContent>
-          <div className="space-y-4">
-            {[1, 2, 3].map((i) => (
-              <div key={i} className="flex items-center space-x-4 p-3 border rounded-lg">
-                <div className="h-8 w-8 rounded-full bg-muted animate-pulse" />
-                <div className="space-y-2 flex-1">
-                  <div className="h-4 bg-muted rounded w-3/4 animate-pulse" />
-                  <div className="h-3 bg-muted rounded w-1/2 animate-pulse" />
-                </div>
-                <div className="h-8 w-20 bg-muted rounded-md animate-pulse" />
-              </div>
-            ))}
-          </div>
-        </CardContent>
       </Card>
     );
   }
 
-  if (relevantApprovals.length === 0) {
+  if (error) {
     return (
-      <Card className="w-full max-w-3xl mx-auto">
+      <Card>
         <CardHeader>
-          <CardTitle className="text-lg">Approval Status</CardTitle>
+          <CardTitle>Error loading approvals</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="text-center py-8 text-muted-foreground">
-            <p>No approval information available for this event.</p>
-          </div>
+          <p className="text-red-500">{error}</p>
         </CardContent>
       </Card>
     );
   }
 
   return (
-    <Card className="w-full max-w-3xl mx-auto">
-      <CardHeader className="pb-4">
-        <div className="flex items-center justify-between">
-          <CardTitle className="text-lg">Approval Status</CardTitle>
-          {getStatusBadge(overallStatus)}
-        </div>
+    <Card>
+      <CardHeader>
+        <CardTitle>Approval Status</CardTitle>
       </CardHeader>
-      <CardContent>
-        <div className="space-y-4">
-          {relevantApprovals.map((approval) => {
-            const canApproveCurrent = canCurrentUserApprove(approval.admin_email);
-            const showCommentInput = canApproveCurrent && approving === approval.admin_email;
-            const isCurrentUser = currentUserEmail === approval.admin_email;
-            
-            return (
-              <div 
-                key={approval.id} 
-                className={`p-4 border rounded-lg ${
-                  isCurrentUser ? 'border-primary/30 bg-primary/5' : ''
-                }`}
-              >
-                <div className="flex items-start justify-between">
-                  <div>
-                    <div className="font-medium">{approval.admin_name || approval.admin_email}</div>
-                    <div className="text-sm text-muted-foreground">
-                      {approval.role || 'Reviewer'}
-                    </div>
-                  </div>
-                  <div className="flex items-center">
-                    {getStatusBadge(approval.status)}
-                  </div>
+      <CardContent className="space-y-4">
+        {approvals.length === 0 ? (
+          <p className="text-muted-foreground">No approvals found for this event.</p>
+        ) : (
+          approvals.map((approval) => (
+            <div key={approval.id} className="border rounded-lg p-4">
+              <div className="flex justify-between items-start">
+                <div>
+                  <h4 className="font-medium">{approval.approverName || 'Approver'}</h4>
+                  <p className="text-sm text-muted-foreground">
+                    {approval.role || 'Reviewer'}
+                  </p>
                 </div>
-                
-                {approval.comments && (
-                  <div className="mt-3 text-sm text-muted-foreground">
-                    <div className="flex items-start">
-                      <MessageSquare className="h-4 w-4 mt-0.5 mr-2 flex-shrink-0" />
-                      <p className="whitespace-pre-wrap">{approval.comments}</p>
-                    </div>
-                  </div>
-                )}
-                
-                {showCommentInput && (
-                  <div className="mt-3 space-y-2">
-                    <Textarea
-                      placeholder="Add comments (required for rejection)"
-                      value={comments[approval.admin_email] || ''}
-                      onChange={(e) => 
-                        setComments(prev => ({
-                          ...prev,
-                          [approval.admin_email]: e.target.value
-                        }))
-                      }
-                      className="min-h-[80px]"
-                    />
-                    <div className="flex justify-end space-x-2">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => setApproving(null)}
-                        disabled={approving === 'loading'}
-                      >
-                        Cancel
-                      </Button>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => handleReject(approval.admin_email)}
-                        disabled={approving === 'loading' || !comments[approval.admin_email]?.trim()}
-                      >
-                        {approving === 'loading' ? 'Processing...' : 'Reject'}
-                      </Button>
-                      <Button
-                        size="sm"
-                        onClick={() => handleApprove(approval.admin_email)}
-                        disabled={approving === 'loading'}
-                      >
-                        {approving === 'loading' ? 'Processing...' : 'Approve'}
-                      </Button>
-                    </div>
-                  </div>
-                )}
-                
-                {canApproveCurrent && !showCommentInput && approval.status === 'pending' && (
-                  <div className="mt-3 flex justify-end space-x-2">
+                {getStatusBadge(approval.status)}
+              </div>
+              
+              {approval.comment && (
+                <div className="mt-2 text-sm text-muted-foreground flex items-start">
+                  <MessageSquare className="w-4 h-4 mr-2 mt-0.5 flex-shrink-0" />
+                  <p>{approval.comment}</p>
+                </div>
+              )}
+
+              {showActions && approval.status === 'pending' && (
+                <div className="mt-3 space-y-2">
+                  <Textarea
+                    placeholder="Add a comment (optional)"
+                    value={comments[approval.id] || ''}
+                    onChange={(e) =>
+                      setComments(prev => ({
+                        ...prev,
+                        [approval.id]: e.target.value
+                      }))
+                    }
+                    className="text-sm"
+                  />
+                  <div className="flex space-x-2">
                     <Button
                       variant="outline"
                       size="sm"
-                      onClick={() => setApproving(approval.admin_email)}
+                      onClick={() => handleApprove(approval.id, 'rejected', comments[approval.id])}
+                      disabled={approving === approval.id}
                     >
-                      Take Action
+                      {approving === approval.id ? 'Processing...' : 'Reject'}
+                    </Button>
+                    <Button
+                      size="sm"
+                      onClick={() => handleApprove(approval.id, 'approved', comments[approval.id])}
+                      disabled={approving === approval.id}
+                    >
+                      {approving === approval.id ? 'Processing...' : 'Approve'}
                     </Button>
                   </div>
-                )}
-              </div>
-            );
-          })}
-        </div>
+                </div>
+              )}
+            </div>
+          ))
+        )}
       </CardContent>
     </Card>
   );
