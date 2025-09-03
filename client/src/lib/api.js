@@ -32,10 +32,17 @@ class ApiClient {
     });
   }
 
-  async login(email) {
-    return this.request('/auth/login', {
+  async sendOTP(email) {
+    return this.request('/auth/send-otp', {
       method: 'POST',
       body: JSON.stringify({ email }),
+    });
+  }
+
+  async verifyOTP(email, otp) {
+    return this.request('/auth/verify-otp', {
+      method: 'POST',
+      body: JSON.stringify({ email, otp }),
     });
   }
 

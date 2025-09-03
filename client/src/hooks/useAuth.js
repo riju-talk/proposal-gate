@@ -84,7 +84,7 @@ export const useAuthProvider = () => {
       
       const data = await response.json();
       
-      if (response.ok && data.success) {
+      if (response.ok) {
         setState(s => ({
           ...s,
           isOTPSent: true,
@@ -96,7 +96,7 @@ export const useAuthProvider = () => {
       } else {
         return { 
           success: false, 
-          error: data.message || 'Failed to send OTP' 
+          error: data.error || 'Failed to send OTP' 
         };
       }
     } catch (error) {
@@ -141,7 +141,7 @@ export const useAuthProvider = () => {
       } else {
         return { 
           success: false, 
-          error: data.message || 'Invalid OTP' 
+          error: data.error || 'Invalid OTP' 
         };
       }
     } catch (error) {
