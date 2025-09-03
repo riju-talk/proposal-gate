@@ -5,7 +5,7 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
-import { ArrowLeft, Mail, Shield, Sparkles, Zap } from 'lucide-react';
+import { ArrowLeft, Mail, Shield, Sparkles, Zap, Loader2, Users } from 'lucide-react';
 
 export const LoginPage = ({ onBack }) => {
   const [view, setView] = useState('email');
@@ -23,8 +23,13 @@ export const LoginPage = ({ onBack }) => {
 
   const handleQuickLogin = (role) => {
     const quickEmails = {
-      admin: 'admin@university.edu',
-      coordinator: 'coordinator@university.edu'
+      president: 'president@sc.iiitd.ac.in',
+      vp: 'vp@sc.iiitd.ac.in',
+      treasurer: 'treasurer@sc.iiitd.ac.in',
+      sa_office: 'admin-saoffice@iiitd.ac.in',
+      faculty: 'ravi@iiitd.ac.in',
+      final: 'smriti@iiitd.ac.in',
+      developer: 'rijusmit22400@iiitd.ac.in'
     };
     setEmail(quickEmails[role]);
   };
@@ -131,7 +136,7 @@ export const LoginPage = ({ onBack }) => {
           <CardTitle className="text-2xl font-bold text-white">Admin Login</CardTitle>
           <CardDescription className="text-white/70">
             {view === 'email' 
-              ? 'Enter your email to receive a one-time password'
+              ? 'Enter your authorized email to receive a one-time password'
               : `Enter the OTP sent to ${email}`}
           </CardDescription>
         </CardHeader>
@@ -140,37 +145,74 @@ export const LoginPage = ({ onBack }) => {
           {view === 'email' ? (
             <form onSubmit={handleSendOTP} className="space-y-4">
               {/* Quick Login Buttons */}
-              <div className="grid grid-cols-2 gap-2 mb-4">
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  onClick={() => handleQuickLogin('admin')}
-                  className="bg-white/5 border-white/20 text-white hover:bg-white/10"
-                >
-                  <Shield className="h-4 w-4 mr-1" />
-                  Admin
-                </Button>
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  onClick={() => handleQuickLogin('coordinator')}
-                  className="bg-white/5 border-white/20 text-white hover:bg-white/10"
-                >
-                  <Users className="h-4 w-4 mr-1" />
-                  Coordinator
-                </Button>
+              <div className="space-y-2 mb-4">
+                <p className="text-xs text-white/60 text-center">Quick Login Options:</p>
+                <div className="grid grid-cols-2 gap-2">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => handleQuickLogin('president')}
+                    className="bg-white/5 border-white/20 text-white hover:bg-white/10 text-xs"
+                  >
+                    President
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => handleQuickLogin('vp')}
+                    className="bg-white/5 border-white/20 text-white hover:bg-white/10 text-xs"
+                  >
+                    Vice President
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => handleQuickLogin('treasurer')}
+                    className="bg-white/5 border-white/20 text-white hover:bg-white/10 text-xs"
+                  >
+                    Treasurer
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => handleQuickLogin('sa_office')}
+                    className="bg-white/5 border-white/20 text-white hover:bg-white/10 text-xs"
+                  >
+                    SA Office
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => handleQuickLogin('faculty')}
+                    className="bg-white/5 border-white/20 text-white hover:bg-white/10 text-xs"
+                  >
+                    Faculty
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => handleQuickLogin('final')}
+                    className="bg-white/5 border-white/20 text-white hover:bg-white/10 text-xs"
+                  >
+                    Final Approver
+                  </Button>
+                </div>
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="email" className="text-white">Email</Label>
+                <Label htmlFor="email" className="text-white">Authorized Email</Label>
                 <div className="relative">
                   <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-white/50" />
                   <Input
                     id="email"
                     type="email"
-                    placeholder="Enter your email"
+                    placeholder="Enter your authorized email"
                     value={email}
                     onChange={handleEmailChange}
                     required
@@ -284,7 +326,7 @@ export const LoginPage = ({ onBack }) => {
                 ) : (
                   <>
                     <Shield className="w-4 h-4 mr-2" />
-                    Verify OTP
+                    Verify & Login
                   </>
                 )}
               </Button>

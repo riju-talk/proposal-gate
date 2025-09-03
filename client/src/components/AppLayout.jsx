@@ -5,7 +5,6 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { EventsView } from "@/components/EventsView";
-import { ClubsView } from "@/components/ClubsView";
 import { LogOut, Search, Filter, Shield, Users, Calendar, GraduationCap, Sparkles } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
@@ -15,7 +14,6 @@ export const AppLayout = ({ userRole, onRequestAdminLogin }) => {
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [activeTab, setActiveTab] = useState("events");
-  const [activeStatusTab, setActiveStatusTab] = useState("pending");
 
   const handleLogout = async () => {
     try {
@@ -40,8 +38,7 @@ export const AppLayout = ({ userRole, onRequestAdminLogin }) => {
         { value: "all", label: "All" },
         { value: "pending", label: "Pending" },
         { value: "approved", label: "Approved" },
-        { value: "rejected", label: "Rejected" },
-        { value: "under_consideration", label: "Under Review" }
+        { value: "rejected", label: "Rejected" }
       ];
     } else {
       return [
@@ -55,7 +52,7 @@ export const AppLayout = ({ userRole, onRequestAdminLogin }) => {
   const getRoleDisplay = () => {
     switch (userRole) {
       case 'admin':
-        return { icon: Shield, text: user?.name || 'Admin', color: 'text-cyan-400' };
+        return { icon: Shield, text: user?.name || 'Admin Panel', color: 'text-cyan-400' };
       case 'coordinator':
         return { icon: Users, text: 'Coordinator View', color: 'text-purple-400' };
       default:
@@ -95,7 +92,7 @@ export const AppLayout = ({ userRole, onRequestAdminLogin }) => {
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-cyan-400 h-4 w-4" />
               <Input
                 type="text"
-                placeholder="Search..."
+                placeholder="Search events..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 className="pl-10 w-64 bg-white/5 border-white/10 focus:border-cyan-400/50 focus:ring-0 text-white/90 placeholder:text-white/40"
@@ -128,28 +125,18 @@ export const AppLayout = ({ userRole, onRequestAdminLogin }) => {
 
       {/* Main Content */}
       <main className="container py-8">
-        <Tabs 
-          value={activeTab} 
-          onValueChange={setActiveTab}
-          className="space-y-6"
-        >
+        <div className="space-y-6">
           <div className="flex justify-between items-center">
-            <TabsList className="bg-white/5 border border-white/10 backdrop-blur-sm">
-              <TabsTrigger 
-                value="events" 
-                className="data-[state=active]:bg-cyan-900/50 data-[state=active]:text-cyan-400 data-[state=active]:border-cyan-400/30"
-              >
-                <Calendar className="h-4 w-4 mr-2" />
-                Events
-              </TabsTrigger>
-              <TabsTrigger 
-                value="clubs" 
-                className="data-[state=active]:bg-purple-900/50 data-[state=active]:text-purple-400 data-[state=active]:border-purple-400/30"
-              >
-                <Users className="h-4 w-4 mr-2" />
-                Clubs
-              </TabsTrigger>
-            </TabsList>
+            <div className="space-y-1">
+              <h2 className="text-3xl font-bold text-white">Event Proposals</h2>
+              <p className="text-white/70">
+                {userRole === 'admin' 
+                  ? 'Manage and approve event proposals' 
+                  : userRole === 'coordinator'
+                  ? 'View pending and approved events'
+                  : 'Discover upcoming approved events'}
+              </p>
+            </div>
 
             <div className="flex items-center space-x-4">
               <div className="flex items-center space-x-2">
@@ -166,7 +153,7 @@ export const AppLayout = ({ userRole, onRequestAdminLogin }) => {
                       <SelectItem 
                         key={filter.value} 
                         value={filter.value}
-                        className="hover:bg-slate-700/50 focus:bg-slate-700/50"
+                        className="hover:bg-slate-700/50 focus:bg-slate-700/50 text-white"
                       >
                         {filter.label}
                       </SelectItem>
@@ -177,24 +164,12 @@ export const AppLayout = ({ userRole, onRequestAdminLogin }) => {
             </div>
           </div>
 
-          <TabsContent value="events">
-            <EventsView 
-              searchTerm={searchTerm} 
-              statusFilter={statusFilter}
-              userRole={userRole}
-              activeStatusTab={activeStatusTab}
-              onStatusTabChange={setActiveStatusTab}
-            />
-          </TabsContent>
-          
-          <TabsContent value="clubs">
-            <ClubsView 
-              searchTerm={searchTerm} 
-              statusFilter={statusFilter}
-              userRole={userRole}
-            />
-          </TabsContent>
-        </Tabs>
+          <EventsView 
+            searchTerm={searchTerm} 
+            statusFilter={statusFilter}
+            userRole={userRole}
+          />
+        </div>
       </main>
     </div>
   );

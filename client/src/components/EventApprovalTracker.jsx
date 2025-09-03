@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
-import { CheckCircle, XCircle, Clock, AlertCircle, MessageSquare } from 'lucide-react';
+import { CheckCircle, XCircle, Clock, AlertCircle, MessageSquare, Shield, User } from 'lucide-react';
 
 export const EventApprovalTracker = ({ eventId, showActions = true }) => {
   const { user } = useAuth();
@@ -20,7 +20,6 @@ export const EventApprovalTracker = ({ eventId, showActions = true }) => {
     const fetchApprovals = async () => {
       try {
         setLoading(true);
-        // Replace with your actual API endpoint
         const response = await fetch(`/api/events/${eventId}/approvals`);
         if (!response.ok) {
           throw new Error('Failed to fetch approvals');
@@ -40,40 +39,48 @@ export const EventApprovalTracker = ({ eventId, showActions = true }) => {
     }
   }, [eventId]);
 
-  const handleApprove = async (approvalId, status, comment = '') => {
+  const handleApprove = async (adminEmail, status, comment = '') => {
     try {
-      setApproving(approvalId);
-      // Replace with your actual API endpoint
-      const response = await fetch(`/api/events/approvals/${approvalId}`, {
-        method: 'PATCH',
+      setApproving(adminEmail);
+      const token = localStorage.getItem('admin_token');
+      
+      const response = await fetch(`/api/events/${eventId}/approve`, {
+        method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
         },
         body: JSON.stringify({
+          adminEmail,
           status,
-          comment,
-          updatedBy: user?.id,
+          comments: comment,
         }),
       });
 
       if (!response.ok) {
-        throw new Error('Failed to update approval status');
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to update approval status');
       }
 
-      const updatedApproval = await response.json();
-      setApproals(prev => 
-        prev.map(a => a.id === updatedApproval.id ? updatedApproval : a)
-      );
+      const result = await response.json();
+      
+      // Refresh approvals
+      const approvalsResponse = await fetch(`/api/events/${eventId}/approvals`);
+      const updatedApprovals = await approvalsResponse.json();
+      setApprovals(updatedApprovals);
+      
+      // Clear comment for this admin
+      setComments(prev => ({ ...prev, [adminEmail]: '' }));
       
       toast({
         title: 'Success',
-        description: 'Approval status updated successfully',
+        description: `Approval ${status === 'approved' ? 'granted' : 'rejected'} successfully. ${result.message}`,
       });
     } catch (err) {
       console.error('Error updating approval:', err);
       toast({
         title: 'Error',
-        description: 'Failed to update approval status',
+        description: err.message || 'Failed to update approval status',
         variant: 'destructive',
       });
     } finally {
@@ -85,14 +92,14 @@ export const EventApprovalTracker = ({ eventId, showActions = true }) => {
     switch (status?.toLowerCase()) {
       case 'approved':
         return (
-          <Badge className="bg-green-100 text-green-800">
+          <Badge className="bg-green-500/20 text-green-400 border-green-500/30">
             <CheckCircle className="w-4 h-4 mr-1" />
             Approved
           </Badge>
         );
       case 'rejected':
         return (
-          <Badge className="bg-red-100 text-red-800">
+          <Badge className="bg-red-500/20 text-red-400 border-red-500/30">
             <XCircle className="w-4 h-4 mr-1" />
             Rejected
           </Badge>
@@ -100,7 +107,7 @@ export const EventApprovalTracker = ({ eventId, showActions = true }) => {
       case 'pending':
       default:
         return (
-          <Badge variant="outline">
+          <Badge className="bg-yellow-500/20 text-yellow-400 border-yellow-500/30">
             <Clock className="w-4 h-4 mr-1" />
             Pending
           </Badge>
@@ -108,11 +115,15 @@ export const EventApprovalTracker = ({ eventId, showActions = true }) => {
     }
   };
 
+  const canUserApprove = (adminEmail) => {
+    return user?.email === adminEmail && showActions;
+  };
+
   if (loading) {
     return (
-      <Card>
+      <Card className="bg-white/5 border-white/10">
         <CardHeader>
-          <CardTitle>Loading approvals...</CardTitle>
+          <CardTitle className="text-white">Loading approvals...</CardTitle>
         </CardHeader>
       </Card>
     );
@@ -120,75 +131,90 @@ export const EventApprovalTracker = ({ eventId, showActions = true }) => {
 
   if (error) {
     return (
-      <Card>
+      <Card className="bg-white/5 border-white/10">
         <CardHeader>
-          <CardTitle>Error loading approvals</CardTitle>
+          <CardTitle className="text-white">Error loading approvals</CardTitle>
         </CardHeader>
         <CardContent>
-          <p className="text-red-500">{error}</p>
+          <p className="text-red-400">{error}</p>
         </CardContent>
       </Card>
     );
   }
 
   return (
-    <Card>
+    <Card className="bg-white/5 border-white/10">
       <CardHeader>
-        <CardTitle>Approval Status</CardTitle>
+        <CardTitle className="text-white flex items-center gap-2">
+          <Shield className="h-5 w-5 text-cyan-400" />
+          Approval Status
+        </CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
         {approvals.length === 0 ? (
-          <p className="text-muted-foreground">No approvals found for this event.</p>
+          <p className="text-white/70">No approvals found for this event.</p>
         ) : (
           approvals.map((approval) => (
-            <div key={approval.id} className="border rounded-lg p-4">
-              <div className="flex justify-between items-start">
-                <div>
-                  <h4 className="font-medium">{approval.approverName || 'Approver'}</h4>
-                  <p className="text-sm text-muted-foreground">
-                    {approval.role || 'Reviewer'}
-                  </p>
+            <div key={approval.id} className="border border-white/10 rounded-lg p-4 bg-white/5">
+              <div className="flex justify-between items-start mb-3">
+                <div className="flex items-center gap-2">
+                  <User className="h-4 w-4 text-cyan-400" />
+                  <div>
+                    <h4 className="font-medium text-white">{approval.admin_name || 'Admin'}</h4>
+                    <p className="text-sm text-white/70 capitalize">
+                      {approval.admin_role?.replace('_', ' ') || 'Reviewer'} (Order: {approval.approval_order})
+                    </p>
+                  </div>
                 </div>
                 {getStatusBadge(approval.status)}
               </div>
               
-              {approval.comment && (
-                <div className="mt-2 text-sm text-muted-foreground flex items-start">
-                  <MessageSquare className="w-4 h-4 mr-2 mt-0.5 flex-shrink-0" />
-                  <p>{approval.comment}</p>
+              {approval.comments && (
+                <div className="mb-3 text-sm text-white/70 flex items-start">
+                  <MessageSquare className="w-4 h-4 mr-2 mt-0.5 flex-shrink-0 text-blue-400" />
+                  <p className="bg-white/5 rounded p-2 border border-white/10">{approval.comments}</p>
                 </div>
               )}
 
-              {showActions && approval.status === 'pending' && (
-                <div className="mt-3 space-y-2">
+              {canUserApprove(approval.admin_email) && approval.status === 'pending' && (
+                <div className="space-y-3 pt-3 border-t border-white/10">
                   <Textarea
                     placeholder="Add a comment (optional)"
-                    value={comments[approval.id] || ''}
+                    value={comments[approval.admin_email] || ''}
                     onChange={(e) =>
                       setComments(prev => ({
                         ...prev,
-                        [approval.id]: e.target.value
+                        [approval.admin_email]: e.target.value
                       }))
                     }
-                    className="text-sm"
+                    className="text-sm bg-white/5 border-white/20 text-white placeholder:text-white/50"
                   />
                   <div className="flex space-x-2">
                     <Button
                       variant="outline"
                       size="sm"
-                      onClick={() => handleApprove(approval.id, 'rejected', comments[approval.id])}
-                      disabled={approving === approval.id}
+                      onClick={() => handleApprove(approval.admin_email, 'rejected', comments[approval.admin_email])}
+                      disabled={approving === approval.admin_email}
+                      className="bg-red-500/20 border-red-500/30 text-red-400 hover:bg-red-500/30"
                     >
-                      {approving === approval.id ? 'Processing...' : 'Reject'}
+                      {approving === approval.admin_email ? 'Processing...' : 'Reject'}
                     </Button>
                     <Button
                       size="sm"
-                      onClick={() => handleApprove(approval.id, 'approved', comments[approval.id])}
-                      disabled={approving === approval.id}
+                      onClick={() => handleApprove(approval.admin_email, 'approved', comments[approval.admin_email])}
+                      disabled={approving === approval.admin_email}
+                      className="bg-green-500/20 border-green-500/30 text-green-400 hover:bg-green-500/30"
                     >
-                      {approving === approval.id ? 'Processing...' : 'Approve'}
+                      {approving === approval.admin_email ? 'Processing...' : 'Approve'}
                     </Button>
                   </div>
+                </div>
+              )}
+
+              {approval.approved_at && (
+                <div className="text-xs text-white/50 mt-2">
+                  {approval.status === 'approved' ? 'Approved' : 'Updated'} on{' '}
+                  {new Date(approval.approved_at).toLocaleDateString()}
                 </div>
               )}
             </div>

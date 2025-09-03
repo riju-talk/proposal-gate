@@ -16,7 +16,6 @@ export const useEventApprovals = (eventId) => {
       }
       const data = await response.json();
       
-      // Ensure we have the expected data structure
       if (!Array.isArray(data)) {
         console.error('Unexpected response format for admins:', data);
         return [];
@@ -45,16 +44,15 @@ export const useEventApprovals = (eventId) => {
       
       const data = await response.json();
       
-      // Ensure we have an array of approvals
       if (!Array.isArray(data)) {
         console.error('Unexpected response format for approvals:', data);
         return;
       }
       
-      // Sort approvals by approval_order if available
+      // Sort approvals by approval_order
       const sortedApprovals = data.sort((a, b) => {
-        const orderA = a.approval_order || (a.authorized_admins?.approval_order) || 0;
-        const orderB = b.approval_order || (b.authorized_admins?.approval_order) || 0;
+        const orderA = a.approval_order || 0;
+        const orderB = b.approval_order || 0;
         return orderA - orderB;
       });
       
@@ -72,10 +70,17 @@ export const useEventApprovals = (eventId) => {
     comments = ''
   ) => {
     try {
+      const token = localStorage.getItem('admin_token');
+      
+      if (!token) {
+        throw new Error('Not authenticated');
+      }
+
       const response = await fetch(`/api/events/${eventId}/approve`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
         },
         body: JSON.stringify({
           adminEmail,
@@ -86,12 +91,14 @@ export const useEventApprovals = (eventId) => {
 
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.message || 'Failed to update approval status');
+        throw new Error(errorData.error || 'Failed to update approval status');
       }
 
+      const result = await response.json();
+      
       // Refresh approvals after successful update
       await fetchApprovals(eventId);
-      return { success: true };
+      return { success: true, result };
     } catch (err) {
       console.error('Error updating approval status:', err);
       return { 
@@ -107,23 +114,12 @@ export const useEventApprovals = (eventId) => {
     // Check if the current user is the admin trying to approve
     if (user.email !== adminEmail) return false;
 
-    // Get the admin's approval order
-    const admin = authorizedAdmins.find(aa => aa.email === adminEmail);
-    if (!admin) return false;
-
-    // If it's the first admin, they can always approve
-    if (admin.approval_order === 1) return true;
-
-    // For other admins, check if all previous admins have approved
-    const previousAdmins = authorizedAdmins.filter(
-      a => a.approval_order < admin.approval_order
-    );
-
-    return previousAdmins.every(prevAdmin => {
-      const approval = approvals.find(a => a.admin_email === prevAdmin.email);
-      return approval?.status === 'approved';
-    });
-  }, [user, eventId, authorizedAdmins, approvals]);
+    // Get the admin's approval record
+    const approval = approvals.find(a => a.admin_email === adminEmail);
+    
+    // Can approve if status is still pending
+    return approval?.status === 'pending';
+  }, [user, eventId, approvals]);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -155,4 +151,3 @@ export const useEventApprovals = (eventId) => {
     canApprove,
   };
 };
-       

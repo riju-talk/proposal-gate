@@ -5,11 +5,11 @@ import { ProposalDetailsModal } from "@/components/ProposalDetailsModal";
 import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/hooks/use-toast";
-import { Calendar, Search, Sparkles } from "lucide-react";
+import { Calendar, Search, Sparkles, CheckCircle, Clock, XCircle } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 export const EventsView = ({ searchTerm, statusFilter, userRole }) => {
-  const { proposals, isLoading, updateProposalStatus } = useEventProposals(statusFilter, userRole);
+  const { proposals, isLoading, updateProposalStatus, error } = useEventProposals(statusFilter, userRole);
   const [selectedProposal, setSelectedProposal] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [activeStatusTab, setActiveStatusTab] = useState("pending");
@@ -25,10 +25,10 @@ export const EventsView = ({ searchTerm, statusFilter, userRole }) => {
       if (!proposal) return false;
       
       const searchLower = searchTerm.toLowerCase();
-      const eventName = proposal.event_name?.toLowerCase() || '';
-      const organizerName = proposal.organizer_name?.toLowerCase() || '';
-      const description = proposal.description?.toLowerCase() || '';
-      const venue = proposal.venue?.toLowerCase() || '';
+      const eventName = (proposal.event_name || proposal.eventName || '').toLowerCase();
+      const organizerName = (proposal.organizer_name || proposal.organizerName || '').toLowerCase();
+      const description = (proposal.description || '').toLowerCase();
+      const venue = (proposal.venue || '').toLowerCase();
       
       // Filter by search term
       const matchesSearch = 
@@ -41,8 +41,8 @@ export const EventsView = ({ searchTerm, statusFilter, userRole }) => {
       if (userRole === 'admin') {
         const matchesStatusTab = 
           (activeStatusTab === 'pending' && proposal.status === 'pending') ||
-          (activeStatusTab === 'under_consideration' && proposal.status === 'under_consideration') ||
-          (activeStatusTab === 'past' && (proposal.status === 'approved' || proposal.status === 'rejected'));
+          (activeStatusTab === 'approved' && proposal.status === 'approved') ||
+          (activeStatusTab === 'rejected' && proposal.status === 'rejected');
         
         return matchesSearch && matchesStatusTab;
       }
@@ -65,13 +65,13 @@ export const EventsView = ({ searchTerm, statusFilter, userRole }) => {
       setIsModalOpen(false);
       toast({
         title: 'Success',
-        description: 'Event status updated successfully',
+        description: 'Event approval updated successfully',
       });
     } catch (error) {
       console.error('Error updating proposal status:', error);
       toast({
         title: 'Error',
-        description: 'Failed to update event status. Please try again.',
+        description: 'Failed to update event approval. Please try again.',
         variant: 'destructive',
       });
     }
@@ -91,6 +91,18 @@ export const EventsView = ({ searchTerm, statusFilter, userRole }) => {
             </CardContent>
           </Card>
         ))}
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="flex flex-col items-center justify-center py-12 text-center">
+        <div className="bg-red-500/20 backdrop-blur-sm rounded-full p-6 mb-4 border border-red-500/30">
+          <XCircle className="h-12 w-12 text-red-400" />
+        </div>
+        <h3 className="text-xl font-medium mb-2 text-white">Error Loading Events</h3>
+        <p className="text-white/70 text-sm max-w-md">{error}</p>
       </div>
     );
   }
@@ -119,22 +131,22 @@ export const EventsView = ({ searchTerm, statusFilter, userRole }) => {
               value="pending" 
               className="data-[state=active]:bg-yellow-500/20 data-[state=active]:text-yellow-400 data-[state=active]:border-yellow-400/30"
             >
-              <Calendar className="h-4 w-4 mr-2" />
+              <Clock className="h-4 w-4 mr-2" />
               Pending Approval
             </TabsTrigger>
             <TabsTrigger 
-              value="under_consideration" 
-              className="data-[state=active]:bg-blue-500/20 data-[state=active]:text-blue-400 data-[state=active]:border-blue-400/30"
+              value="approved" 
+              className="data-[state=active]:bg-green-500/20 data-[state=active]:text-green-400 data-[state=active]:border-green-400/30"
             >
-              <Sparkles className="h-4 w-4 mr-2" />
-              Under Review
+              <CheckCircle className="h-4 w-4 mr-2" />
+              Approved
             </TabsTrigger>
             <TabsTrigger 
-              value="past" 
-              className="data-[state=active]:bg-purple-500/20 data-[state=active]:text-purple-400 data-[state=active]:border-purple-400/30"
+              value="rejected" 
+              className="data-[state=active]:bg-red-500/20 data-[state=active]:text-red-400 data-[state=active]:border-red-400/30"
             >
-              <Calendar className="h-4 w-4 mr-2" />
-              Past Events
+              <XCircle className="h-4 w-4 mr-2" />
+              Rejected
             </TabsTrigger>
           </TabsList>
 
@@ -160,6 +172,7 @@ export const EventsView = ({ searchTerm, statusFilter, userRole }) => {
             proposal={selectedProposal}
             showActions={userRole === 'admin'}
             onStatusUpdate={handleStatusUpdate}
+            userRole={userRole}
           />
         )}
       </>
@@ -188,6 +201,7 @@ export const EventsView = ({ searchTerm, statusFilter, userRole }) => {
           proposal={selectedProposal}
           showActions={false}
           onStatusUpdate={handleStatusUpdate}
+          userRole={userRole}
         />
       )}
     </>
