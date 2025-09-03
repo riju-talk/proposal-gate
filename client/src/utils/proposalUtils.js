@@ -1,4 +1,4 @@
-import { EventProposal } from "@/hooks/useEventProposals";
+import { useEventProposals } from "@/hooks/useEventProposals";
 
 export const normalizeProposal = (data) => {
   // Create a new object with all the data

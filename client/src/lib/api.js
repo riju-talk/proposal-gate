@@ -24,14 +24,6 @@ class ApiClient {
     }
   }
 
-  // Authentication methods
-  async register(email, username, fullName, role) {
-    return this.request('/auth/register', {
-      method: 'POST',
-      body: JSON.stringify({ email, username, fullName, role }),
-    });
-  }
-
   async sendOTP(email) {
     return this.request('/auth/send-otp', {
       method: 'POST',
