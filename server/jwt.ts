@@ -50,20 +50,3 @@ export const clearAuthCookie = (res: Response) => {
     path: '/',
   });
 };
-
-export const authenticateJWT = (req: Request, res: Response, next: NextFunction) => {
-  const token = req.cookies.auth_token;
-  
-  if (!token) {
-    return res.status(401).json({ error: 'No authentication token provided' });
-  }
-  
-  const decoded = verifyJWT(token);
-  if (!decoded) {
-    clearAuthCookie(res);
-    return res.status(401).json({ error: 'Invalid or expired token' });
-  }
-  
-  req.user = decoded;
-  next();
-};

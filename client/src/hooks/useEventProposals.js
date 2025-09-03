@@ -10,9 +10,24 @@ export const useEventProposals = (statusFilter, userRole = 'public') => {
       try {
         let endpoint = '/api/event-proposals/public'; // Default for public users
 
+        // Determine endpoint based on user role
+        if (userRole === 'admin') {
+          endpoint = '/api/event-proposals';
+        } else if (userRole === 'coordinator') {
+          endpoint = '/api/event-proposals/coordinator';
+        }
+
         const headers = {
           'Content-Type': 'application/json',
         };
+
+        // Add auth headers for admin requests
+        if (userRole === 'admin') {
+          const token = localStorage.getItem('admin_token');
+          if (token) {
+            headers['Authorization'] = `Bearer ${token}`;
+          }
+        }
 
         const response = await fetch(endpoint, { headers });
         
@@ -21,7 +36,7 @@ export const useEventProposals = (statusFilter, userRole = 'public') => {
         }
 
         const data = await response.json();
-        const proposalsData = Array.isArray(data.body) ? data.body : [];
+        const proposalsData = Array.isArray(data) ? data : (Array.isArray(data.body) ? data.body : []);
         const normalizedProposals = normalizeProposals(proposalsData);
         setProposals(normalizedProposals);
       } catch (error) {

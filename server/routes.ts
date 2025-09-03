@@ -5,18 +5,10 @@ import { insertEventProposalSchema } from "@shared/schema";
 import { sendOTP, verifyOTP } from "./auth";
 import { securityMiddleware, otpRateLimit, verifyRateLimit, requireAdmin } from "./middleware";
 import { generateJWT, setAuthCookie, clearAuthCookie } from "./jwt";
-import adminRoutes from "./routes/admin.routes";
-import publicRoutes from "./routes/public.routes";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Apply security middleware
   app.use(securityMiddleware);
-
-  // Register public routes (no authentication required)
-  app.use('/api', publicRoutes);
-  
-  // Register admin routes (requires authentication)
-  app.use('/api', adminRoutes);
 
   // Authentication routes
   app.post("/api/auth/send-otp", otpRateLimit, async (req: Request, res: Response) => {
@@ -30,7 +22,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const result = await sendOTP(email);
       
       if (result.success) {
-        res.json({ message: "OTP sent successfully" });
+        res.json({ success: true, message: "OTP sent successfully" });
       } else {
         res.status(400).json({ error: result.error });
       }
@@ -51,13 +43,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const result = await verifyOTP(email, otp);
       
       if (result.success && result.admin) {
-        // Generate JWT token and set HTTP-only cookie
+        // Generate JWT token
         const token = generateJWT(result.admin);
-        setAuthCookie(res, token);
         
         res.json({ 
           success: true,
-          admin: result.admin
+          admin: result.admin,
+          token: token
         });
       } else {
         res.status(400).json({ error: result.error });
@@ -72,8 +64,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/event-proposals/public", async (req: Request, res: Response) => {
     try {
       const proposals = await storage.getAllEventProposals();
-      console.log(proposals);
-      res.json({body: proposals});
+      // Only return approved proposals for public view
+      const publicProposals = proposals.filter(p => p.status === 'approved');
+      res.json(publicProposals);
     } catch (error) {
       console.error("Get public event proposals error:", error);
       res.status(500).json({ error: "Internal server error" });
@@ -103,6 +96,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json(coordinatorProposals);
     } catch (error) {
       console.error("Get coordinator event proposals error:", error);
+      res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
+  app.get("/api/club-formation-requests/coordinator", async (req: Request, res: Response) => {
+    try {
+      const requests = await storage.getAllClubFormationRequests();
+      // Coordinators can see pending and approved requests
+      const coordinatorRequests = requests.filter(r => 
+        r.status === 'pending' || r.status === 'approved'
+      );
+      res.json(coordinatorRequests);
+    } catch (error) {
+      console.error("Get coordinator club requests error:", error);
       res.status(500).json({ error: "Internal server error" });
     }
   });
@@ -159,7 +166,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.patch("/api/event-proposals/:id/status", requireAdmin, async (req: Request, res: Response) => {
     try {
-      const { status } = req.body;
+      const { status, comments } = req.body;
       const adminEmail = req.user?.email;
       
       // Validate status
@@ -179,61 +186,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (adminApproval) {
         await storage.updateEventApproval(adminApproval.id, {
           status,
-          approvedAt: status === "approved" ? new Date(new Date().toISOString()) : null,
-          comments: req.body.comments || null,
+          approvedAt: status === "approved" ? new Date() : null,
+          comments: comments || null,
         });
       }
 
       res.json(proposal);
     } catch (error) {
       console.error("Update event proposal status error:", error);
-      res.status(500).json({ error: "Internal server error" });
-    }
-  });
-
-  // Event approval routes
-  app.get("/api/event-proposals/:id/approvals", async (req: Request, res: Response) => {
-    try {
-      const approvals = await storage.getEventApprovals(req.params.id);
-      res.json(approvals);
-    } catch (error) {
-      console.error("Get event approvals error:", error);
-      res.status(500).json({ error: "Internal server error" });
-    }
-  });
-
-  app.patch("/api/event-approvals/:eventId/:adminEmail", requireAdmin, async (req: Request, res: Response) => {
-    try {
-      const { status, comments } = req.body;
-      const { eventId, adminEmail } = req.params;
-      const requestingAdminEmail = req.user?.email;
-      
-      // Ensure admin can only update their own approval
-      if (requestingAdminEmail !== decodeURIComponent(adminEmail)) {
-        return res.status(403).json({ error: "Can only update your own approval" });
-      }
-      
-      // Validate status
-      if (!['approved', 'rejected', 'under_consideration'].includes(status)) {
-        return res.status(400).json({ error: "Invalid status" });
-      }
-      
-      const approvals = await storage.getEventApprovals(eventId);
-      const approval = approvals.find(a => a.adminEmail === decodeURIComponent(adminEmail));
-      
-      if (!approval) {
-        return res.status(404).json({ error: "Event approval not found" });
-      }
-      
-      const updatedApproval = await storage.updateEventApproval(approval.id, {
-        status,
-        comments,
-        approvedAt: status === "approved" ? new Date(new Date().toISOString()) : null,
-      });
-      
-      res.json(updatedApproval);
-    } catch (error) {
-      console.error("Update event approval error:", error);
       res.status(500).json({ error: "Internal server error" });
     }
   });
@@ -249,7 +209,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get("/api/club-formation-requests", async (req: Request, res: Response) => {
+  app.get("/api/club-formation-requests", requireAdmin, async (req: Request, res: Response) => {
     try {
       const requests = await storage.getAllClubFormationRequests();
       res.json(requests);
@@ -269,7 +229,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.patch("/api/club-formation-requests/:id", requireAdmin, async (req: Request, res: Response) => {
+  app.patch("/api/club-formation-requests/:id/status", requireAdmin, async (req: Request, res: Response) => {
     try {
       const { status, comments } = req.body;
       const { id } = req.params;
@@ -279,9 +239,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: "Invalid status" });
       }
       
-      // Update club formation request status
-      // Note: You'll need to implement this in storage.ts
-      res.json({ success: true, id, status });
+      const updatedRequest = await storage.updateClubFormationRequestStatus(id, status);
+      res.json(updatedRequest);
     } catch (error) {
       console.error("Update club formation request error:", error);
       res.status(500).json({ error: "Internal server error" });
@@ -301,68 +260,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Event approval routes
+  app.get("/api/event-proposals/:id/approvals", async (req: Request, res: Response) => {
+    try {
+      const approvals = await storage.getEventApprovals(req.params.id);
+      res.json(approvals);
+    } catch (error) {
+      console.error("Get event approvals error:", error);
+      res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
   // Logout endpoint
   app.post("/api/auth/logout", (req: Request, res: Response) => {
     clearAuthCookie(res);
     res.json({ success: true, message: "Logged out successfully" });
-  });
-
-  // Profile routes
-  app.get("/api/profiles/:id", async (req: Request, res: Response) => {
-    try {
-      const profile = await storage.getProfile(req.params.id);
-      if (!profile) {
-        return res.status(404).json({ error: "Profile not found" });
-      }
-      res.json(profile);
-    } catch (error) {
-      console.error("Get profile error:", error);
-      res.status(500).json({ error: "Internal server error" });
-    }
-  });
-
-  // Student representatives routes
-  app.get("/api/student-representatives", async (req: Request, res: Response) => {
-    try {
-      const representatives = await storage.getAllStudentRepresentatives();
-      res.json(representatives);
-    } catch (error) {
-      console.error("Get student representatives error:", error);
-      res.status(500).json({ error: "Internal server error" });
-    }
-  });
-
-  // Important contacts routes
-  app.get("/api/important-contacts", async (req: Request, res: Response) => {
-    try {
-      const contacts = await storage.getAllImportantContacts();
-      res.json(contacts);
-    } catch (error) {
-      console.error("Get important contacts error:", error);
-      res.status(500).json({ error: "Internal server error" });
-    }
-  });
-
-  // Hostel info routes
-  app.get("/api/hostel-info", async (req: Request, res: Response) => {
-    try {
-      const hostelInfo = await storage.getAllHostelInfo();
-      res.json(hostelInfo);
-    } catch (error) {
-      console.error("Get hostel info error:", error);
-      res.status(500).json({ error: "Internal server error" });
-    }
-  });
-
-  // Mess hostel committee routes
-  app.get("/api/mess-hostel-committee", async (req: Request, res: Response) => {
-    try {
-      const committee = await storage.getAllMessHostelCommittee();
-      res.json(committee);
-    } catch (error) {
-      console.error("Get mess hostel committee error:", error);
-      res.status(500).json({ error: "Internal server error" });
-    }
   });
 
   // Health check endpoint

@@ -2,8 +2,7 @@ import { Request, Response, NextFunction } from 'express';
 import rateLimit from 'express-rate-limit';
 import helmet from 'helmet';
 import cors from 'cors';
-import { storage } from './storage';
-import { authenticateJWT } from './jwt';
+import { verifyJWT } from './jwt';
 
 // Rate limiting for OTP requests
 export const otpRateLimit = rateLimit({
@@ -30,22 +29,44 @@ export const securityMiddleware = [
       directives: {
         defaultSrc: ["'self'"],
         styleSrc: ["'self'", "'unsafe-inline'"],
-        scriptSrc: ["'self'"],
+        scriptSrc: ["'self'", "'unsafe-inline'"],
         imgSrc: ["'self'", "data:", "https:"],
         connectSrc: ["'self'"],
+        fontSrc: ["'self'", "https:", "data:"],
       },
     },
   }),
   cors({
     origin: process.env.NODE_ENV === 'production' 
       ? ['https://your-domain.com'] 
-      : ['http://localhost:5000', 'http://localhost:8080'],
+      : ['http://localhost:5000', 'http://localhost:8080', 'http://localhost:3000'],
     credentials: true,
   }),
 ];
 
 // Admin authentication middleware using JWT
-export const requireAdmin = authenticateJWT;
+export const requireAdmin = (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const authHeader = req.headers.authorization;
+    
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return res.status(401).json({ error: 'No authentication token provided' });
+    }
+    
+    const token = authHeader.split(' ')[1];
+    const decoded = verifyJWT(token);
+    
+    if (!decoded) {
+      return res.status(401).json({ error: 'Invalid or expired token' });
+    }
+    
+    req.user = decoded;
+    next();
+  } catch (error) {
+    console.error('Authentication error:', error);
+    res.status(401).json({ error: 'Authentication failed' });
+  }
+};
 
 // Extend Request type
 declare global {

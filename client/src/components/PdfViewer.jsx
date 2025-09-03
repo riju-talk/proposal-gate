@@ -1,66 +1,29 @@
 import { useState, useRef, useEffect } from 'react';
-import { Document, Page, pdfjs } from 'react-pdf';
 import { Button } from '@/components/ui/button';
-import { ZoomIn, ZoomOut, Download, Loader2 } from 'lucide-react';
+import { ZoomIn, ZoomOut, Download, Loader2, ExternalLink } from 'lucide-react';
 
-// Configure PDF.js worker
-pdfjs.GlobalWorkerOptions.workerSrc = `//unpkg.com/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.js`;
-
-export const PdfViewer = ({ file, className = '' }) => {
-  const [numPages, setNumPages] = useState(null);
-  const [pageNumber, setPageNumber] = useState(1);
-  const [scale, setScale] = useState(1.0);
+export const PdfViewer = ({ url, className = '' }) => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const containerRef = useRef(null);
-  const [containerWidth, setContainerWidth] = useState(0);
+  const iframeRef = useRef(null);
 
-  // Update container width on resize
   useEffect(() => {
-    const updateWidth = () => {
-      if (containerRef.current) {
-        setContainerWidth(containerRef.current.offsetWidth);
-      }
-    };
+    if (url) {
+      setLoading(false);
+    }
+  }, [url]);
 
-    updateWidth();
-    window.addEventListener('resize', updateWidth);
-    return () => window.removeEventListener('resize', updateWidth);
-  }, []);
-
-  const onDocumentLoadSuccess = ({ numPages }) => {
-    setNumPages(numPages);
-    setLoading(false);
-    setError(null);
-  };
-
-  const onDocumentLoadError = (error) => {
-    console.error('Error loading PDF:', error);
-    setError('Failed to load PDF. Please try again.');
-    setLoading(false);
-  };
-
-  const goToPrevPage = () => {
-    setPageNumber(prevPage => Math.max(prevPage - 1, 1));
-  };
-
-  const goToNextPage = () => {
-    setPageNumber(prevPage => Math.min(prevPage + 1, numPages));
-  };
-
-  const zoomIn = () => {
-    setScale(prevScale => Math.min(prevScale + 0.25, 2.5));
-  };
-
-  const zoomOut = () => {
-    setScale(prevScale => Math.max(prevScale - 0.25, 0.5));
+  const openInNewTab = () => {
+    if (url) {
+      window.open(url, '_blank');
+    }
   };
 
   const downloadPdf = () => {
-    if (!file) return;
+    if (!url) return;
     
     const link = document.createElement('a');
-    link.href = typeof file === 'string' ? file : URL.createObjectURL(file);
+    link.href = url;
     link.download = 'document.pdf';
     link.target = '_blank';
     document.body.appendChild(link);
@@ -68,49 +31,49 @@ export const PdfViewer = ({ file, className = '' }) => {
     document.body.removeChild(link);
   };
 
-  if (!file) {
+  if (!url) {
     return (
-      <div className={`flex items-center justify-center border rounded-md p-8 bg-muted/50 ${className}`}>
-        <p className="text-muted-foreground">No PDF file provided</p>
+      <div className={`flex items-center justify-center border rounded-md p-8 bg-white/5 border-white/20 ${className}`}>
+        <p className="text-white/70">No PDF file provided</p>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className={`flex flex-col items-center justify-center border rounded-md p-8 bg-white/5 border-white/20 ${className}`}>
+        <p className="text-red-400 mb-4">Failed to load PDF</p>
+        <Button onClick={openInNewTab} variant="outline" className="bg-white/5 border-white/20 text-white">
+          <ExternalLink className="h-4 w-4 mr-2" />
+          Open in New Tab
+        </Button>
       </div>
     );
   }
 
   return (
-    <div 
-      ref={containerRef}
-      className={`border rounded-md overflow-hidden bg-background ${className}`}
-    >
-      <div className="border-b p-2 flex items-center justify-between bg-muted/50">
+    <div className={`border rounded-md overflow-hidden bg-white/5 border-white/20 ${className}`}>
+      <div className="border-b border-white/20 p-2 flex items-center justify-between bg-white/5">
         <div className="flex items-center space-x-2">
-          <Button 
-            variant="ghost" 
-            size="sm" 
-            onClick={zoomOut}
-            disabled={scale <= 0.5}
-            title="Zoom Out"
-          >
-            <ZoomOut className="h-4 w-4" />
-          </Button>
-          <span className="text-sm text-muted-foreground">
-            {Math.round(scale * 100)}%
-          </span>
-          <Button 
-            variant="ghost" 
-            size="sm" 
-            onClick={zoomIn}
-            disabled={scale >= 2.5}
-            title="Zoom In"
-          >
-            <ZoomIn className="h-4 w-4" />
-          </Button>
+          <span className="text-sm text-white/70">PDF Document</span>
         </div>
 
         <div className="flex items-center space-x-2">
           <Button 
             variant="ghost" 
             size="sm" 
+            onClick={openInNewTab}
+            className="text-white/70 hover:bg-white/10"
+            title="Open in New Tab"
+          >
+            <ExternalLink className="h-4 w-4 mr-1" />
+            <span>Open</span>
+          </Button>
+          <Button 
+            variant="ghost" 
+            size="sm" 
             onClick={downloadPdf}
+            className="text-white/70 hover:bg-white/10"
             title="Download PDF"
           >
             <Download className="h-4 w-4 mr-1" />
@@ -119,66 +82,26 @@ export const PdfViewer = ({ file, className = '' }) => {
         </div>
       </div>
 
-      <div className="overflow-auto p-4 flex flex-col items-center">
+      <div className="relative" style={{ height: '500px' }}>
         {loading && (
-          <div className="flex flex-col items-center justify-center p-8">
-            <Loader2 className="h-8 w-8 animate-spin text-muted-foreground mb-2" />
-            <p className="text-sm text-muted-foreground">Loading PDF...</p>
+          <div className="absolute inset-0 flex flex-col items-center justify-center">
+            <Loader2 className="h-8 w-8 animate-spin text-cyan-400 mb-2" />
+            <p className="text-sm text-white/70">Loading PDF...</p>
           </div>
         )}
 
-        {error && (
-          <div className="text-center p-8 text-destructive">
-            <p>{error}</p>
-          </div>
-        )}
-
-        <div style={{ transform: `scale(${scale})`, transformOrigin: 'top center' }}>
-          <Document
-            file={file}
-            onLoadSuccess={onDocumentLoadSuccess}
-            onLoadError={onDocumentLoadError}
-            loading={
-              <div className="flex items-center justify-center p-8">
-                <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-              </div>
-            }
-          >
-            <Page 
-              pageNumber={pageNumber} 
-              width={containerWidth ? Math.min(containerWidth - 64, 800) : 600}
-              renderTextLayer={false}
-              renderAnnotationLayer={false}
-            />
-          </Document>
-        </div>
+        <iframe
+          ref={iframeRef}
+          src={url}
+          className="w-full h-full"
+          title="PDF Document"
+          onLoad={() => setLoading(false)}
+          onError={() => {
+            setLoading(false);
+            setError('Failed to load PDF');
+          }}
+        />
       </div>
-
-      {numPages > 1 && (
-        <div className="border-t p-2 flex items-center justify-between bg-muted/50">
-          <div className="text-sm text-muted-foreground">
-            Page {pageNumber} of {numPages}
-          </div>
-          <div className="flex space-x-2">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={goToPrevPage}
-              disabled={pageNumber <= 1}
-            >
-              Previous
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={goToNextPage}
-              disabled={pageNumber >= numPages}
-            >
-              Next
-            </Button>
-          </div>
-        </div>
-      )}
     </div>
   );
 };

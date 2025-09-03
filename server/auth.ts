@@ -16,12 +16,25 @@ const otpSessions = new Map<string, OTPSession>();
 
 // Email transporter configuration
 const createTransporter = () => {
-  // Using Gmail SMTP (free tier)
-  return nodemailer.createTransport({
+  if (process.env.NODE_ENV === 'development' || !process.env.SMTP_USER) {
+    // For development, create a test transporter
+    return nodemailer.createTransporter({
+      host: 'smtp.ethereal.email',
+      port: 587,
+      secure: false,
+      auth: {
+        user: 'ethereal.user@ethereal.email',
+        pass: 'ethereal.pass'
+      }
+    });
+  }
+
+  // Production Gmail SMTP
+  return nodemailer.createTransporter({
     service: 'gmail',
     auth: {
-      user: process.env.SMTP_USER || 'your-email@gmail.com',
-      pass: process.env.SMTP_PASS || 'your-app-password'
+      user: process.env.SMTP_USER,
+      pass: process.env.SMTP_PASS
     }
   });
 };
@@ -50,38 +63,44 @@ export const sendOTP = async (email: string): Promise<{ success: boolean; error?
       attempts: 0
     });
 
-    // Send email
+    // In development, just log OTP to console
+    if (process.env.NODE_ENV === 'development' || !process.env.SMTP_USER) {
+      console.log(`🔐 OTP for ${email}: ${otp} (expires in 10 minutes)`);
+      return { success: true };
+    }
+
+    // Send email in production
     const transporter = createTransporter();
     const mailOptions = {
       from: process.env.SMTP_USER || 'noreply@studentcouncil.edu',
       to: email,
       subject: 'IIIT Delhi Student Council - Login OTP',
       html: `
-        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; background: linear-gradient(135deg, #1e293b, #334155); border-radius: 12px;">
           <div style="text-align: center; margin-bottom: 30px;">
-            <h1 style="color: #1e40af; margin-bottom: 10px;">IIIT Delhi Student Council</h1>
-            <p style="color: #6b7280; font-size: 16px;">Admin Portal Access</p>
+            <h1 style="color: #06b6d4; margin-bottom: 10px; font-size: 28px;">IIIT Delhi Student Council</h1>
+            <p style="color: #94a3b8; font-size: 16px;">Admin Portal Access</p>
           </div>
           
-          <div style="background: linear-gradient(135deg, #3b82f6, #1e40af); padding: 30px; border-radius: 12px; text-align: center; margin-bottom: 20px;">
-            <h2 style="color: white; margin-bottom: 15px;">Your Login Code</h2>
-            <div style="background: white; padding: 20px; border-radius: 8px; display: inline-block;">
-              <span style="font-size: 32px; font-weight: bold; color: #1e40af; letter-spacing: 4px;">${otp}</span>
+          <div style="background: linear-gradient(135deg, #06b6d4, #8b5cf6); padding: 30px; border-radius: 12px; text-align: center; margin-bottom: 20px;">
+            <h2 style="color: white; margin-bottom: 15px; font-size: 24px;">Your Login Code</h2>
+            <div style="background: white; padding: 20px; border-radius: 8px; display: inline-block; box-shadow: 0 10px 25px rgba(0,0,0,0.2);">
+              <span style="font-size: 32px; font-weight: bold; color: #1e293b; letter-spacing: 4px;">${otp}</span>
             </div>
-            <p style="color: #e5e7eb; margin-top: 15px; font-size: 14px;">This code expires in 10 minutes</p>
+            <p style="color: #e2e8f0; margin-top: 15px; font-size: 14px;">This code expires in 10 minutes</p>
           </div>
           
-          <div style="background: #f9fafb; padding: 20px; border-radius: 8px; border-left: 4px solid #3b82f6;">
-            <h3 style="color: #374151; margin-bottom: 10px;">Security Notice</h3>
-            <ul style="color: #6b7280; margin: 0; padding-left: 20px;">
+          <div style="background: rgba(255,255,255,0.05); padding: 20px; border-radius: 8px; border-left: 4px solid #06b6d4;">
+            <h3 style="color: #f1f5f9; margin-bottom: 10px;">Security Notice</h3>
+            <ul style="color: #94a3b8; margin: 0; padding-left: 20px;">
               <li>Never share this code with anyone</li>
               <li>This code is only valid for 10 minutes</li>
               <li>If you didn't request this code, please ignore this email</li>
             </ul>
           </div>
           
-          <div style="text-align: center; margin-top: 30px; padding-top: 20px; border-top: 1px solid #e5e7eb;">
-            <p style="color: #9ca3af; font-size: 12px;">
+          <div style="text-align: center; margin-top: 30px; padding-top: 20px; border-top: 1px solid rgba(255,255,255,0.1);">
+            <p style="color: #64748b; font-size: 12px;">
               © 2025 IIIT Delhi Student Council. All rights reserved.
             </p>
           </div>
@@ -89,13 +108,7 @@ export const sendOTP = async (email: string): Promise<{ success: boolean; error?
       `
     };
 
-    // In development, just log OTP to console instead of sending email
-    if (process.env.NODE_ENV === 'development' || !process.env.SMTP_USER) {
-      console.log(`🔐 OTP for ${email}: ${otp} (expires in 10 minutes)`);
-    } else {
-      await transporter.sendMail(mailOptions);
-    }
-
+    await transporter.sendMail(mailOptions);
     return { success: true };
   } catch (error) {
     console.error('Error sending OTP:', error);

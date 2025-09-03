@@ -54,22 +54,6 @@ export const useAuthProvider = () => {
     }
   }, []);
   
-  // Handle OTP reset event
-  useEffect(() => {
-    const handleResetOTP = () => {
-      setState(s => ({
-        ...s,
-        isOTPSent: false,
-        lastSentTime: null,
-        countdown: 0,
-        email: ''
-      }));
-    };
-    
-    window.addEventListener('resetOTP', handleResetOTP);
-    return () => window.removeEventListener('resetOTP', handleResetOTP);
-  }, []);
-  
   const sendOTP = useCallback(async (email) => {
     setIsLoading(true);
     
@@ -128,6 +112,7 @@ export const useAuthProvider = () => {
       if (response.ok && data.success) {
         const adminUser = {
           email: data.admin.email,
+          name: data.admin.name,
           role: data.admin.role
         };
         
@@ -178,16 +163,6 @@ export const useAuthProvider = () => {
     verifyOTP,
     logout
   };
-};
-
-export const AuthProvider = ({ children }) => {
-  const auth = useAuthProvider();
-  
-  return (
-    <AuthContext.Provider value={auth}>
-      {children}
-    </AuthContext.Provider>
-  );
 };
 
 export const useAuth = () => {
