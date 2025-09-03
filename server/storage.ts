@@ -205,7 +205,25 @@ export class DatabaseStorage implements IStorage {
     return result[0];
   }
 
-  // Admin initialization
+  // Student representative operations
+  async getAllStudentRepresentatives(): Promise<StudentRepresentative[]> {
+    return await db.select().from(studentRepresentatives);
+  }
+
+  // Important contact operations
+  async getAllImportantContacts(): Promise<ImportantContact[]> {
+    return await db.select().from(importantContacts);
+  }
+
+  // Hostel info operations
+  async getAllHostelInfo(): Promise<HostelInfo[]> {
+    return await db.select().from(hostelInfo);
+  }
+
+  // Mess hostel committee operations
+  async getAllMessHostelCommittee(): Promise<MessHostelCommittee[]> {
+    return await db.select().from(messHostelCommittee);
+  }
 }
 
 // Use database storage

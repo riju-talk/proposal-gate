@@ -160,7 +160,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.patch("/api/event-proposals/:id/status", requireAdmin, async (req: Request, res: Response) => {
     try {
       const { status } = req.body;
-      const adminEmail = req.user.email;
+      const adminEmail = req.user?.email;
       
       // Validate status
       if (!['approved', 'rejected', 'under_consideration'].includes(status)) {
@@ -206,7 +206,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { status, comments } = req.body;
       const { eventId, adminEmail } = req.params;
-      const requestingAdminEmail = req.user.email;
+      const requestingAdminEmail = req.user?.email;
       
       // Ensure admin can only update their own approval
       if (requestingAdminEmail !== decodeURIComponent(adminEmail)) {
@@ -305,6 +305,64 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/auth/logout", (req: Request, res: Response) => {
     clearAuthCookie(res);
     res.json({ success: true, message: "Logged out successfully" });
+  });
+
+  // Profile routes
+  app.get("/api/profiles/:id", async (req: Request, res: Response) => {
+    try {
+      const profile = await storage.getProfile(req.params.id);
+      if (!profile) {
+        return res.status(404).json({ error: "Profile not found" });
+      }
+      res.json(profile);
+    } catch (error) {
+      console.error("Get profile error:", error);
+      res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
+  // Student representatives routes
+  app.get("/api/student-representatives", async (req: Request, res: Response) => {
+    try {
+      const representatives = await storage.getAllStudentRepresentatives();
+      res.json(representatives);
+    } catch (error) {
+      console.error("Get student representatives error:", error);
+      res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
+  // Important contacts routes
+  app.get("/api/important-contacts", async (req: Request, res: Response) => {
+    try {
+      const contacts = await storage.getAllImportantContacts();
+      res.json(contacts);
+    } catch (error) {
+      console.error("Get important contacts error:", error);
+      res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
+  // Hostel info routes
+  app.get("/api/hostel-info", async (req: Request, res: Response) => {
+    try {
+      const hostelInfo = await storage.getAllHostelInfo();
+      res.json(hostelInfo);
+    } catch (error) {
+      console.error("Get hostel info error:", error);
+      res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
+  // Mess hostel committee routes
+  app.get("/api/mess-hostel-committee", async (req: Request, res: Response) => {
+    try {
+      const committee = await storage.getAllMessHostelCommittee();
+      res.json(committee);
+    } catch (error) {
+      console.error("Get mess hostel committee error:", error);
+      res.status(500).json({ error: "Internal server error" });
+    }
   });
 
   // Health check endpoint
