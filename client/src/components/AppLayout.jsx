@@ -5,7 +5,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { EventsView } from "@/components/EventsView";
-import { LogOut, Search, Filter, Shield, Users, Calendar, GraduationCap, Sparkles } from "lucide-react";
+import { LogOut, Search, Filter, Shield, Users, Calendar, GraduationCap, Plus, Home } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 export const AppLayout = ({ userRole, onRequestAdminLogin }) => {
@@ -13,7 +13,6 @@ export const AppLayout = ({ userRole, onRequestAdminLogin }) => {
   const { toast } = useToast();
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
-  const [activeTab, setActiveTab] = useState("events");
 
   const handleLogout = async () => {
     try {
@@ -35,16 +34,15 @@ export const AppLayout = ({ userRole, onRequestAdminLogin }) => {
   const availableStatusFilters = useMemo(() => {
     if (userRole === 'admin') {
       return [
-        { value: "all", label: "All" },
-        { value: "pending", label: "Pending" },
+        { value: "all", label: "All Events" },
+        { value: "pending", label: "Pending Approval" },
         { value: "approved", label: "Approved" },
         { value: "rejected", label: "Rejected" }
       ];
     } else {
       return [
-        { value: "all", label: "All" },
-        { value: "pending", label: "Pending" },
-        { value: "approved", label: "Approved" }
+        { value: "all", label: "All Events" },
+        { value: "approved", label: "Approved Events" }
       ];
     }
   }, [userRole]);
@@ -52,108 +50,192 @@ export const AppLayout = ({ userRole, onRequestAdminLogin }) => {
   const getRoleDisplay = () => {
     switch (userRole) {
       case 'admin':
-        return { icon: Shield, text: user?.name || 'Admin Panel', color: 'text-cyan-400' };
+        return { 
+          icon: Shield, 
+          text: user?.name || 'Admin Panel', 
+          subtitle: 'Administrative Access',
+          color: 'text-primary' 
+        };
       case 'coordinator':
-        return { icon: Users, text: 'Coordinator View', color: 'text-purple-400' };
+        return { 
+          icon: Users, 
+          text: 'Coordinator View', 
+          subtitle: 'Event Coordination',
+          color: 'text-blue-400' 
+        };
       default:
-        return { icon: GraduationCap, text: 'Public Portal', color: 'text-green-400' };
+        return { 
+          icon: GraduationCap, 
+          text: 'Public Portal', 
+          subtitle: 'Student Events',
+          color: 'text-green-400' 
+        };
     }
   };
 
   const roleDisplay = getRoleDisplay();
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900">
-      {/* Header */}
-      <header className="sticky top-0 z-50 w-full border-b border-white/10 bg-black/20 backdrop-blur-xl shadow-2xl">
-        <div className="container flex h-16 items-center justify-between">
-          <div className="flex items-center space-x-4">
-            <div className="flex items-center space-x-3">
-              <div className="w-10 h-10 rounded-xl flex items-center justify-center shadow-lg bg-white/10 backdrop-blur-sm border border-white/20">
-                <img src="/student_council.jpg" alt="Logo" className="h-8 w-8 rounded-lg" />
-              </div>
-              <div>
-                <h1 className="text-xl font-bold bg-gradient-to-r from-cyan-400 to-purple-400 bg-clip-text text-transparent">
-                  Student Council IIIT-Delhi
-                </h1>
-                <div className="flex items-center gap-1">
-                  <roleDisplay.icon className={`h-3 w-3 ${roleDisplay.color}`} />
-                  <p className={`text-xs font-medium ${roleDisplay.color}`}>
-                    {roleDisplay.text}
-                  </p>
+    <div className="min-h-screen bg-background">
+      {/* Professional Header */}
+      <header className="sticky top-0 z-50 w-full border-b border-border bg-background/80 backdrop-blur-xl">
+        <div className="container-centered">
+          <div className="flex h-16 items-center justify-between">
+            {/* Logo and Title */}
+            <div className="flex items-center space-x-4">
+              <div className="flex items-center space-x-3">
+                <div className="w-10 h-10 rounded-lg flex items-center justify-center bg-primary/10 border border-primary/20">
+                  <img src="/student_council.jpg" alt="IIIT Delhi" className="h-8 w-8 rounded-md object-cover" />
+                </div>
+                <div>
+                  <h1 className="text-xl font-bold text-foreground">
+                    IIIT Delhi Student Council
+                  </h1>
+                  <div className="flex items-center gap-1">
+                    <roleDisplay.icon className={`h-3 w-3 ${roleDisplay.color}`} />
+                    <p className={`text-xs font-medium ${roleDisplay.color}`}>
+                      {roleDisplay.text}
+                    </p>
+                  </div>
                 </div>
               </div>
             </div>
-          </div>
 
-          <div className="flex items-center space-x-4">
-            {/* Search Bar */}
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-cyan-400 h-4 w-4" />
-              <Input
-                type="text"
-                placeholder="Search events..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10 w-64 bg-white/5 border-white/10 focus:border-cyan-400/50 focus:ring-0 text-white/90 placeholder:text-white/40"
-              />
+            {/* Navigation */}
+            <nav className="hidden md:flex items-center space-x-6">
+              <Button variant="ghost" className="text-muted-foreground hover:text-foreground">
+                <Home className="h-4 w-4 mr-2" />
+                Home
+              </Button>
+              <Button variant="ghost" className="text-muted-foreground hover:text-foreground">
+                <Calendar className="h-4 w-4 mr-2" />
+                Events
+              </Button>
+              <Button variant="ghost" className="text-muted-foreground hover:text-foreground">
+                <Users className="h-4 w-4 mr-2" />
+                Clubs
+              </Button>
+            </nav>
+
+            {/* Actions */}
+            <div className="flex items-center space-x-4">
+              {userRole === 'public' && (
+                <Button 
+                  onClick={onRequestAdminLogin}
+                  className="btn-primary"
+                >
+                  <Shield className="h-4 w-4 mr-2" />
+                  Admin Login
+                </Button>
+              )}
+
+              {user && (
+                <Button 
+                  onClick={handleLogout}
+                  variant="ghost" 
+                  className="text-muted-foreground hover:text-foreground"
+                >
+                  <LogOut className="h-4 w-4 mr-2" />
+                  Logout
+                </Button>
+              )}
             </div>
-
-            {userRole === 'public' && (
-              <Button 
-                onClick={onRequestAdminLogin}
-                className="bg-gradient-to-r from-cyan-600 to-purple-600 hover:from-cyan-500 hover:to-purple-500 text-white border-0 shadow-lg hover:shadow-cyan-500/20 transition-all"
-              >
-                <Shield className="h-4 w-4 mr-2" />
-                Admin Login
-              </Button>
-            )}
-
-            {user && (
-              <Button 
-                onClick={handleLogout}
-                variant="ghost" 
-                className="text-white/70 hover:bg-white/5 hover:text-white"
-              >
-                <LogOut className="h-4 w-4 mr-2" />
-                Logout
-              </Button>
-            )}
           </div>
         </div>
       </header>
 
+      {/* Hero Section */}
+      <section className="section-spacing bg-gradient-to-br from-background via-background to-primary/5">
+        <div className="container-centered text-center">
+          <div className="max-w-4xl mx-auto space-y-6">
+            <div className="space-y-4">
+              <h1 className="text-4xl md:text-6xl font-bold text-foreground">
+                IIIT Delhi
+              </h1>
+              <h2 className="text-3xl md:text-5xl font-bold gradient-text">
+                Student Council
+              </h2>
+            </div>
+            
+            <p className="text-lg md:text-xl text-muted-foreground max-w-2xl mx-auto leading-relaxed">
+              Your voice, our mission. Connecting students, fostering growth, and 
+              building a vibrant campus community at IIIT Delhi.
+            </p>
+
+            {/* Stats */}
+            <div className="grid grid-cols-3 gap-8 max-w-2xl mx-auto pt-8">
+              <div className="text-center">
+                <div className="text-3xl md:text-4xl font-bold text-primary">500+</div>
+                <div className="text-sm text-muted-foreground">Active Students</div>
+              </div>
+              <div className="text-center">
+                <div className="text-3xl md:text-4xl font-bold text-primary">50+</div>
+                <div className="text-sm text-muted-foreground">Events This Year</div>
+              </div>
+              <div className="text-center">
+                <div className="text-3xl md:text-4xl font-bold text-primary">6</div>
+                <div className="text-sm text-muted-foreground">Active Clubs</div>
+              </div>
+            </div>
+
+            {/* Action Buttons */}
+            <div className="flex flex-col sm:flex-row gap-4 justify-center pt-8">
+              <Button className="btn-primary px-8 py-3 text-base">
+                <Users className="h-5 w-5 mr-2" />
+                Learn About Us
+              </Button>
+              <Button variant="outline" className="px-8 py-3 text-base border-primary/20 hover:bg-primary/10">
+                <Shield className="h-5 w-5 mr-2" />
+                Meet Our Team
+              </Button>
+            </div>
+          </div>
+        </div>
+      </section>
+
       {/* Main Content */}
-      <main className="container py-8">
-        <div className="space-y-6">
-          <div className="flex justify-between items-center">
-            <div className="space-y-1">
-              <h2 className="text-3xl font-bold text-white">Event Proposals</h2>
-              <p className="text-white/70">
+      <main className="section-spacing">
+        <div className="container-centered">
+          <div className="space-y-8">
+            {/* Section Header */}
+            <div className="text-center space-y-4">
+              <h2 className="text-3xl md:text-4xl font-bold text-foreground">
+                Campus Events
+              </h2>
+              <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
                 {userRole === 'admin' 
-                  ? 'Manage and approve event proposals' 
+                  ? 'Manage and approve event proposals from students and organizations' 
                   : userRole === 'coordinator'
-                  ? 'View pending and approved events'
-                  : 'Discover upcoming approved events'}
+                  ? 'View and coordinate upcoming campus events'
+                  : 'Discover exciting events happening around campus'}
               </p>
             </div>
 
-            <div className="flex items-center space-x-4">
+            {/* Search and Filter Controls */}
+            <div className="flex flex-col md:flex-row gap-4 items-center justify-between max-w-4xl mx-auto">
+              <div className="relative flex-1 max-w-md">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
+                <Input
+                  type="text"
+                  placeholder="Search events..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="pl-10 bg-card border-border focus:border-primary/50 focus:ring-1 focus:ring-primary/20"
+                />
+              </div>
+
               <div className="flex items-center space-x-2">
-                <Filter className="h-4 w-4 text-white/50" />
-                <Select 
-                  value={statusFilter} 
-                  onValueChange={setStatusFilter}
-                >
-                  <SelectTrigger className="w-40 bg-white/5 border-white/10 text-white">
+                <Filter className="h-4 w-4 text-muted-foreground" />
+                <Select value={statusFilter} onValueChange={setStatusFilter}>
+                  <SelectTrigger className="w-48 bg-card border-border">
                     <SelectValue placeholder="Filter by status" />
                   </SelectTrigger>
-                  <SelectContent className="bg-slate-800 border-white/10">
+                  <SelectContent className="bg-card border-border">
                     {availableStatusFilters.map((filter) => (
                       <SelectItem 
                         key={filter.value} 
                         value={filter.value}
-                        className="hover:bg-slate-700/50 focus:bg-slate-700/50 text-white"
+                        className="hover:bg-muted focus:bg-muted"
                       >
                         {filter.label}
                       </SelectItem>
@@ -162,17 +244,35 @@ export const AppLayout = ({ userRole, onRequestAdminLogin }) => {
                 </Select>
               </div>
             </div>
-          </div>
 
-          <EventsView 
-            searchTerm={searchTerm} 
-            statusFilter={statusFilter}
-            userRole={userRole}
-          />
+            {/* Events Grid */}
+            <div className="max-w-7xl mx-auto">
+              <EventsView 
+                searchTerm={searchTerm} 
+                statusFilter={statusFilter}
+                userRole={userRole}
+              />
+            </div>
+          </div>
         </div>
       </main>
+
+      {/* Footer */}
+      <footer className="border-t border-border bg-card/50 backdrop-blur-sm">
+        <div className="container-centered py-8">
+          <div className="text-center space-y-4">
+            <div className="flex items-center justify-center space-x-2">
+              <img src="/student_council.jpg" alt="IIIT Delhi" className="h-8 w-8 rounded-md" />
+              <span className="text-lg font-semibold text-foreground">IIIT Delhi Student Council</span>
+            </div>
+            <p className="text-sm text-muted-foreground">
+              © 2025 IIIT Delhi Student Council. All rights reserved.
+            </p>
+          </div>
+        </div>
+      </footer>
     </div>
   );
 };
 
-export default AppLayout;
+export default MainApp;

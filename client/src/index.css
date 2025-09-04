@@ -2,60 +2,56 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Modern Event Proposal Dashboard Design System */
+/* Professional IIIT Delhi Student Council Design System */
 
 @layer base {
   :root {
     color-scheme: dark;
     
-    /* IIIT Delhi Student Council Color Scheme - Modern Dark Theme */
-    --background: 222 84% 4%;        /* Very dark blue-gray background */
-    --foreground: 210 40% 98%;       /* Near white text */
+    /* IIIT Delhi Student Council Color Scheme - Professional Dark Theme */
+    --background: 220 27% 8%;         /* Deep dark blue-gray background */
+    --foreground: 210 40% 98%;        /* Near white text */
 
-    --card: 220 13% 8%;              /* Dark card background with transparency */
-    --card-foreground: 210 40% 95%;  /* Light text on cards */
+    --card: 220 27% 10%;              /* Slightly lighter card background */
+    --card-foreground: 210 40% 95%;   /* Light text on cards */
 
-    --popover: 220 13% 8%;
+    --popover: 220 27% 10%;
     --popover-foreground: 210 40% 95%;
 
-    --primary: 200 100% 70%;         /* Bright cyan accent */
-    --primary-foreground: 222 84% 4%; /* Dark text on cyan */
-    --primary-glow: 200 100% 80%;    /* Lighter cyan for glow effects */
+    --primary: 180 100% 50%;          /* Bright cyan accent */
+    --primary-foreground: 220 27% 8%; /* Dark text on cyan */
 
-    --secondary: 280 100% 70%;       /* Purple accent */
-    --secondary-foreground: 222 84% 4%;
+    --secondary: 220 27% 12%;         /* Subtle secondary background */
+    --secondary-foreground: 210 40% 95%;
 
-    --muted: 217 19% 6%;            /* Darker muted backgrounds */
-    --muted-foreground: 217 10% 55%; /* Muted text */
+    --muted: 220 27% 12%;            /* Muted backgrounds */
+    --muted-foreground: 217 10% 65%; /* Muted text */
 
-    --accent: 320 100% 70%;          /* Pink accent */
-    --accent-foreground: 222 84% 4%;
+    --accent: 180 100% 50%;          /* Cyan accent */
+    --accent-foreground: 220 27% 8%;
 
     --success: 142 76% 36%;          /* Green for success states */
     --success-foreground: 210 40% 98%;
 
     --warning: 38 92% 50%;           /* Orange for warnings */
-    --warning-foreground: 222 84% 4%;
+    --warning-foreground: 220 27% 8%;
 
     --destructive: 0 84% 60%;        /* Red for destructive actions */
     --destructive-foreground: 210 40% 98%;
 
-    --border: 217 19% 12%;           /* Subtle borders */
-    --input: 217 19% 10%;            /* Input backgrounds */
-    --ring: 200 100% 70%;            /* Focus rings in cyan */
+    --border: 220 27% 15%;           /* Subtle borders */
+    --input: 220 27% 12%;            /* Input backgrounds */
+    --ring: 180 100% 50%;            /* Focus rings in cyan */
 
-    --radius: 0.75rem;
+    --radius: 0.5rem;
 
     /* Custom gradients */
-    --gradient-primary: linear-gradient(135deg, hsl(200 100% 70%), hsl(280 100% 70%));
-    --gradient-success: linear-gradient(135deg, hsl(142 76% 36%), hsl(142 76% 46%));
-    --gradient-card: linear-gradient(145deg, hsl(220 13% 8% / 0.8), hsl(217 19% 10% / 0.9));
-    --gradient-hero: linear-gradient(135deg, hsl(222 84% 4%) 0%, hsl(217 19% 6%) 50%, hsl(200 100% 70% / 0.1) 100%);
+    --gradient-primary: linear-gradient(135deg, hsl(180 100% 50%), hsl(200 100% 60%));
+    --gradient-hero: linear-gradient(135deg, hsl(220 27% 8%) 0%, hsl(220 27% 10%) 50%, hsl(180 100% 50% / 0.05) 100%);
     
-    /* Sophisticated shadows with colored glows */
-    --shadow-elegant: 0 10px 25px -5px hsl(200 100% 70% / 0.15);
-    --shadow-glow: 0 0 30px hsl(200 100% 70% / 0.25);
-    --shadow-card: 0 4px 12px -2px hsl(222 84% 4% / 0.5);
+    /* Professional shadows */
+    --shadow-elegant: 0 10px 25px -5px hsl(220 27% 4% / 0.5);
+    --shadow-card: 0 4px 12px -2px hsl(220 27% 4% / 0.3);
   }
 }
 
@@ -66,9 +62,8 @@
 
   body {
     min-height: 100vh;
-    @apply text-foreground;
-    background: linear-gradient(135deg, hsl(222 84% 4%) 0%, hsl(217 19% 6%) 50%, hsl(200 100% 70% / 0.05) 100%);
-    background-attachment: fixed;
+    @apply text-foreground bg-background;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', sans-serif;
   }
 
   /* Custom scrollbar */
@@ -91,51 +86,38 @@
 }
 
 @layer components {
-  /* Glass morphism effect */
-  .glass {
-    background: rgba(255, 255, 255, 0.05);
-    backdrop-filter: blur(10px);
-    border: 1px solid rgba(255, 255, 255, 0.1);
+  /* Professional card styling */
+  .professional-card {
+    @apply bg-card border border-border rounded-lg shadow-lg backdrop-blur-sm;
+    background: hsl(var(--card) / 0.8);
   }
 
   /* Gradient text */
   .gradient-text {
-    background: linear-gradient(135deg, hsl(var(--primary)), hsl(var(--secondary)));
+    background: linear-gradient(135deg, hsl(var(--primary)), hsl(200 100% 60%));
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
   }
 
-  /* Animated gradient background */
-  .animated-gradient {
-    background: linear-gradient(-45deg, #ee7752, #e73c7e, #23a6d5, #23d5ab);
-    background-size: 400% 400%;
-    animation: gradient 15s ease infinite;
+  /* Professional button styling */
+  .btn-primary {
+    @apply bg-primary text-primary-foreground hover:bg-primary/90 shadow-lg;
+    background: linear-gradient(135deg, hsl(var(--primary)), hsl(200 100% 60%));
   }
 
-  @keyframes gradient {
-    0% { background-position: 0% 50%; }
-    50% { background-position: 100% 50%; }
-    100% { background-position: 0% 50%; }
+  /* Container with proper centering */
+  .container-centered {
+    @apply max-w-7xl mx-auto px-4 sm:px-6 lg:px-8;
   }
 
-  /* Floating animation */
-  .float {
-    animation: float 6s ease-in-out infinite;
+  /* Professional spacing */
+  .section-spacing {
+    @apply py-12 lg:py-16;
   }
 
-  @keyframes float {
-    0%, 100% { transform: translateY(0px); }
-    50% { transform: translateY(-20px); }
-  }
-
-  /* Pulse glow effect */
-  .pulse-glow {
-    animation: pulse-glow 2s ease-in-out infinite alternate;
-  }
-
-  @keyframes pulse-glow {
-    from { box-shadow: 0 0 20px hsl(var(--primary) / 0.3); }
-    to { box-shadow: 0 0 30px hsl(var(--primary) / 0.6); }
+  /* Card hover effects */
+  .card-hover {
+    @apply transition-all duration-300 hover:shadow-xl hover:scale-[1.02] hover:border-primary/20;
   }
 }

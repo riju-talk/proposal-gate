@@ -11,24 +11,16 @@ export const MainApp = () => {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 relative overflow-hidden">
-        {/* Animated background elements */}
-        <div className="absolute inset-0 pointer-events-none">
-          <div className="absolute -top-32 -right-32 w-80 h-80 bg-cyan-500/20 rounded-full blur-3xl animate-pulse" />
-          <div className="absolute -bottom-32 -left-32 w-80 h-80 bg-purple-500/20 rounded-full blur-3xl animate-pulse delay-1000" />
-          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-pink-500/10 rounded-full blur-3xl animate-pulse delay-500" />
-        </div>
-
-        <div className="text-center space-y-6 relative z-10">
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <div className="text-center space-y-6">
           <div className="relative flex justify-center">
-            <div className="flex items-center justify-center h-20 w-20 mx-auto bg-white/10 backdrop-blur-sm rounded-full shadow-lg border border-white/20">
-              <Loader2 className="h-10 w-10 text-cyan-400 animate-spin" />
+            <div className="flex items-center justify-center h-20 w-20 mx-auto bg-primary/10 backdrop-blur-sm rounded-full shadow-lg border border-primary/20">
+              <Loader2 className="h-10 w-10 text-primary animate-spin" />
             </div>
-            <Sparkles className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 h-8 w-8 text-cyan-400/70 animate-pulse" />
           </div>
           <div className="space-y-2">
-            <h1 className="text-3xl font-bold text-white drop-shadow-lg">Student Council Portal</h1>
-            <p className="text-white/70 text-lg">Loading your dashboard...</p>
+            <h1 className="text-3xl font-bold text-foreground">Student Council Portal</h1>
+            <p className="text-muted-foreground text-lg">Loading your dashboard...</p>
           </div>
         </div>
       </div>
@@ -50,7 +42,7 @@ export const MainApp = () => {
 
   // Show main app - everyone can access, but with different permissions
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900">
+    <div className="min-h-screen bg-background">
       <AppLayout 
         userRole={getUserRole()}
         onRequestAdminLogin={() => setShowAdminLogin(true)} 
