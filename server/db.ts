@@ -16,14 +16,14 @@ import 'dotenv/config';
 import path from 'path';
 import fs from 'fs';
 
-console.log(process.env.DATABASE_URL);
+//console.log(process.env.DATABASE_URL);
 
 const envPath = path.resolve(process.cwd(), '.env');
 if (fs.existsSync(envPath)) {
-  console.log('Loaded .env from:', envPath);
+  //console.log('Loaded .env from:', envPath);
 } else {
   // still load any env vars provided by the environment
-  console.warn('No .env found at', envPath);
+  //console.warn('No .env found at', envPath);
 }
 
 // Use conservative fallbacks (avoid nullish coalescing ??)

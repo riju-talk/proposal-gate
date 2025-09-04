@@ -101,22 +101,6 @@ export const AppLayout = ({ userRole, onRequestAdminLogin }) => {
               </div>
             </div>
 
-            {/* Navigation */}
-            <nav className="hidden md:flex items-center space-x-6">
-              <Button variant="ghost" className="text-muted-foreground hover:text-foreground">
-                <Home className="h-4 w-4 mr-2" />
-                Home
-              </Button>
-              <Button variant="ghost" className="text-muted-foreground hover:text-foreground">
-                <Calendar className="h-4 w-4 mr-2" />
-                Events
-              </Button>
-              <Button variant="ghost" className="text-muted-foreground hover:text-foreground">
-                <Users className="h-4 w-4 mr-2" />
-                Clubs
-              </Button>
-            </nav>
-
             {/* Actions */}
             <div className="flex items-center space-x-4">
               {userRole === 'public' && (
@@ -161,31 +145,16 @@ export const AppLayout = ({ userRole, onRequestAdminLogin }) => {
               Your voice, our mission. Connecting students, fostering growth, and 
               building a vibrant campus community at IIIT Delhi.
             </p>
-
-            {/* Stats */}
-            <div className="grid grid-cols-3 gap-8 max-w-2xl mx-auto pt-8">
-              <div className="text-center">
-                <div className="text-3xl md:text-4xl font-bold text-primary">500+</div>
-                <div className="text-sm text-muted-foreground">Active Students</div>
-              </div>
-              <div className="text-center">
-                <div className="text-3xl md:text-4xl font-bold text-primary">50+</div>
-                <div className="text-sm text-muted-foreground">Events This Year</div>
-              </div>
-              <div className="text-center">
-                <div className="text-3xl md:text-4xl font-bold text-primary">6</div>
-                <div className="text-sm text-muted-foreground">Active Clubs</div>
-              </div>
-            </div>
+    
 
             {/* Action Buttons */}
             <div className="flex flex-col sm:flex-row gap-4 justify-center pt-8">
-              <Button className="btn-primary px-8 py-3 text-base">
+              <Button className="btn-primary px-8 py-3 text-base" onClick={() => window.location.href = '/about'}>
                 <Users className="h-5 w-5 mr-2" />
                 Learn About Us
               </Button>
               <Button variant="outline" className="px-8 py-3 text-base border-primary/20 hover:bg-primary/10">
-                <Shield className="h-5 w-5 mr-2" />
+                <Shield className="h-5 w-5 mr-2" onClick={() => window.location.href = '/about'}/>
                 Meet Our Team
               </Button>
             </div>

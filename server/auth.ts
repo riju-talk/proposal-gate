@@ -18,19 +18,19 @@ const otpSessions = new Map<string, OTPSession>();
 const createTransporter = () => {
   if (process.env.NODE_ENV === 'development' || !process.env.SMTP_USER) {
     // For development, create a test transporter
-    return nodemailer.createTransporter({
-      host: 'smtp.ethereal.email',
+    return nodemailer.createTransport({
+      host: 'gmail',
       port: 587,
       secure: false,
       auth: {
-        user: 'ethereal.user@ethereal.email',
-        pass: 'ethereal.pass'
+        user: process.env.SMTP_USER,
+        pass: process.env.SMTP_PASS
       }
     });
   }
 
   // Production Gmail SMTP
-  return nodemailer.createTransporter({
+  return nodemailer.createTransport({
     service: 'gmail',
     auth: {
       user: process.env.SMTP_USER,

@@ -5,7 +5,7 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
-import { ArrowLeft, Mail, Shield, Zap, Loader2, Users } from 'lucide-react';
+import { ArrowLeft, Mail, Shield, Zap, Loader2 } from 'lucide-react';
 
 export const LoginPage = ({ onBack }) => {
   const [view, setView] = useState('email');
@@ -31,6 +31,17 @@ export const LoginPage = ({ onBack }) => {
       final: 'smriti@iiitd.ac.in',
       developer: 'rijusmit22400@iiitd.ac.in'
     };
+    
+    if (!quickEmails[role]) {
+      setEmail('')
+      toast({
+        title: 'Unauthorized',
+        description: 'Unauthorized admin access',
+        variant: 'destructive', // Add this line
+      });
+      return;
+    }
+    
     setEmail(quickEmails[role]);
   };
 
