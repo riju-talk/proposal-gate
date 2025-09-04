@@ -275,4 +275,4 @@ export const AppLayout = ({ userRole, onRequestAdminLogin }) => {
   );
 };
 
-export default MainApp;
+export default AppLayout;
