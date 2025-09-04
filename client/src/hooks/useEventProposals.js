@@ -14,26 +14,15 @@ export const useEventProposals = (statusFilter, userRole = 'public') => {
         let endpoint = '/api/event-proposals/public'; // Default for public users
 
         // Determine endpoint based on user role
-        if (userRole === 'admin') {
-          endpoint = '/api/event-proposals';
-        } else if (userRole === 'coordinator') {
-          endpoint = '/api/event-proposals/coordinator';
-        }
 
         const headers = {
           'Content-Type': 'application/json',
         };
 
         // Add auth headers for admin requests
-        if (userRole === 'admin') {
-          const token = localStorage.getItem('admin_token');
-          if (token) {
-            headers['Authorization'] = `Bearer ${token}`;
-          }
-        }
 
         const response = await fetch(endpoint, { headers });
-        
+        console.log(response.json);
         if (!response.ok) {
           throw new Error(`Failed to fetch proposals: ${response.status}`);
         }

@@ -93,10 +93,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
           updated_at: eventProposals.updatedAt,
         })
         .from(eventProposals)
-        .where(eq(eventProposals.status, 'approved'))
         .orderBy(desc(eventProposals.eventDate));
 
       res.json(events);
+      //console.log(events);
     } catch (error) {
       console.error("Get public events error:", error);
       res.status(500).json({ error: "Internal server error" });

@@ -162,7 +162,7 @@ export const EventApprovalTracker = ({ eventId, showActions = true }) => {
                   <div>
                     <h4 className="font-medium text-white">{approval.admin_name || 'Admin'}</h4>
                     <p className="text-sm text-white/70 capitalize">
-                      {approval.admin_role?.replace('_', ' ') || 'Reviewer'} (Order: {approval.approval_order})
+                      {approval.admin_role?.replace('_', ' ') || 'Reviewer'}
                     </p>
                   </div>
                 </div>
