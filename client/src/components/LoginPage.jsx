@@ -5,7 +5,7 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
-import { ArrowLeft, Mail, Shield, Sparkles, Zap, Loader2, Users } from 'lucide-react';
+import { ArrowLeft, Mail, Shield, Zap, Loader2, Users } from 'lucide-react';
 
 export const LoginPage = ({ onBack }) => {
   const [view, setView] = useState('email');
@@ -118,222 +118,219 @@ export const LoginPage = ({ onBack }) => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 p-4 relative overflow-hidden">
-      {/* Animated background elements */}
-      <div className="absolute inset-0 pointer-events-none">
-        <div className="absolute -top-32 -right-32 w-80 h-80 bg-cyan-500/20 rounded-full blur-3xl animate-pulse" />
-        <div className="absolute -bottom-32 -left-32 w-80 h-80 bg-purple-500/20 rounded-full blur-3xl animate-pulse delay-1000" />
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-pink-500/10 rounded-full blur-3xl animate-pulse delay-500" />
-      </div>
-
-      <Card className="w-full max-w-md relative z-10 bg-white/10 backdrop-blur-xl border-white/20 shadow-2xl">
-        <CardHeader className="text-center">
-          <div className="flex justify-center mb-4">
-            <div className="w-16 h-16 rounded-full bg-gradient-to-r from-cyan-500 to-purple-500 flex items-center justify-center shadow-lg">
-              <Shield className="h-8 w-8 text-white" />
+    <div className="min-h-screen flex items-center justify-center bg-background p-4">
+      <div className="w-full max-w-md">
+        <Card className="professional-card">
+          <CardHeader className="text-center space-y-4">
+            <div className="flex justify-center">
+              <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center border border-primary/20">
+                <Shield className="h-8 w-8 text-primary" />
+              </div>
             </div>
-          </div>
-          <CardTitle className="text-2xl font-bold text-white">Admin Login</CardTitle>
-          <CardDescription className="text-white/70">
-            {view === 'email' 
-              ? 'Enter your authorized email to receive a one-time password'
-              : `Enter the OTP sent to ${email}`}
-          </CardDescription>
-        </CardHeader>
-        
-        <CardContent>
-          {view === 'email' ? (
-            <form onSubmit={handleSendOTP} className="space-y-4">
-              {/* Quick Login Buttons */}
-              <div className="space-y-2 mb-4">
-                <p className="text-xs text-white/60 text-center">Quick Login Options:</p>
-                <div className="grid grid-cols-2 gap-2">
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    onClick={() => handleQuickLogin('president')}
-                    className="bg-white/5 border-white/20 text-white hover:bg-white/10 text-xs"
-                  >
-                    President
-                  </Button>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    onClick={() => handleQuickLogin('vp')}
-                    className="bg-white/5 border-white/20 text-white hover:bg-white/10 text-xs"
-                  >
-                    Vice President
-                  </Button>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    onClick={() => handleQuickLogin('treasurer')}
-                    className="bg-white/5 border-white/20 text-white hover:bg-white/10 text-xs"
-                  >
-                    Treasurer
-                  </Button>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    onClick={() => handleQuickLogin('sa_office')}
-                    className="bg-white/5 border-white/20 text-white hover:bg-white/10 text-xs"
-                  >
-                    SA Office
-                  </Button>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    onClick={() => handleQuickLogin('faculty')}
-                    className="bg-white/5 border-white/20 text-white hover:bg-white/10 text-xs"
-                  >
-                    Faculty
-                  </Button>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    onClick={() => handleQuickLogin('final')}
-                    className="bg-white/5 border-white/20 text-white hover:bg-white/10 text-xs"
-                  >
-                    Final Approver
-                  </Button>
+            <div>
+              <CardTitle className="text-2xl font-bold text-foreground">Admin Access</CardTitle>
+              <CardDescription className="text-muted-foreground mt-2">
+                {view === 'email' 
+                  ? 'Enter your authorized email to receive a verification code'
+                  : `Enter the verification code sent to ${email}`}
+              </CardDescription>
+            </div>
+          </CardHeader>
+          
+          <CardContent className="space-y-6">
+            {view === 'email' ? (
+              <form onSubmit={handleSendOTP} className="space-y-6">
+                {/* Quick Login Options */}
+                <div className="space-y-3">
+                  <Label className="text-sm font-medium text-muted-foreground">Quick Access:</Label>
+                  <div className="grid grid-cols-2 gap-2">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handleQuickLogin('president')}
+                      className="text-xs border-border hover:bg-muted"
+                    >
+                      President
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handleQuickLogin('vp')}
+                      className="text-xs border-border hover:bg-muted"
+                    >
+                      Vice President
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handleQuickLogin('treasurer')}
+                      className="text-xs border-border hover:bg-muted"
+                    >
+                      Treasurer
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handleQuickLogin('sa_office')}
+                      className="text-xs border-border hover:bg-muted"
+                    >
+                      SA Office
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handleQuickLogin('faculty')}
+                      className="text-xs border-border hover:bg-muted"
+                    >
+                      Faculty
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handleQuickLogin('final')}
+                      className="text-xs border-border hover:bg-muted"
+                    >
+                      Final Approver
+                    </Button>
+                  </div>
                 </div>
-              </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="email" className="text-white">Authorized Email</Label>
-                <div className="relative">
-                  <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-white/50" />
-                  <Input
-                    id="email"
-                    type="email"
-                    placeholder="Enter your authorized email"
-                    value={email}
-                    onChange={handleEmailChange}
-                    required
-                    disabled={isLoading}
-                    autoFocus
-                    className="pl-10 bg-white/5 border-white/20 text-white placeholder:text-white/50 focus:border-cyan-400/50"
-                  />
+                <div className="space-y-2">
+                  <Label htmlFor="email" className="text-foreground">Authorized Email</Label>
+                  <div className="relative">
+                    <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                    <Input
+                      id="email"
+                      type="email"
+                      placeholder="Enter your authorized email"
+                      value={email}
+                      onChange={handleEmailChange}
+                      required
+                      disabled={isLoading}
+                      autoFocus
+                      className="pl-10 bg-background border-border focus:border-primary/50 focus:ring-1 focus:ring-primary/20"
+                    />
+                  </div>
                 </div>
-              </div>
-              
-              {error && (
-                <div className="bg-red-500/20 border border-red-500/30 rounded-md p-3">
-                  <p className="text-sm text-red-300">{error}</p>
-                </div>
-              )}
-              
-              <Button 
-                type="submit" 
-                className="w-full bg-gradient-to-r from-cyan-600 to-purple-600 hover:from-cyan-500 hover:to-purple-500 text-white border-0 shadow-lg" 
-                disabled={isLoading}
-              >
-                {isLoading ? (
-                  <>
-                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                    Sending OTP...
-                  </>
-                ) : (
-                  <>
-                    <Zap className="w-4 h-4 mr-2" />
-                    Send OTP
-                  </>
+                
+                {error && (
+                  <div className="bg-destructive/10 border border-destructive/20 rounded-md p-3">
+                    <p className="text-sm text-destructive">{error}</p>
+                  </div>
                 )}
-              </Button>
-
-              <Button
-                type="button"
-                variant="ghost"
-                onClick={onBack}
-                className="w-full text-white/70 hover:bg-white/5"
-              >
-                <ArrowLeft className="h-4 w-4 mr-2" />
-                Back to Portal
-              </Button>
-            </form>
-          ) : (
-            <form onSubmit={handleVerifyOTP} className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="otp" className="text-white">Verification Code</Label>
-                <Input
-                  id="otp"
-                  type="text"
-                  inputMode="numeric"
-                  pattern="\d{6}"
-                  placeholder="Enter 6-digit code"
-                  value={otp}
-                  onChange={handleOtpChange}
-                  required
+                
+                <Button 
+                  type="submit" 
+                  className="w-full btn-primary" 
                   disabled={isLoading}
-                  autoFocus
-                  className="text-center text-2xl tracking-widest bg-white/5 border-white/20 text-white placeholder:text-white/50 focus:border-cyan-400/50"
-                />
-              </div>
-              
-              <div className="flex items-center justify-between text-sm">
+                >
+                  {isLoading ? (
+                    <>
+                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                      Sending OTP...
+                    </>
+                  ) : (
+                    <>
+                      <Zap className="w-4 h-4 mr-2" />
+                      Send Verification Code
+                    </>
+                  )}
+                </Button>
+
                 <Button
                   type="button"
                   variant="ghost"
-                  size="sm"
-                  onClick={handleBackToEmail}
-                  className="text-white/70 hover:bg-white/5"
+                  onClick={onBack}
+                  className="w-full text-muted-foreground hover:text-foreground"
                 >
-                  <ArrowLeft className="h-4 w-4 mr-1" />
-                  Change Email
+                  <ArrowLeft className="h-4 w-4 mr-2" />
+                  Back to Portal
                 </Button>
+              </form>
+            ) : (
+              <form onSubmit={handleVerifyOTP} className="space-y-6">
+                <div className="space-y-2">
+                  <Label htmlFor="otp" className="text-foreground">Verification Code</Label>
+                  <Input
+                    id="otp"
+                    type="text"
+                    inputMode="numeric"
+                    pattern="\d{6}"
+                    placeholder="Enter 6-digit code"
+                    value={otp}
+                    onChange={handleOtpChange}
+                    required
+                    disabled={isLoading}
+                    autoFocus
+                    className="text-center text-2xl tracking-widest bg-background border-border focus:border-primary/50 focus:ring-1 focus:ring-primary/20"
+                  />
+                </div>
                 
-                <div className="flex items-center space-x-2">
-                  <span className="text-white/70">
-                    {countdown > 0 ? (
-                      `Resend in ${countdown}s`
-                    ) : (
-                      <Button
-                        type="button"
-                        variant="link"
-                        size="sm"
-                        onClick={handleResendOTP}
-                        className="p-0 h-auto text-cyan-400 hover:text-cyan-300"
-                      >
-                        Resend OTP
-                      </Button>
-                    )}
-                  </span>
+                <div className="flex items-center justify-between text-sm">
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    onClick={handleBackToEmail}
+                    className="text-muted-foreground hover:text-foreground"
+                  >
+                    <ArrowLeft className="h-4 w-4 mr-1" />
+                    Change Email
+                  </Button>
+                  
+                  <div className="flex items-center space-x-2">
+                    <span className="text-muted-foreground">
+                      {countdown > 0 ? (
+                        `Resend in ${countdown}s`
+                      ) : (
+                        <Button
+                          type="button"
+                          variant="link"
+                          size="sm"
+                          onClick={handleResendOTP}
+                          className="p-0 h-auto text-primary hover:text-primary/80"
+                        >
+                          Resend Code
+                        </Button>
+                      )}
+                    </span>
+                  </div>
                 </div>
-              </div>
-              
-              {error && (
-                <div className="bg-red-500/20 border border-red-500/30 rounded-md p-3">
-                  <p className="text-sm text-red-300">{error}</p>
-                </div>
-              )}
-              
-              <Button 
-                type="submit" 
-                className="w-full bg-gradient-to-r from-cyan-600 to-purple-600 hover:from-cyan-500 hover:to-purple-500 text-white border-0 shadow-lg" 
-                disabled={isLoading || otp.length !== 6}
-              >
-                {isLoading ? (
-                  <>
-                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                    Verifying...
-                  </>
-                ) : (
-                  <>
-                    <Shield className="w-4 h-4 mr-2" />
-                    Verify & Login
-                  </>
+                
+                {error && (
+                  <div className="bg-destructive/10 border border-destructive/20 rounded-md p-3">
+                    <p className="text-sm text-destructive">{error}</p>
+                  </div>
                 )}
-              </Button>
-            </form>
-          )}
-        </CardContent>
-      </Card>
+                
+                <Button 
+                  type="submit" 
+                  className="w-full btn-primary" 
+                  disabled={isLoading || otp.length !== 6}
+                >
+                  {isLoading ? (
+                    <>
+                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                      Verifying...
+                    </>
+                  ) : (
+                    <>
+                      <Shield className="w-4 h-4 mr-2" />
+                      Verify & Login
+                    </>
+                  )}
+                </Button>
+              </form>
+            )}
+          </CardContent>
+        </Card>
+      </div>
     </div>
   );
 };

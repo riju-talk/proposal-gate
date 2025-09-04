@@ -5,7 +5,7 @@ import { ProposalDetailsModal } from "@/components/ProposalDetailsModal";
 import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/hooks/use-toast";
-import { Calendar, Search, Sparkles, CheckCircle, Clock, XCircle } from "lucide-react";
+import { Calendar, Search, CheckCircle, Clock, XCircle } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 export const EventsView = ({ searchTerm, statusFilter, userRole }) => {
@@ -79,14 +79,18 @@ export const EventsView = ({ searchTerm, statusFilter, userRole }) => {
 
   if (isLoading) {
     return (
-      <div className="space-y-4">
-        {[...Array(3)].map((_, i) => (
-          <Card key={i} className="animate-pulse bg-white/5 border-white/10">
+      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+        {[...Array(6)].map((_, i) => (
+          <Card key={i} className="professional-card animate-pulse">
             <CardContent className="p-6">
-              <div className="flex flex-col space-y-3">
-                <Skeleton className="h-6 w-3/4 bg-white/10" />
-                <Skeleton className="h-4 w-1/2 bg-white/10" />
-                <Skeleton className="h-4 w-2/3 bg-white/10" />
+              <div className="space-y-4">
+                <Skeleton className="h-6 w-3/4 bg-muted" />
+                <Skeleton className="h-4 w-1/2 bg-muted" />
+                <Skeleton className="h-4 w-2/3 bg-muted" />
+                <div className="grid grid-cols-2 gap-4">
+                  <Skeleton className="h-16 bg-muted" />
+                  <Skeleton className="h-16 bg-muted" />
+                </div>
               </div>
             </CardContent>
           </Card>
@@ -97,24 +101,24 @@ export const EventsView = ({ searchTerm, statusFilter, userRole }) => {
 
   if (error) {
     return (
-      <div className="flex flex-col items-center justify-center py-12 text-center">
-        <div className="bg-red-500/20 backdrop-blur-sm rounded-full p-6 mb-4 border border-red-500/30">
-          <XCircle className="h-12 w-12 text-red-400" />
+      <div className="flex flex-col items-center justify-center py-16 text-center">
+        <div className="bg-destructive/10 rounded-full p-6 mb-6 border border-destructive/20">
+          <XCircle className="h-12 w-12 text-destructive" />
         </div>
-        <h3 className="text-xl font-medium mb-2 text-white">Error Loading Events</h3>
-        <p className="text-white/70 text-sm max-w-md">{error}</p>
+        <h3 className="text-xl font-semibold mb-2 text-foreground">Error Loading Events</h3>
+        <p className="text-muted-foreground max-w-md">{error}</p>
       </div>
     );
   }
 
   if (filteredProposals.length === 0) {
     return (
-      <div className="flex flex-col items-center justify-center py-12 text-center">
-        <div className="bg-white/5 backdrop-blur-sm rounded-full p-6 mb-4 border border-white/10">
-          <Search className="h-12 w-12 text-white/50" />
+      <div className="flex flex-col items-center justify-center py-16 text-center">
+        <div className="bg-muted/50 rounded-full p-6 mb-6 border border-border">
+          <Search className="h-12 w-12 text-muted-foreground" />
         </div>
-        <h3 className="text-xl font-medium mb-2 text-white">No events found</h3>
-        <p className="text-white/70 text-sm max-w-md">
+        <h3 className="text-xl font-semibold mb-2 text-foreground">No Events Found</h3>
+        <p className="text-muted-foreground max-w-md">
           {searchTerm ? 'Try adjusting your search or filter criteria' : 'No events have been submitted yet'}
         </p>
       </div>
@@ -125,33 +129,35 @@ export const EventsView = ({ searchTerm, statusFilter, userRole }) => {
   if (userRole === 'admin') {
     return (
       <>
-        <Tabs value={activeStatusTab} onValueChange={setActiveStatusTab} className="space-y-6">
-          <TabsList className="bg-white/5 border border-white/10 backdrop-blur-sm">
-            <TabsTrigger 
-              value="pending" 
-              className="data-[state=active]:bg-yellow-500/20 data-[state=active]:text-yellow-400 data-[state=active]:border-yellow-400/30"
-            >
-              <Clock className="h-4 w-4 mr-2" />
-              Pending Approval
-            </TabsTrigger>
-            <TabsTrigger 
-              value="approved" 
-              className="data-[state=active]:bg-green-500/20 data-[state=active]:text-green-400 data-[state=active]:border-green-400/30"
-            >
-              <CheckCircle className="h-4 w-4 mr-2" />
-              Approved
-            </TabsTrigger>
-            <TabsTrigger 
-              value="rejected" 
-              className="data-[state=active]:bg-red-500/20 data-[state=active]:text-red-400 data-[state=active]:border-red-400/30"
-            >
-              <XCircle className="h-4 w-4 mr-2" />
-              Rejected
-            </TabsTrigger>
-          </TabsList>
+        <Tabs value={activeStatusTab} onValueChange={setActiveStatusTab} className="space-y-8">
+          <div className="flex justify-center">
+            <TabsList className="bg-card border border-border">
+              <TabsTrigger 
+                value="pending" 
+                className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground"
+              >
+                <Clock className="h-4 w-4 mr-2" />
+                Pending Approval
+              </TabsTrigger>
+              <TabsTrigger 
+                value="approved" 
+                className="data-[state=active]:bg-success data-[state=active]:text-success-foreground"
+              >
+                <CheckCircle className="h-4 w-4 mr-2" />
+                Approved
+              </TabsTrigger>
+              <TabsTrigger 
+                value="rejected" 
+                className="data-[state=active]:bg-destructive data-[state=active]:text-destructive-foreground"
+              >
+                <XCircle className="h-4 w-4 mr-2" />
+                Rejected
+              </TabsTrigger>
+            </TabsList>
+          </div>
 
           <TabsContent value={activeStatusTab}>
-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+            <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
               {filteredProposals.map((proposal) => (
                 <EventProposalCard
                   key={proposal.id}
@@ -182,7 +188,7 @@ export const EventsView = ({ searchTerm, statusFilter, userRole }) => {
   // Coordinator and public view
   return (
     <>
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
         {filteredProposals.map((proposal) => (
           <EventProposalCard
             key={proposal.id}
