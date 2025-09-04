@@ -1,4 +1,4 @@
-git import nodemailer from 'nodemailer';
+import nodemailer from 'nodemailer';
 import { generateToken } from '../utils/jwt';
 import { eq } from 'drizzle-orm';
 import { db } from '../db';
@@ -106,10 +106,7 @@ export const sendPasswordResetEmail = async (email: string) => {
     }
 
     // Generate password reset token (expires in 1 hour)
-    const token = generateToken(
-      { userId: user.id, email: user.email, role: user.role },
-      '1h'
-    );
+    const token = generateToken({ userId: user.id, email: user.email, role: user.role });
 
     const resetUrl = `${APP_URL}/reset-password?token=${token}`;
 
