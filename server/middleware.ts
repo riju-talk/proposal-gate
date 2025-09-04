@@ -44,16 +44,15 @@ export const securityMiddleware = [
   }),
 ];
 
-// Admin authentication middleware using JWT
+// Admin authentication middleware using JWT from HTTP-only cookies
 export const requireAdmin = (req: Request, res: Response, next: NextFunction) => {
   try {
-    const authHeader = req.headers.authorization;
+    const token = req.cookies?.auth_token;
     
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    if (!token) {
       return res.status(401).json({ error: 'No authentication token provided' });
     }
     
-    const token = authHeader.split(' ')[1];
     const decoded = verifyJWT(token);
     
     if (!decoded) {
@@ -72,7 +71,11 @@ export const requireAdmin = (req: Request, res: Response, next: NextFunction) =>
 declare global {
   namespace Express {
     interface Request {
-      user?: any;
+      user?: {
+        email: string;
+        name: string;
+        role: string;
+      };
     }
   }
 }
