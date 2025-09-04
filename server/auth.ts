@@ -18,7 +18,7 @@ const otpSessions = new Map<string, OTPSession>();
 const createTransporter = () => {
   if (process.env.NODE_ENV === 'development' || !process.env.SMTP_USER) {
     // For development, create a test transporter
-    return nodemailer.createTransport({
+    return nodemailer.createTransporter({
       host: 'smtp.ethereal.email',
       port: 587,
       secure: false,
@@ -30,7 +30,7 @@ const createTransporter = () => {
   }
 
   // Production Gmail SMTP
-  return nodemailer.createTransport({
+  return nodemailer.createTransporter({
     service: 'gmail',
     auth: {
       user: process.env.SMTP_USER,
@@ -162,8 +162,7 @@ export const verifyOTP = async (email: string, inputOTP: string): Promise<{ succ
 
 export const cleanupExpiredOTPs = () => {
   const now = new Date();
-  const entries = Array.from(otpSessions.entries());
-  for (const [email, session] of entries) {
+  for (const [email, session] of otpSessions.entries()) {
     if (now > session.expiresAt) {
       otpSessions.delete(email);
     }
