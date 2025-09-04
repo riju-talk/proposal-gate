@@ -5,7 +5,7 @@ import { ProposalDetailsModal } from "@/components/ProposalDetailsModal";
 import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/hooks/use-toast";
-import { Calendar, Search, CheckCircle, Clock, XCircle } from "lucide-react";
+import { Search, CheckCircle, Clock, XCircle } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 export const EventsView = ({ searchTerm, statusFilter, userRole }) => {
@@ -25,17 +25,17 @@ export const EventsView = ({ searchTerm, statusFilter, userRole }) => {
       if (!proposal) return false;
       
       const searchLower = searchTerm.toLowerCase();
-      const eventName = (proposal.event_name || proposal.eventName || '').toLowerCase();
-      const organizerName = (proposal.organizer_name || proposal.organizerName || '').toLowerCase();
-      const description = (proposal.description || '').toLowerCase();
-      const venue = (proposal.venue || '').toLowerCase();
+      const eventName = (proposal.eventName || '').toLowerCase();
+      const organizerName = (proposal.organizerName || '').toLowerCase();
+      const description = (proposal.eventDescription || '').toLowerCase();
+      const location = (proposal.eventLocation || '').toLowerCase();
       
       // Filter by search term
       const matchesSearch = 
         eventName.includes(searchLower) ||
         organizerName.includes(searchLower) ||
         description.includes(searchLower) ||
-        venue.includes(searchLower);
+        location.includes(searchLower);
       
       // Filter by status for admin tabs
       if (userRole === 'admin') {
@@ -59,20 +59,28 @@ export const EventsView = ({ searchTerm, statusFilter, userRole }) => {
     setIsModalOpen(true);
   };
 
-  const handleStatusUpdate = async (id, status, comments) => {
+  const handleStatusUpdate = async (id, status, comments = '') => {
     try {
+      // Update the proposal status
       await updateProposalStatus(id, status, comments);
-      setIsModalOpen(false);
+      
+      // Show success toast
       toast({
         title: 'Success',
-        description: 'Event approval updated successfully',
+        description: `Event ${status} successfully`,
+        variant: 'default',
+        duration: 3000,
       });
+      
+      // Close the modal
+      setIsModalOpen(false);
     } catch (error) {
-      console.error('Error updating proposal status:', error);
+      console.error('Error updating status:', error);
       toast({
         title: 'Error',
-        description: 'Failed to update event approval. Please try again.',
+        description: error.message || 'Failed to update status',
         variant: 'destructive',
+        duration: 5000,
       });
     }
   };
