@@ -8,8 +8,9 @@ import { useToast } from "@/hooks/use-toast";
 import { Search, CheckCircle, Clock, XCircle } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
-export const EventsView = ({ searchTerm, statusFilter, userRole }) => {
-  const { proposals, isLoading, updateProposalStatus, error } = useEventProposals(statusFilter, userRole);
+export const EventsView = ({ searchTerm = "", statusFilter, userRole }) => {
+  const { proposals, isLoading, updateProposalStatus, error } =
+    useEventProposals(statusFilter, userRole);
   const [selectedProposal, setSelectedProposal] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [activeStatusTab, setActiveStatusTab] = useState("pending");
@@ -17,39 +18,43 @@ export const EventsView = ({ searchTerm, statusFilter, userRole }) => {
 
   const filteredProposals = useMemo(() => {
     if (!Array.isArray(proposals)) {
-      console.error('Proposals is not an array:', proposals);
+      console.error("Proposals is not an array:", proposals);
       return [];
     }
-    
+
     return proposals.filter((proposal) => {
       if (!proposal) return false;
-      
+
       const searchLower = searchTerm.toLowerCase();
-      const eventName = (proposal.eventName || '').toLowerCase();
-      const organizerName = (proposal.organizerName || '').toLowerCase();
-      const description = (proposal.eventDescription || '').toLowerCase();
-      const location = (proposal.eventLocation || '').toLowerCase();
-      
+
+      // ✅ Use normalized snake_case field names
+      const eventName = (proposal.event_name || "").toLowerCase();
+      const organizerName = (proposal.organizer_name || "").toLowerCase();
+      const description = (proposal.description || "").toLowerCase();
+      const venue = (proposal.venue || "").toLowerCase();
+
       // Filter by search term
-      const matchesSearch = 
+      const matchesSearch =
         eventName.includes(searchLower) ||
         organizerName.includes(searchLower) ||
         description.includes(searchLower) ||
-        location.includes(searchLower);
-      
-      // Filter by status for admin tabs
-      if (userRole === 'admin') {
-        const matchesStatusTab = 
-          (activeStatusTab === 'pending' && proposal.status === 'pending') ||
-          (activeStatusTab === 'approved' && proposal.status === 'approved') ||
-          (activeStatusTab === 'rejected' && proposal.status === 'rejected');
-        
+        venue.includes(searchLower);
+
+      const status = (proposal.status || "").toLowerCase();
+
+      if (userRole === "admin") {
+        const matchesStatusTab =
+          (activeStatusTab === "pending" && status === "pending") ||
+          (activeStatusTab === "approved" && status === "approved") ||
+          (activeStatusTab === "rejected" && status === "rejected");
+
         return matchesSearch && matchesStatusTab;
       }
-      
-      // For coordinator and public, filter by general status
-      const matchesStatus = statusFilter === 'all' || proposal.status === statusFilter;
-      
+
+      // Coordinator/public: filter by passed statusFilter
+      const matchesStatus =
+        statusFilter === "all" || status === statusFilter.toLowerCase();
+
       return matchesSearch && matchesStatus;
     });
   }, [proposals, searchTerm, statusFilter, userRole, activeStatusTab]);
@@ -59,32 +64,28 @@ export const EventsView = ({ searchTerm, statusFilter, userRole }) => {
     setIsModalOpen(true);
   };
 
-  const handleStatusUpdate = async (id, status, comments = '') => {
+  const handleStatusUpdate = async (id, status, comments = "") => {
     try {
-      // Update the proposal status
       await updateProposalStatus(id, status, comments);
-      
-      // Show success toast
       toast({
-        title: 'Success',
+        title: "Success",
         description: `Event ${status} successfully`,
-        variant: 'default',
+        variant: "default",
         duration: 3000,
       });
-      
-      // Close the modal
       setIsModalOpen(false);
     } catch (error) {
-      console.error('Error updating status:', error);
+      console.error("Error updating status:", error);
       toast({
-        title: 'Error',
-        description: error.message || 'Failed to update status',
-        variant: 'destructive',
+        title: "Error",
+        description: error.message || "Failed to update status",
+        variant: "destructive",
         duration: 5000,
       });
     }
   };
 
+  // 🔄 Loading state
   if (isLoading) {
     return (
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
@@ -107,55 +108,67 @@ export const EventsView = ({ searchTerm, statusFilter, userRole }) => {
     );
   }
 
+  // ❌ Error state
   if (error) {
     return (
       <div className="flex flex-col items-center justify-center py-16 text-center">
         <div className="bg-destructive/10 rounded-full p-6 mb-6 border border-destructive/20">
           <XCircle className="h-12 w-12 text-destructive" />
         </div>
-        <h3 className="text-xl font-semibold mb-2 text-foreground">Error Loading Events</h3>
+        <h3 className="text-xl font-semibold mb-2 text-foreground">
+          Error Loading Events
+        </h3>
         <p className="text-muted-foreground max-w-md">{error}</p>
       </div>
     );
   }
 
+  // 📭 Empty state
   if (filteredProposals.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center py-16 text-center">
         <div className="bg-muted/50 rounded-full p-6 mb-6 border border-border">
           <Search className="h-12 w-12 text-muted-foreground" />
         </div>
-        <h3 className="text-xl font-semibold mb-2 text-foreground">No Events Found</h3>
+        <h3 className="text-xl font-semibold mb-2 text-foreground">
+          No Events Found
+        </h3>
         <p className="text-muted-foreground max-w-md">
-          {searchTerm ? 'Try adjusting your search or filter criteria' : 'No events have been submitted yet'}
+          {searchTerm
+            ? "Try adjusting your search or filter criteria"
+            : "No events have been submitted yet"}
         </p>
       </div>
     );
   }
 
-  // Admin view with status tabs
-  if (userRole === 'admin') {
+  // 🛡 Admin view with tabs
+  if (userRole === "admin") {
     return (
       <>
-        <Tabs value={activeStatusTab} onValueChange={setActiveStatusTab} className="space-y-8">
+        <Tabs
+          value={activeStatusTab}
+          onValueChange={setActiveStatusTab}
+          className="space-y-8"
+        >
           <div className="flex justify-center">
             <TabsList className="bg-card border border-border">
-              <TabsTrigger 
-                value="pending" 
+              <TabsTrigger
+                value="pending"
                 className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground"
               >
                 <Clock className="h-4 w-4 mr-2" />
                 Pending Approval
               </TabsTrigger>
-              <TabsTrigger 
-                value="approved" 
+              <TabsTrigger
+                value="approved"
                 className="data-[state=active]:bg-success data-[state=active]:text-success-foreground"
               >
                 <CheckCircle className="h-4 w-4 mr-2" />
                 Approved
               </TabsTrigger>
-              <TabsTrigger 
-                value="rejected" 
+              <TabsTrigger
+                value="rejected"
                 className="data-[state=active]:bg-destructive data-[state=active]:text-destructive-foreground"
               >
                 <XCircle className="h-4 w-4 mr-2" />
@@ -171,7 +184,7 @@ export const EventsView = ({ searchTerm, statusFilter, userRole }) => {
                   key={proposal.id}
                   proposal={proposal}
                   onViewDetails={() => handleViewDetails(proposal)}
-                  showActions={userRole === 'admin'}
+                  showActions
                   userRole={userRole}
                 />
               ))}
@@ -184,7 +197,7 @@ export const EventsView = ({ searchTerm, statusFilter, userRole }) => {
             isOpen={isModalOpen}
             onClose={() => setIsModalOpen(false)}
             proposal={selectedProposal}
-            showActions={userRole === 'admin'}
+            showActions
             onStatusUpdate={handleStatusUpdate}
             userRole={userRole}
           />
@@ -193,7 +206,7 @@ export const EventsView = ({ searchTerm, statusFilter, userRole }) => {
     );
   }
 
-  // Coordinator and public view
+  // 👥 Coordinator / Public view
   return (
     <>
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">

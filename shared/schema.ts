@@ -2,92 +2,97 @@ import {
   pgTable,
   text,
   integer,
-  boolean,
   timestamp,
   uuid,
   numeric,
+  pgEnum,
+  date,
+  time,
+  boolean,
 } from "drizzle-orm/pg-core";
-import { z } from "zod";
 import { sql } from "drizzle-orm";
+import { z } from "zod";
 
 // ===================================================
-// ✅ 1. Event Proposals Table
+// Enums
+// ===================================================
+export const statusEnum = pgEnum("status_enum", [
+  "pending",
+  "approved",
+  "rejected",
+]);
+
+// ===================================================
+// 1. Event Proposals Table
 // ===================================================
 export const eventProposals = pgTable("event_proposals", {
   id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
   eventName: text("event_name").notNull(),
-  eventType: text("event_type").notNull(),
-  description: text("description").notNull(),
-  eventDate: timestamp("event_date", { mode: "date" }).notNull(), // maps to DATE
-  startTime: text("start_time").notNull(), // TIME WITHOUT TIME ZONE → string format (e.g., "14:30")
-  endTime: text("end_time").notNull(),
-  venue: text("venue").notNull(),
-  expectedParticipants: integer("expected_participants").notNull(),
-  budgetEstimate: numeric("budget_estimate"), // optional decimal
-  objectives: text("objectives"), // optional
-  additionalRequirements: text("additional_requirements"),
   organizerName: text("organizer_name").notNull(),
   organizerEmail: text("organizer_email").notNull(),
-  organizerPhone: text("organizer_phone"), // optional
-  pdfDocumentUrl: text("pdf_document_url"), // optional
-  status: text("status")
+  organizerPhone: text("organizer_phone"),
+  eventType: text("event_type").notNull(),
+  eventDate: date("event_date").notNull(), // DATE
+  startTime: time("start_time").notNull(), // TIME
+  endTime: time("end_time").notNull(),
+  venue: text("venue").notNull(),
+  expectedParticipants: integer("expected_participants").notNull(),
+  budgetEstimate: numeric("budget_estimate"),
+  description: text("description").notNull(),
+  objectives: text("objectives"),
+  additionalRequirements: text("additional_requirements"),
+  pdfDocumentUrl: text("pdf_document_url"),
+  status: statusEnum("status").notNull().default(sql`'pending'`),
+  createdAt: timestamp("created_at", { withTimezone: true })
     .notNull()
-    .default("pending")
-    .check("status_check", sql`status IN ('pending', 'approved', 'rejected')`),
-  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
-  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+    .defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
 });
 
 // ===================================================
-// ✅ 2. Authorized Admins Table
+// 2. Authorized Admins Table
 // ===================================================
 export const authorizedAdmins = pgTable("authorized_admins", {
   id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
   email: text("email").notNull().unique(),
   name: text("name").notNull(),
-  role: text("role").notNull().check(
-    "role_check",
-    sql`role IN ('super_admin', 'admin', 'moderator')`
-  ),
-  department: text("department"),
-  phone: text("phone"),
+  role: text("role").notNull(), // plain text in schema
   approvalOrder: integer("approval_order").notNull(),
   isActive: boolean("is_active").notNull().default(true),
-  lastLogin: timestamp("last_login"),
-  passwordHash: text("password_hash").notNull(),
-  passwordResetToken: text("password_reset_token"),
-  passwordResetExpires: timestamp("password_reset_expires"),
-  failedLoginAttempts: integer("failed_login_attempts").default(0),
-  accountLocked: boolean("account_locked").default(false),
-  mfaEnabled: boolean("mfa_enabled").default(false),
-  mfaSecret: text("mfa_secret"),
-  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
-  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  createdAt: timestamp("created_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
 });
 
 // ===================================================
-// ✅ 3. Event Approvals Table
+// 3. Event Approvals Table
 // ===================================================
 export const eventApprovals = pgTable("event_approvals", {
   id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
   eventProposalId: uuid("event_proposal_id")
     .notNull()
-    .references(() => eventProposals.id, { onDelete: "cascade" }), // FK to event_proposals.id
+    .references(() => eventProposals.id, { onDelete: "cascade" }),
   adminEmail: text("admin_email")
     .notNull()
-    .references(() => authorizedAdmins.email, { onDelete: "cascade" }), // FK to authorized_admins.email
-  approvedAt: timestamp("approved_at", { withTimezone: true }), // nullable
-  comments: text("comments"), // optional
-  status: text("status")
+    .references(() => authorizedAdmins.email, { onDelete: "cascade" }),
+  approvedAt: timestamp("approved_at", { withTimezone: true }),
+  comments: text("comments"),
+  status: statusEnum("status").notNull().default(sql`'pending'`),
+  createdAt: timestamp("created_at", { withTimezone: true })
     .notNull()
-    .default("pending")
-    .check("status_check", sql`status IN ('pending', 'approved', 'rejected')`),
-  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
-  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+    .defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
 });
 
 // ===================================================
-// ✅ 4. OTP-verification table
+// 4. OTP Verifications Table
 // ===================================================
 export const otpVerifications = pgTable("otp_verifications", {
   id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
@@ -95,23 +100,64 @@ export const otpVerifications = pgTable("otp_verifications", {
   otp: text("otp").notNull(),
   used: boolean("used").notNull().default(false),
   expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
-  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  createdAt: timestamp("created_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
 });
 
 // ===================================================
-// ✅ Zod Schemas for Validation
+// TypeScript Types
 // ===================================================
+export type EventProposal = typeof eventProposals.$inferSelect;
+export type NewEventProposal = typeof eventProposals.$inferInsert;
 
-export const updateEventApprovalSchema = z.object({
-  status: z.enum(["approved", "rejected"], { required_error: "Status must be 'approved' or 'rejected'" }),
+export type AuthorizedAdmin = typeof authorizedAdmins.$inferSelect;
+export type NewAuthorizedAdmin = typeof authorizedAdmins.$inferInsert;
+
+export type EventApproval = typeof eventApprovals.$inferSelect;
+export type NewEventApproval = typeof eventApprovals.$inferInsert;
+
+export type OTPVerification = typeof otpVerifications.$inferSelect;
+export type NewOTPVerification = typeof otpVerifications.$inferInsert;
+
+// ===================================================
+// Validation Schemas
+// ===================================================
+export const eventProposalSchema = z.object({
+  eventName: z.string().min(3).max(255),
+  organizerName: z.string().min(3).max(255),
+  organizerEmail: z.string().email(),
+  organizerPhone: z.string().optional(),
+  eventType: z.string().min(3).max(100),
+  eventDate: z.string().or(z.date()), // DATE
+  startTime: z.string(), // TIME
+  endTime: z.string(),
+  venue: z.string().min(3).max(255),
+  expectedParticipants: z.number().int().positive(),
+  budgetEstimate: z.number().optional(),
+  description: z.string().min(10),
+  objectives: z.string().optional(),
+  additionalRequirements: z.string().optional(),
+  pdfDocumentUrl: z.string().url().optional(),
+});
+
+export const adminSchema = z.object({
+  email: z.string().email(),
+  name: z.string().min(3).max(255),
+  role: z.string(),
+  approvalOrder: z.number().int().positive(),
+  isActive: z.boolean().default(true),
+});
+
+export const eventApprovalSchema = z.object({
+  adminEmail: z.string().email(),
+  eventProposalId: z.string().uuid(),
+  status: z.enum(statusEnum.enumValues),
   comments: z.string().optional(),
 });
 
-// ===================================================
-// ✅ TypeScript Types
-// ===================================================
-export type EventProposal = typeof eventProposals.$inferSelect;
-export type AuthorizedAdmin = typeof authorizedAdmins.$inferSelect;
-export type EventApproval = typeof eventApprovals.$inferSelect;
-export type UpdateEventApproval = z.infer<typeof updateEventApprovalSchema>;
-export type OTPVerification = typeof otpVerifications.$inferSelect;
+export const otpVerificationSchema = z.object({
+  email: z.string().email(),
+  otp: z.string().length(6),
+  expiresAt: z.date(),
+});

@@ -3,79 +3,89 @@ import express, { type Request, type Response, type NextFunction } from "express
 import { createServer } from "http";
 import { fileURLToPath } from "url";
 import path from "path";
-import { setupVite } from "./vite";
-import { registerRoutes } from "./routes";
 import dotenv from "dotenv";
-import { serveStatic } from "./vite";
+import helmet from "helmet";
+import cors from "cors";
+import cookieParser from "cookie-parser";
 
-// Load environment variables
-dotenv.config();
-
-// Resolve paths
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
-
-// Initialize app
-const app = express();
-const server = createServer(app);
+import { setupVite, serveStatic } from "./vite";
+import { registerRoutes } from "./routes";
 
 // ==================== Environment Setup ====================
+dotenv.config();
+
 const NODE_ENV = process.env.NODE_ENV || "development";
 const PORT = process.env.PORT || 3000;
 const CLIENT_PORT = process.env.VITE_PORT || 5000;
 
-// ==================== Middleware ====================
-app.use(express.json({ limit: "10mb" }));
-app.use(express.urlencoded({ extended: true }));
-
-// Apply security headers
-app.use((_req, res, next) => {
-  res.setHeader("X-Content-Type-Options", "nosniff");
-  res.setHeader("X-Frame-Options", "SAMEORIGIN");
-  res.setHeader("X-XSS-Protection", "1; mode=block");
-  res.setHeader("Strict-Transport-Security", "max-age=31536000; includeSubDomains");
-  next();
-});
-
-// CORS setup (for dev + prod)
 const allowedOrigins = [
   `http://localhost:${CLIENT_PORT}`,
   `http://127.0.0.1:${CLIENT_PORT}`,
   // Add production domains here
 ];
 
-app.use((req, res, next) => {
-  const origin = req.headers.origin;
-  if (origin && allowedOrigins.includes(origin)) {
-    res.setHeader("Access-Control-Allow-Origin", origin);
-  }
-  res.setHeader("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS, PATCH");
-  res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization, X-Requested-With");
-  res.setHeader("Access-Control-Allow-Credentials", "true");
+// ==================== Paths ====================
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
-  if (req.method === "OPTIONS") {
-    return res.status(200).end();
-  }
+// ==================== App & Server ====================
+const app = express();
+const server = createServer(app);
 
-  next();
-});
+// ==================== Middleware ====================
+// Parse requests
+app.use(express.json({ limit: "10mb" }));
+app.use(express.urlencoded({ extended: true }));
+
+app.use(cookieParser());
+
+// Security headers
+app.use(
+  helmet({
+    contentSecurityPolicy: NODE_ENV === "production", // disable CSP in dev
+  })
+);
+
+// CORS
+app.use(
+  cors({
+    origin: (origin, callback) => {
+      if (!origin || allowedOrigins.includes(origin)) {
+        callback(null, true);
+      } else {
+        callback(new Error("Not allowed by CORS"));
+      }
+    },
+    credentials: true,
+    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],
+  })
+);
 
 // ==================== Routes ====================
-app.use((err: Error, req: Request, res: Response, next: NextFunction) => {
-  console.error(err.stack);
-  res.status(500).json({ error: 'Internal Server Error' });
-});
-
-// Register API routes
 registerRoutes(app);
 
-// Serve frontend in production
-if (NODE_ENV === 'production') {
+// Dev mode: setup Vite middleware
+if (NODE_ENV === "development") {
+  setupVite(app, server).catch((err) => {
+    console.error("⚠️ Failed to setup Vite middleware:", err);
+    process.exit(1);
+  });
+}
+
+// Prod mode: serve built client
+if (NODE_ENV === "production") {
   serveStatic(app);
 }
 
+// ==================== Error Handling ====================
 // 404 handler
 app.use((req: Request, res: Response) => {
-  res.status(404).json({ error: 'Not Found' });
+  res.status(404).json({ error: "Not Found" });
+});
+
+// Error handler
+app.use((err: Error, req: Request, res: Response, next: NextFunction) => {
+  console.error("[server] Uncaught error:", err.stack || err.message);
+  res.status(500).json({ error: "Internal Server Error" });
 });
 
 // ==================== Server Start ====================

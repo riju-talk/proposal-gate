@@ -1,153 +1,83 @@
-import { useState, useEffect, useCallback } from 'react';
-import { useAuth } from './useAuth';
+// hooks/useEventApprovals.js
+import { useState, useEffect, useCallback } from "react";
+import { useAuth } from "./useAuth";
+import { apiClient } from "../lib/api";
 
 export const useEventApprovals = (eventId) => {
   const { user } = useAuth();
   const [approvals, setApprovals] = useState([]);
-  const [authorizedAdmins, setAuthorizedAdmins] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  const fetchAdmins = useCallback(async () => {
-    try {
-      const response = await fetch('/api/admins');
-      if (!response.ok) {
-        throw new Error('Failed to fetch admins');
-      }
-      const data = await response.json();
-      
-      if (!Array.isArray(data)) {
-        console.error('Unexpected response format for admins:', data);
-        return [];
-      }
-      
-      // Filter out developer role and inactive admins, then sort by approval_order
-      const filteredAdmins = data
-        .filter((admin) => admin.is_active && admin.role !== 'developer')
-        .sort((a, b) => (a.approval_order || 0) - (b.approval_order || 0));
-      
-      setAuthorizedAdmins(filteredAdmins);
-      return filteredAdmins;
-    } catch (err) {
-      console.error('Error fetching admins:', err);
-      setError('Failed to load admin data');
-      return [];
-    }
-  }, []);
-
+  // ---- Fetch approvals ----
   const fetchApprovals = useCallback(async (eventId) => {
     try {
-      const response = await fetch(`/api/events/${eventId}/approvals`);
-      if (!response.ok) {
-        throw new Error(`Failed to fetch approvals: ${response.statusText}`);
-      }
-      
-      const data = await response.json();
-      
-      if (!Array.isArray(data)) {
-        console.error('Unexpected response format for approvals:', data);
-        return;
-      }
-      
-      // Sort approvals by approval_order
-      const sortedApprovals = data.sort((a, b) => {
-        const orderA = a.approval_order || 0;
-        const orderB = b.approval_order || 0;
-        return orderA - orderB;
-      });
-      
-      setApprovals(sortedApprovals);
+      const { data, error } = await apiClient.getEventApprovals(eventId);
+      if (error) throw new Error(error);
+
+      setApprovals(data || []);
     } catch (err) {
-      console.error('Error fetching approvals:', err);
-      setError('Failed to load approval data');
+      console.error("Error fetching approvals:", err);
+      setError("Failed to load approval data");
     }
   }, []);
 
-  const updateApprovalStatus = useCallback(async (
-    eventId, 
-    adminEmail, 
-    status, 
-    comments = ''
-  ) => {
-    try {
-      const token = localStorage.getItem('admin_token');
-      
-      if (!token) {
-        throw new Error('Not authenticated');
-      }
-
-      const response = await fetch(`/api/events/${eventId}/approve`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`,
-        },
-        body: JSON.stringify({
-          adminEmail,
+  // ---- Update approval status ----
+  const updateApprovalStatus = useCallback(
+    async (status, comments = "") => {
+      try {
+        const { error } = await apiClient.updateEventApprovalByProposalAndAdmin(
+          eventId,
+          user?.email,
           status,
-          comments,
-        }),
-      });
+          comments
+        );
 
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.error || 'Failed to update approval status');
+        if (error) throw new Error(error);
+
+        // Refresh approvals
+        await fetchApprovals(eventId);
+        return { success: true };
+      } catch (err) {
+        console.error("Error updating approval status:", err);
+        return {
+          success: false,
+          error: err instanceof Error ? err.message : "Failed to update approval",
+        };
       }
+    },
+    [eventId, user?.email, fetchApprovals]
+  );
 
-      const result = await response.json();
-      
-      // Refresh approvals after successful update
-      await fetchApprovals(eventId);
-      return { success: true, result };
-    } catch (err) {
-      console.error('Error updating approval status:', err);
-      return { 
-        success: false, 
-        error: err instanceof Error ? err.message : 'Failed to update approval status' 
-      };
-    }
-  }, [fetchApprovals]);
+  const approveEvent = useCallback(
+    (comments = "") => updateApprovalStatus("approved", comments),
+    [updateApprovalStatus]
+  );
 
-  const canApprove = useCallback((adminEmail) => {
+  const rejectEvent = useCallback(
+    (comments = "") => updateApprovalStatus("rejected", comments),
+    [updateApprovalStatus]
+  );
+
+  const canApprove = useCallback(() => {
     if (!user?.email || !eventId) return false;
-    
-    // Check if the current user is the admin trying to approve
-    if (user.email !== adminEmail) return false;
-
-    // Get the admin's approval record
-    const approval = approvals.find(a => a.admin_email === adminEmail);
-    
-    // Can approve if status is still pending
-    return approval?.status === 'pending';
+    const approval = approvals.find((a) => a.admin_email === user.email);
+    return approval?.status === "pending";
   }, [user, eventId, approvals]);
 
   useEffect(() => {
-    const fetchData = async () => {
-      if (!eventId) return;
-      
+    if (eventId) {
       setIsLoading(true);
-      setError(null);
-      
-      try {
-        await fetchAdmins();
-        await fetchApprovals(eventId);
-      } catch (err) {
-        console.error('Error in fetchData:', err);
-        setError('Failed to load data');
-      } finally {
-        setIsLoading(false);
-      }
-    };
-    
-    fetchData();
-  }, [eventId, fetchAdmins, fetchApprovals]);
+      fetchApprovals(eventId).finally(() => setIsLoading(false));
+    }
+  }, [eventId, fetchApprovals]);
 
   return {
     approvals,
-    authorizedAdmins,
     isLoading,
     error,
-    updateApprovalStatus,
+    approveEvent,
+    rejectEvent,
     canApprove,
   };
 };

@@ -1,93 +1,94 @@
-// API client to replace Supabase calls
+// client/src/lib/api.js
 class ApiClient {
-  baseUrl = '/api';
+  baseUrl = "/api";
 
   async request(endpoint, options = {}) {
     try {
       const response = await fetch(`${this.baseUrl}${endpoint}`, {
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
           ...options.headers,
         },
+        credentials: "include", // send cookies (JWT)
         ...options,
       });
 
       if (!response.ok) {
-        const errorData = await response.json();
-        return { error: errorData.error || 'Request failed' };
+        let errorMessage = "Request failed";
+        try {
+          const errorData = await response.json();
+          errorMessage = errorData.error || errorMessage;
+        } catch {
+          // ignore parsing error
+        }
+        return { error: errorMessage };
       }
 
       const data = await response.json();
       return { data };
     } catch (error) {
-      return { error: error instanceof Error ? error.message : 'Unknown error' };
+      return {
+        error: error instanceof Error ? error.message : "Unknown error",
+      };
     }
   }
 
+  // ================== AUTH ==================
   async sendOTP(email) {
-    return this.request('/auth/send-otp', {
-      method: 'POST',
+    return this.request("/auth/send-otp", {
+      method: "POST",
       body: JSON.stringify({ email }),
     });
   }
 
   async verifyOTP(email, otp) {
-    return this.request('/auth/verify-otp', {
-      method: 'POST',
+    return this.request("/auth/verify-otp", {
+      method: "POST",
       body: JSON.stringify({ email, otp }),
     });
   }
 
-  // Profile methods
-  async getProfile(id) {
-    return this.request(`/profiles/${id}`);
+  async logout() {
+    return this.request("/auth/logout", { method: "POST" });
   }
 
-  // Event proposal methods
-  async getEventProposals() {
-    return this.request('/event-proposals');
+  // ================== EVENTS ==================
+  async getPublicEventProposals() {
+    return this.request("/event-proposals/public");
   }
+
+  async getAdminEventProposals() {
+    return this.request("/event-proposals/admin");
+  }
+
   async getEventProposal(id) {
     return this.request(`/event-proposals/${id}`);
   }
 
-  async updateEventProposalStatus(id, status) {
-    return this.request(`/event-proposals/${id}/status`, {
-      method: 'PATCH',
-      body: JSON.stringify({ status }),
-    });
-  }
-
-  // Event approval methods
+  // ================== APPROVALS ==================
   async getEventApprovals(eventId) {
-    return this.request(`/event-proposals/${eventId}/approvals`);
+    return this.request(`/events/${eventId}/approvals`);
   }
 
-  async updateEventApproval(id, status, comments) {
-    return this.request(`/event-approvals/${id}`, {
-      method: 'PATCH',
-      body: JSON.stringify({ status, comments }),
+  async getAdminApprovalStatus(eventId, adminEmail) {
+    return this.request(
+      `/events/${eventId}/approvals/${encodeURIComponent(adminEmail)}`
+    );
+  }
+
+  async approveEvent(eventId, comments = "") {
+    return this.request(`/events/${eventId}/approve`, {
+      method: "POST",
+      body: JSON.stringify({ status: "approved", comments }),
     });
   }
 
-
-  async updateEventApprovalByProposalAndAdmin(eventProposalId, adminEmail, status, comments) {
-    // Since we don't have individual approval IDs in the client, we'll create a special endpoint
-    return this.request(`/event-proposals/${eventProposalId}/approvals/${encodeURIComponent(adminEmail)}`, {
-      method: 'PATCH',
-      body: JSON.stringify({ status, comments }),
+  async rejectEvent(eventId, comments = "") {
+    return this.request(`/events/${eventId}/approve`, {
+      method: "POST",
+      body: JSON.stringify({ status: "rejected", comments }),
     });
   }
-
-
-  async updateEventProposal(id, data) {
-    return this.request(`/event-proposals/${id}`, {
-      method: 'PATCH',
-      body: JSON.stringify(data),
-    });
-  }
-
-
 }
 
 export const apiClient = new ApiClient();

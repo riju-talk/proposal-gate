@@ -1,21 +1,49 @@
 // server/jwt.ts
-import jwt from 'jsonwebtoken';
+import jwt, { SignOptions, VerifyOptions } from "jsonwebtoken";
 
 const JWT_SECRET = process.env.JWT_SECRET;
 if (!JWT_SECRET) throw new Error("JWT_SECRET is required");
 
-export const generateJWT = (admin: { email: string; name: string; role: string }): string => {
-  return jwt.sign(
-    { email: admin.email, name: admin.name, role: admin.role },
-    JWT_SECRET,
-    { expiresIn: "24h" }
-  );
+export interface JwtPayload extends jwt.JwtPayload {
+  userId: string;
+  email: string;
+  name?: string;
+  role: string;
+  type?: string; // e.g., "password_reset"
+}
+
+// Generate a JWT
+export const generateJWT = (
+  payload: JwtPayload,
+  expiresIn: number | `${number}s` | `${number}m` | `${number}h` | `${number}d` | `${number}y` = '24h'
+): string => {
+  const options: SignOptions = { expiresIn };
+  return jwt.sign(payload, JWT_SECRET, options);
 };
 
-export const verifyJWT = (token: string): { email: string; name: string; role: string } | null => {
+// Verify a JWT
+export const verifyJWT = (token: string): JwtPayload | null => {
   try {
-    return jwt.verify(token, JWT_SECRET) as any;
-  } catch {
+    const options: VerifyOptions = {};
+    return jwt.verify(token, JWT_SECRET, options) as JwtPayload;
+  } catch (error) {
+    console.error("JWT verification failed:", error);
     return null;
   }
 };
+
+// Helper: Auth token
+export const generateAuthToken = (user: {
+  id: string;
+  email: string;
+  name?: string;
+  role: string;
+}): string => {
+  return generateJWT({
+    userId: user.id,
+    email: user.email,
+    name: user.name,
+    role: user.role,
+  });
+};
+

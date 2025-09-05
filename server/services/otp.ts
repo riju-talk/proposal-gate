@@ -1,15 +1,17 @@
 import { db } from "../db";
 import { otpVerifications, authorizedAdmins } from "@shared/schema";
-import { eq, and } from "drizzle-orm";
+import { eq, and, desc } from "drizzle-orm";
 
 // Generate 6-digit OTP
 const generateOTP = (): string => {
   return Math.floor(100000 + Math.random() * 900000).toString();
 };
 
-// Send OTP (check if email is authorized, then send)
-export const sendOTP = async (email: string): Promise<{ success: boolean; error?: string }> => {
-  // Check if email exists in authorized_admins
+// Send OTP
+export const sendOTP = async (
+  email: string
+): Promise<{ success: boolean; error?: string }> => {
+  // Check if email exists in authorized_admins and is active
   const [admin] = await db
     .select()
     .from(authorizedAdmins)
@@ -20,12 +22,25 @@ export const sendOTP = async (email: string): Promise<{ success: boolean; error?
     return { success: false, error: "Email not authorized" };
   }
 
+  // Check last OTP request (rate limit: 1 OTP per 60 seconds)
+  const [lastOtp] = await db
+    .select()
+    .from(otpVerifications)
+    .where(eq(otpVerifications.email, email))
+    .orderBy(desc(otpVerifications.createdAt))
+    .limit(1);
+
+  if (lastOtp && Date.now() - new Date(lastOtp.createdAt).getTime() < 60 * 1000) {
+    return { success: false, error: "Please wait before requesting another OTP" };
+  }
+
   const otp = generateOTP();
   const expiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
 
-  // Delete any existing OTPs for this email
+  // Invalidate existing OTPs (mark as used)
   await db
-    .delete(otpVerifications)
+    .update(otpVerifications)
+    .set({ used: true })
     .where(eq(otpVerifications.email, email));
 
   // Insert new OTP
@@ -35,8 +50,8 @@ export const sendOTP = async (email: string): Promise<{ success: boolean; error?
     expiresAt,
   });
 
-  // TODO: Send OTP via email (use Nodemailer, Resend, etc.)
-  console.log(`OTP for ${email}: ${otp}`); // Mock log
+  // TODO: Replace with Nodemailer/Resend in prod
+  console.log(`OTP for ${email}: ${otp}`);
 
   return { success: true };
 };
@@ -45,24 +60,30 @@ export const sendOTP = async (email: string): Promise<{ success: boolean; error?
 export const verifyOTP = async (
   email: string,
   otp: string
-): Promise<{ success: boolean; error?: string; admin?: { email: string; name: string; role: string } }> => {
+): Promise<{
+  success: boolean;
+  error?: string;
+  admin?: { email: string; name: string; role: string };
+}> => {
   const now = new Date();
 
   const [record] = await db
     .select()
     .from(otpVerifications)
-    .where(eq(otpVerifications.email, email))
+    .where(and(eq(otpVerifications.email, email), eq(otpVerifications.used, false)))
+    .orderBy(desc(otpVerifications.createdAt))
     .limit(1);
 
   if (!record) {
     return { success: false, error: "OTP not found" };
   }
 
-  if (record.used) {
-    return { success: false, error: "OTP already used" };
-  }
-
   if (new Date(record.expiresAt) < now) {
+    // Expire this OTP
+    await db
+      .update(otpVerifications)
+      .set({ used: true })
+      .where(eq(otpVerifications.id, record.id));
     return { success: false, error: "OTP expired" };
   }
 
@@ -70,7 +91,7 @@ export const verifyOTP = async (
     return { success: false, error: "Invalid OTP" };
   }
 
-  // Mark OTP as used
+  // ✅ Mark OTP as used
   await db
     .update(otpVerifications)
     .set({ used: true })
