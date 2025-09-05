@@ -47,14 +47,6 @@ class ApiClient {
   async getEventProposals() {
     return this.request('/event-proposals');
   }
-
-  async createEventProposal(proposal) {
-    return this.request('/event-proposals', {
-      method: 'POST',
-      body: JSON.stringify(proposal),
-    });
-  }
-
   async getEventProposal(id) {
     return this.request(`/event-proposals/${id}`);
   }
@@ -78,34 +70,6 @@ class ApiClient {
     });
   }
 
-  // Authorized admin methods
-  async getAuthorizedAdmins() {
-    return this.request('/authorized-admins');
-  }
-
-  // Club methods
-  async getClubs() {
-    return this.request('/clubs');
-  }
-
-  // Club formation request methods
-  async getClubFormationRequests() {
-    return this.request('/club-formation-requests');
-  }
-
-  async createClubFormationRequest(request) {
-    return this.request('/club-formation-requests', {
-      method: 'POST',
-      body: JSON.stringify(request),
-    });
-  }
-
-  async updateClubFormationRequestStatus(id, status) {
-    return this.request(`/club-formation-requests/${id}`, {
-      method: 'PATCH',
-      body: JSON.stringify({ status }),
-    });
-  }
 
   async updateEventApprovalByProposalAndAdmin(eventProposalId, adminEmail, status, comments) {
     // Since we don't have individual approval IDs in the client, we'll create a special endpoint
@@ -115,11 +79,6 @@ class ApiClient {
     });
   }
 
-  async createAdminUsers() {
-    return this.request('/create-admin-users', {
-      method: 'POST',
-    });
-  }
 
   async updateEventProposal(id, data) {
     return this.request(`/event-proposals/${id}`, {
@@ -128,25 +87,6 @@ class ApiClient {
     });
   }
 
-  // Student representative methods
-  async getStudentRepresentatives() {
-    return this.request('/student-representatives');
-  }
-
-  // Important contact methods
-  async getImportantContacts() {
-    return this.request('/important-contacts');
-  }
-
-  // Hostel info methods
-  async getHostelInfo() {
-    return this.request('/hostel-info');
-  }
-
-  // Mess hostel committee methods
-  async getMessHostelCommittee() {
-    return this.request('/mess-hostel-committee');
-  }
 
 }
 

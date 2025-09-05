@@ -1,5 +1,5 @@
-git import nodemailer from 'nodemailer';
-import { generateToken } from '../utils/jwt';
+import nodemailer from 'nodemailer';
+import { generateJWT } from './jwt';
 import { eq } from 'drizzle-orm';
 import { db } from '../db';
 import { profiles } from '@shared/schema';
@@ -50,7 +50,7 @@ export const sendVerificationEmail = async (email: string) => {
     }
 
     // Generate verification token
-    const token = generateToken({ userId: user.id, email: user.email, role: user.role });
+    const token = generateJWT({ userId: user.id, email: user.email, role: user.role });
     const verificationUrl = `${APP_URL}/verify-email?token=${token}`;
 
     // Send verification email

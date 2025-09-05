@@ -1,46 +1,29 @@
-import jwt from 'jsonwebtoken';
-import { config } from '../config';
+// server/auth.ts
+import { Request, Response } from "express";
+import { sendOTP, verifyOTP } from "./otp";
+import { generateJWT } from "./jwt";
 
-export interface JwtPayload {
-  email: string;
-  id: string;
-  role: string;
-  name?: string;
-  approvalOrder: number;
-  iat?: number;
-  exp?: number;
-}
+export const handleSendOTP = async (req: Request, res: Response) => {
+  const { email } = req.body;
+  if (!email) return res.status(400).json({ error: "Email required" });
 
-export function generateJWT(payload: Omit<JwtPayload, 'iat' | 'exp'>): string {
-  return jwt.sign(payload, config.jwtSecret, {
-    expiresIn: config.jwtExpiresIn,
-  });
-}
-
-export function verifyJWT(token: string): JwtPayload | null {
-  try {
-    return jwt.verify(token, config.jwtSecret) as JwtPayload;
-  } catch (error) {
-    console.error('JWT verification failed:', error);
-    return null;
+  const result = await sendOTP(email);
+  if (result.success) {
+    res.json({ success: true, message: "OTP sent" });
+  } else {
+    res.status(400).json({ error: result.error });
   }
-}
+};
 
-export function setAuthCookies(res: any, token: string) {
-  res.cookie('token', token, {
-    httpOnly: true,
-    secure: process.env.NODE_ENV === 'production',
-    sameSite: 'strict',
-    maxAge: config.jwtCookieMaxAge,
-    path: '/',
-  });
-}
+export const handleVerifyOTP = async (req: Request, res: Response) => {
+  const { email, otp } = req.body;
+  if (!email || !otp) return res.status(400).json({ error: "Email and OTP required" });
 
-export function clearAuthCookies(res: any) {
-  res.clearCookie('token', {
-    path: '/',
-    httpOnly: true,
-    secure: process.env.NODE_ENV === 'production',
-    sameSite: 'strict',
-  });
-}
+  const result = await verifyOTP(email, otp);
+  if (result.success && result.admin) {
+    const token = generateJWT(result.admin);
+    res.json({ success: true, token });
+  } else {
+    res.status(400).json({ error: result.error });
+  }
+};

@@ -1,226 +1,117 @@
-import { pgTable, text, serial, integer, boolean, timestamp, uuid, varchar, json, numeric, pgSchema } from "drizzle-orm/pg-core";
+import {
+  pgTable,
+  text,
+  integer,
+  boolean,
+  timestamp,
+  uuid,
+  numeric,
+} from "drizzle-orm/pg-core";
 import { z } from "zod";
 import { sql } from "drizzle-orm";
 
-// Create schema for better organization
-const authSchema = pgSchema("auth");
-
-// OTP Verification Table
-export const otpVerifications = authSchema.table("otp_verifications", {
-  id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
-  email: text("email").notNull(),
-  otp: text("otp").notNull(),
-  used: boolean("used").notNull().default(false),
-  expiresAt: timestamp("expires_at").notNull(),
-  createdAt: timestamp("created_at").notNull().defaultNow(),
-});
-
-// User Sessions Table
-export const userSessions = authSchema.table("user_sessions", {
-  id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
-  userId: uuid("user_id").notNull().references(() => profiles.id, { onDelete: "cascade" }),
-  token: text("token").notNull().unique(),
-  userAgent: text("user_agent"),
-  ipAddress: text("ip_address"),
-  expiresAt: timestamp("expires_at").notNull(),
-  createdAt: timestamp("created_at").notNull().defaultNow(),
-});
-
-// Profiles table
-export const profiles = pgTable("profiles", {
-  id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
-  email: text("email").notNull().unique(),
-  username: text("username").notNull(),
-  fullName: text("full_name"),
-  role: text("role").notNull().default("user"),
-  approvalOrder: integer("approval_order"),
-  isEmailVerified: boolean("is_email_verified").notNull().default(false),
-  lastLoginAt: timestamp("last_login_at"),
-  createdAt: timestamp("created_at").notNull().defaultNow(),
-  updatedAt: timestamp("updated_at").notNull().defaultNow(),
-});
-
-// Event proposals table
+// ===================================================
+// ✅ 1. Event Proposals Table
+// ===================================================
 export const eventProposals = pgTable("event_proposals", {
   id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
   eventName: text("event_name").notNull(),
   eventType: text("event_type").notNull(),
   description: text("description").notNull(),
-  eventDate: text("event_date").notNull(),
-  startTime: text("start_time").notNull(),
+  eventDate: timestamp("event_date", { mode: "date" }).notNull(), // maps to DATE
+  startTime: text("start_time").notNull(), // TIME WITHOUT TIME ZONE → string format (e.g., "14:30")
   endTime: text("end_time").notNull(),
   venue: text("venue").notNull(),
   expectedParticipants: integer("expected_participants").notNull(),
-  budgetEstimate: numeric("budget_estimate"),
-  objectives: text("objectives"),
+  budgetEstimate: numeric("budget_estimate"), // optional decimal
+  objectives: text("objectives"), // optional
   additionalRequirements: text("additional_requirements"),
   organizerName: text("organizer_name").notNull(),
   organizerEmail: text("organizer_email").notNull(),
-  organizerPhone: text("organizer_phone"),
-  pdfDocumentUrl: text("pdf_document_url"),
-  status: text("status").default("pending"),
-  createdAt: timestamp("created_at").notNull().defaultNow(),
-  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+  organizerPhone: text("organizer_phone"), // optional
+  pdfDocumentUrl: text("pdf_document_url"), // optional
+  status: text("status")
+    .notNull()
+    .default("pending")
+    .check("status_check", sql`status IN ('pending', 'approved', 'rejected')`),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
 });
 
-// Authorized admins table
+// ===================================================
+// ✅ 2. Authorized Admins Table
+// ===================================================
 export const authorizedAdmins = pgTable("authorized_admins", {
   id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
   email: text("email").notNull().unique(),
   name: text("name").notNull(),
-  role: text("role").notNull(),
+  role: text("role").notNull().check(
+    "role_check",
+    sql`role IN ('super_admin', 'admin', 'moderator')`
+  ),
+  department: text("department"),
+  phone: text("phone"),
   approvalOrder: integer("approval_order").notNull(),
   isActive: boolean("is_active").notNull().default(true),
-  createdAt: timestamp("created_at").notNull().defaultNow(),
-  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+  lastLogin: timestamp("last_login"),
+  passwordHash: text("password_hash").notNull(),
+  passwordResetToken: text("password_reset_token"),
+  passwordResetExpires: timestamp("password_reset_expires"),
+  failedLoginAttempts: integer("failed_login_attempts").default(0),
+  accountLocked: boolean("account_locked").default(false),
+  mfaEnabled: boolean("mfa_enabled").default(false),
+  mfaSecret: text("mfa_secret"),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
 });
 
-// Event approvals table
+// ===================================================
+// ✅ 3. Event Approvals Table
+// ===================================================
 export const eventApprovals = pgTable("event_approvals", {
   id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
-  eventProposalId: uuid("event_proposal_id").notNull().references(() => eventProposals.id, { onDelete: "cascade" }),
-  adminEmail: text("admin_email").notNull().references(() => authorizedAdmins.email),
-  approvedAt: timestamp("approved_at"),
-  comments: text("comments"),
-  status: text("status").notNull().default("pending"),
-  createdAt: timestamp("created_at").notNull().defaultNow(),
-  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+  eventProposalId: uuid("event_proposal_id")
+    .notNull()
+    .references(() => eventProposals.id, { onDelete: "cascade" }), // FK to event_proposals.id
+  adminEmail: text("admin_email")
+    .notNull()
+    .references(() => authorizedAdmins.email, { onDelete: "cascade" }), // FK to authorized_admins.email
+  approvedAt: timestamp("approved_at", { withTimezone: true }), // nullable
+  comments: text("comments"), // optional
+  status: text("status")
+    .notNull()
+    .default("pending")
+    .check("status_check", sql`status IN ('pending', 'approved', 'rejected')`),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
 });
 
-// Clubs table
-export const clubs = pgTable("clubs", {
+// ===================================================
+// ✅ 4. OTP-verification table
+// ===================================================
+export const otpVerifications = pgTable("otp_verifications", {
   id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
-  name: text("name").notNull(),
-  description: text("description"),
-  avatarUrl: text("avatar_url").default(""),
-  coordinatorNames: text("coordinator_names").notNull(),
-  coordinatorEmails: text("coordinator_emails").notNull(),
-  channelLinks: text("channel_links"),
-  isActive: boolean("is_active").default(true),
-  createdAt: timestamp("created_at").notNull().defaultNow(),
-  updatedAt: timestamp("updated_at").notNull().defaultNow(),
-});
-
-// Club formation requests table
-export const clubFormationRequests = pgTable("club_formation_requests", {
-  id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
-  clubName: text("club_name").notNull(),
-  clubDescription: text("club_description").notNull(),
-  clubObjectives: text("club_objectives").notNull(),
-  proposedByName: text("proposed_by_name").notNull(),
-  proposedByEmail: text("proposed_by_email").notNull(),
-  proposedByPhone: text("proposed_by_phone"),
-  facultyAdvisor: text("faculty_advisor"),
-  initialMembers: json("initial_members").$type<string[]>(),
-  proposedActivities: text("proposed_activities"),
-  charterDocumentUrl: text("charter_document_url"),
-  status: text("status").default("pending"),
-  createdAt: timestamp("created_at").notNull().defaultNow(),
-  updatedAt: timestamp("updated_at").notNull().defaultNow(),
-});
-
-// Student representatives table
-export const studentRepresentatives = pgTable("student_representatives", {
-  id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
-  name: text("name").notNull(),
   email: text("email").notNull(),
-  officialEmail: text("official_email"),
-  position: text("position").notNull(),
-  program: text("program").notNull(),
-  branch: text("branch").notNull(),
-  year: integer("year").notNull(),
-  createdAt: timestamp("created_at").notNull().defaultNow(),
-  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+  otp: text("otp").notNull(),
+  used: boolean("used").notNull().default(false),
+  expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
 
-// Important contacts table
-export const importantContacts = pgTable("important_contacts", {
-  id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
-  name: text("name").notNull(),
-  phoneNumber: text("phone_number").notNull(),
-  email: text("email"),
-  designation: text("designation"),
-  department: text("department"),
-  isEmergency: boolean("is_emergency").default(false),
-  displayOrder: integer("display_order"),
-  createdAt: timestamp("created_at").notNull().defaultNow(),
-  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+// ===================================================
+// ✅ Zod Schemas for Validation
+// ===================================================
+
+export const updateEventApprovalSchema = z.object({
+  status: z.enum(["approved", "rejected"], { required_error: "Status must be 'approved' or 'rejected'" }),
+  comments: z.string().optional(),
 });
 
-// Hostel info table
-export const hostelInfo = pgTable("hostel_info", {
-  id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
-  hostelName: text("hostel_name").notNull(),
-  wardenName: text("warden_name"),
-  wardenContact: text("warden_contact"),
-  emergencyContact: text("emergency_contact"),
-  capacity: integer("capacity"),
-  facilities: json("facilities").$type<string[]>(),
-  rules: json("rules").$type<string[]>(),
-  timings: json("timings"),
-  createdAt: timestamp("created_at").notNull().defaultNow(),
-  updatedAt: timestamp("updated_at").notNull().defaultNow(),
-});
-
-// Mess hostel committee table
-export const messHostelCommittee = pgTable("mess_hostel_committee", {
-  id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
-  name: text("name").notNull(),
-  email: text("email").notNull(),
-  createdAt: timestamp("created_at").notNull().defaultNow(),
-  updatedAt: timestamp("updated_at").notNull().defaultNow(),
-});
-
-// Keep the original users table for compatibility
-export const users = pgTable("users", {
-  id: serial("id").primaryKey(),
-  username: text("username").notNull().unique(),
-  password: text("password").notNull(),
-});
-
-// Schemas for validation using Zod directly
-export const insertProfileSchema = z.object({
-  email: z.string().email(),
-  username: z.string().min(1),
-  fullName: z.string().optional(),
-  role: z.string().default("user"),
-});
-
-export const insertEventProposalSchema = z.object({
-  eventName: z.string().min(1),
-  eventType: z.string().min(1),
-  description: z.string().min(1),
-  eventDate: z.string().min(1),
-  startTime: z.string().min(1),
-  endTime: z.string().min(1),
-  venue: z.string().min(1),
-  expectedParticipants: z.number().int().positive(),
-  budgetEstimate: z.string().optional(),
-  objectives: z.string().optional(),
-  additionalRequirements: z.string().optional(),
-  organizerName: z.string().min(1),
-  organizerEmail: z.string().email(),
-  organizerPhone: z.string().optional(),
-  pdfDocumentUrl: z.string().optional(),
-});
-
-export const insertUserSchema = z.object({
-  username: z.string().min(1),
-  password: z.string().min(1),
-});
-
-// Export types
-export type InsertUser = z.infer<typeof insertUserSchema>;
-export type User = typeof users.$inferSelect;
-export type Profile = typeof profiles.$inferSelect;
-export type InsertProfile = z.infer<typeof insertProfileSchema>;
+// ===================================================
+// ✅ TypeScript Types
+// ===================================================
 export type EventProposal = typeof eventProposals.$inferSelect;
-export type InsertEventProposal = z.infer<typeof insertEventProposalSchema>;
 export type AuthorizedAdmin = typeof authorizedAdmins.$inferSelect;
 export type EventApproval = typeof eventApprovals.$inferSelect;
-export type Club = typeof clubs.$inferSelect;
-export type ClubFormationRequest = typeof clubFormationRequests.$inferSelect;
-export type StudentRepresentative = typeof studentRepresentatives.$inferSelect;
-export type ImportantContact = typeof importantContacts.$inferSelect;
-export type HostelInfo = typeof hostelInfo.$inferSelect;
-export type MessHostelCommittee = typeof messHostelCommittee.$inferSelect;
+export type UpdateEventApproval = z.infer<typeof updateEventApprovalSchema>;
+export type OTPVerification = typeof otpVerifications.$inferSelect;
