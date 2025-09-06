@@ -56,11 +56,6 @@ export const EventApprovalTracker = ({ eventId, showActions = true }) => {
         }),
       });
 
-<<<<<<< HEAD
-      await refetch(); // Refresh approvals
-    } catch (err) {
-      console.error("Error updating approval:", err);
-=======
       if (!response.ok) {
         const errorData = await response.json();
         throw new Error(errorData.error || `Failed to ${action} event`);
@@ -78,7 +73,6 @@ export const EventApprovalTracker = ({ eventId, showActions = true }) => {
       // Clear comment
       setComments(prev => ({ ...prev, [user?.email]: '' }));
       
->>>>>>> f480674e77c03e45ff099554b08e2fdf67e0b4b7
       toast({
         title: 'Success',
         description: result.message || `Event ${action} successfully`,
