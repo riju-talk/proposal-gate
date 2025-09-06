@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
+import { apiClient } from '@/lib/api';
 import { CheckCircle, XCircle, Clock, AlertCircle, MessageSquare, Shield, User, Loader2, Eye } from 'lucide-react';
 
 export const EventApprovalTracker = ({ eventId, showActions = true }) => {
@@ -20,14 +21,12 @@ export const EventApprovalTracker = ({ eventId, showActions = true }) => {
     const fetchApprovals = async () => {
       try {
         setLoading(true);
-        const response = await fetch(`/api/events/${eventId}`, {
-          credentials: 'include'
-        });
-        if (!response.ok) {
-          throw new Error('Failed to fetch event details');
+        const result = await apiClient.getEventProposal(eventId);
+        if (result.data) {
+          setApprovals(result.data.approvals || []);
+        } else {
+          throw new Error(result.error || 'Failed to fetch event details');
         }
-        const data = await response.json();
-        setApprovals(data.approvals || []);
       } catch (err) {
         console.error('Error fetching approvals:', err);
         setError(err.message);
@@ -45,30 +44,24 @@ export const EventApprovalTracker = ({ eventId, showActions = true }) => {
     try {
       setApproving(action);
       
-      const response = await fetch(`/api/events/${eventId}/${action}`, {
-        method: 'PATCH',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        credentials: 'include',
-        body: JSON.stringify({
-          comments: comment,
-        }),
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || `Failed to ${action} event`);
+      let result;
+      if (action === 'approve') {
+        result = await apiClient.approveEvent(eventId, comment);
+      } else if (action === 'reject') {
+        result = await apiClient.rejectEvent(eventId, comment);
+      } else {
+        throw new Error(`Unknown action: ${action}`);
       }
 
-      const result = await response.json();
+      if (result.error) {
+        throw new Error(result.error);
+      }
       
       // Refresh approvals
-      const approvalsResponse = await fetch(`/api/events/${eventId}`, {
-        credentials: 'include'
-      });
-      const updatedData = await approvalsResponse.json();
-      setApprovals(updatedData.approvals || []);
+      const updatedResult = await apiClient.getEventProposal(eventId);
+      if (updatedResult.data) {
+        setApprovals(updatedResult.data.approvals || []);
+      }
       
       // Clear comment
       setComments(prev => ({ ...prev, [user?.email]: '' }));

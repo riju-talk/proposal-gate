@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
+import { apiClient } from "@/lib/api";
 
 export const useEventProposals = (statusFilter, userRole = "public") => {
   const [proposals, setProposals] = useState([]);
@@ -11,15 +12,13 @@ export const useEventProposals = (statusFilter, userRole = "public") => {
     console.log("🔄 Fetching proposals for role:", userRole, "filter:", statusFilter);
 
     try {
-      const response = await fetch('/api/events', {
-        credentials: 'include'
-      });
+      const result = await apiClient.getEventProposals();
 
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
+      if (result.error) {
+        throw new Error(result.error);
       }
 
-      const proposalsData = await response.json();
+      const proposalsData = result.data;
       console.log("✅ Fetched proposals:", proposalsData.length);
 
       // Normalize field names to snake_case for consistency
@@ -65,27 +64,20 @@ export const useEventProposals = (statusFilter, userRole = "public") => {
       console.log("🔄 Updating proposal status:", id, status);
       
       try {
-        const endpoint = status === "approved" 
-          ? `/api/events/${id}/approve`
-          : status === "rejected"
-          ? `/api/events/${id}/reject`
-          : `/api/events/${id}/review`;
-          
-        const response = await fetch(endpoint, {
-          method: "PATCH",
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          credentials: 'include',
-          body: JSON.stringify({ comments }),
-        });
-
-        if (!response.ok) {
-          const errorData = await response.json();
-          throw new Error(errorData.error || `Failed to ${status} proposal`);
+        let result;
+        if (status === "approved") {
+          result = await apiClient.approveEvent(id, comments);
+        } else if (status === "rejected") {
+          result = await apiClient.rejectEvent(id, comments);
+        } else {
+          throw new Error(`Status ${status} is not supported yet`);
         }
 
-        const data = await response.json();
+        if (result.error) {
+          throw new Error(result.error);
+        }
+
+        const data = result.data;
         console.log("✅ Proposal status updated successfully");
 
         // Update local state
