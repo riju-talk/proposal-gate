@@ -1,5 +1,5 @@
 import { db } from "./db";
-import { eventProposals, eventApprovals, authorizedAdmins } from "@shared/schema";
+import { eventProposals, eventApprovals, authorizedAdmins } from "../shared/schema";
 import { eq, and } from "drizzle-orm";
 
 export interface IStorage {

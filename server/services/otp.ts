@@ -1,5 +1,5 @@
 import { db } from "../db";
-import { otpVerifications, authorizedAdmins } from "@shared/schema";
+import { otpVerifications, authorizedAdmins } from "../../shared/schema";
 import { eq, and, desc } from "drizzle-orm";
 
 // Generate 6-digit OTP

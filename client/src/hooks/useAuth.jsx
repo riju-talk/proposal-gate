@@ -1,16 +1,11 @@
-// client/src/context/AuthContext.jsx
-import {
-  createContext,
-  useContext,
-  useState,
-  useEffect,
-  useCallback,
-} from "react";
+import { createContext, useContext, useState, useEffect, useCallback } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { apiClient } from "@/lib/api";
 
+// 1️⃣ Create the AuthContext
 export const AuthContext = createContext(undefined);
 
+// 2️⃣ AuthProvider Component
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [isOTPSent, setIsOTPSent] = useState(false);
@@ -18,9 +13,10 @@ export const AuthProvider = ({ children }) => {
   const [countdown, setCountdown] = useState(0);
   const [email, setEmail] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+
   const { toast } = useToast();
 
-  // Restore session (cookie-based)
+  // 3️⃣ Restore session on mount
   useEffect(() => {
     const restoreSession = async () => {
       const { data, error } = await apiClient.getCurrentUser();
@@ -30,7 +26,7 @@ export const AuthProvider = ({ children }) => {
     restoreSession();
   }, []);
 
-  // Countdown for OTP resend
+  // 4️⃣ Countdown logic for OTP resend
   useEffect(() => {
     if (!lastSentTime) return;
 
@@ -40,16 +36,20 @@ export const AuthProvider = ({ children }) => {
         Math.ceil((lastSentTime + 60000 - Date.now()) / 1000)
       );
       setCountdown(timeLeft);
+
       if (timeLeft === 0) clearInterval(interval);
     }, 1000);
 
     return () => clearInterval(interval);
   }, [lastSentTime]);
 
+  // 5️⃣ Send OTP method
   const sendOTP = useCallback(
     async (targetEmail) => {
       setIsLoading(true);
+
       const { data, error } = await apiClient.sendOTP(targetEmail);
+
       setIsLoading(false);
 
       if (data) {
@@ -58,20 +58,25 @@ export const AuthProvider = ({ children }) => {
         setEmail(targetEmail);
         setCountdown(60);
         toast({ title: "OTP sent", description: "Check your email inbox." });
+
         return { success: true };
       }
+
       return { success: false, error };
     },
     [toast]
   );
 
+  // 6️⃣ Verify OTP method
   const verifyOTP = useCallback(
     async (targetEmail, otp) => {
       setIsLoading(true);
+
       const { data, error } = await apiClient.verifyOTP(
         targetEmail || email,
         otp
       );
+
       setIsLoading(false);
 
       if (data?.success && data.admin) {
@@ -79,11 +84,13 @@ export const AuthProvider = ({ children }) => {
         toast({ title: "Logged in", description: "Welcome back!" });
         return { success: true };
       }
+
       return { success: false, error: error || "Invalid OTP" };
     },
     [email, toast]
   );
 
+  // 7️⃣ Logout method
   const logout = useCallback(async () => {
     await apiClient.logout();
     setUser(null);
@@ -94,6 +101,7 @@ export const AuthProvider = ({ children }) => {
     toast({ title: "Logged out" });
   }, [toast]);
 
+  // 8️⃣ Provide Context Values
   return (
     <AuthContext.Provider
       value={{
@@ -112,8 +120,10 @@ export const AuthProvider = ({ children }) => {
   );
 };
 
+// 9️⃣ Custom Hook for easier usage
 export const useAuth = () => {
-  const ctx = useContext(AuthContext);
-  if (!ctx) throw new Error("useAuth must be used within an AuthProvider");
-  return ctx;
+  const context = useContext(AuthContext);
+  if (!context)
+    throw new Error("useAuth must be used within an AuthProvider");
+  return context;
 };
