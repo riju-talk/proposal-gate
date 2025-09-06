@@ -9,6 +9,7 @@ interface OTPSession {
   otp: string;
   expiresAt: Date;
   attempts: number;
+  createdAt: Date;
 }
 
 // In-memory OTP storage (in production, use Redis or database)
@@ -18,19 +19,19 @@ const otpSessions = new Map<string, OTPSession>();
 const createTransporter = () => {
   if (process.env.NODE_ENV === 'development' || !process.env.SMTP_USER) {
     // For development, create a test transporter
-    return nodemailer.createTransport({
+    return nodemailer.createTransporter({
       host: 'smtp.ethereal.email',
       port: 587,
       secure: false,
       auth: {
-        user: process.env.SMTP_USER,
-        pass: process.env.SMTP_PASS
+        user: 'ethereal.user@ethereal.email',
+        pass: 'ethereal.pass'
       }
     });
   }
 
   // Production Gmail SMTP
-  return nodemailer.createTransport({
+  return nodemailer.createTransporter({
     service: 'gmail',
     auth: {
       user: process.env.SMTP_USER,
@@ -51,6 +52,13 @@ export const sendOTP = async (email: string): Promise<{ success: boolean; error?
       return { success: false, error: 'Unauthorized: Only authorized admins can access this system' };
     }
 
+    // Check rate limiting - only allow one OTP per minute
+    const existingSession = otpSessions.get(email);
+    if (existingSession && (Date.now() - existingSession.createdAt.getTime()) < 60000) {
+      const timeLeft = Math.ceil((60000 - (Date.now() - existingSession.createdAt.getTime())) / 1000);
+      return { success: false, error: `Please wait ${timeLeft} seconds before requesting a new OTP` };
+    }
+
     // Generate OTP
     const otp = generateOTP();
     const expiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
@@ -60,7 +68,8 @@ export const sendOTP = async (email: string): Promise<{ success: boolean; error?
       email,
       otp,
       expiresAt,
-      attempts: 0
+      attempts: 0,
+      createdAt: new Date()
     });
 
     // In development, just log OTP to console
@@ -162,8 +171,7 @@ export const verifyOTP = async (email: string, inputOTP: string): Promise<{ succ
 
 export const cleanupExpiredOTPs = () => {
   const now = new Date();
-  const entries = Array.from(otpSessions.entries());
-  for (const [email, session] of entries) {
+  for (const [email, session] of otpSessions.entries()) {
     if (now > session.expiresAt) {
       otpSessions.delete(email);
     }

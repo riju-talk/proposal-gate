@@ -71,6 +71,7 @@ app.use((req, res, next) => {
     log(`🚀 Express API Server running on port ${port}`);
     log(`📧 SMTP configured: ${process.env.SMTP_USER ? 'Yes' : 'No (using console logs)'}`);
     log(`🔒 Environment: ${app.get("env")}`);
+    log(`🔑 JWT Secret configured: ${process.env.JWT_SECRET ? 'Yes' : 'Using default (change in production)'}`);
     console.log("✅ API Server started successfully with database and routes");
   });
 })();

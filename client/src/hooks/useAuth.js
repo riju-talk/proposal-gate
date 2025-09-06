@@ -39,19 +39,22 @@ export const useAuthProvider = () => {
   
   // Check for existing session on mount
   useEffect(() => {
-    const storedUser = localStorage.getItem('admin_user');
-    const token = localStorage.getItem('admin_token');
-    
-    if (storedUser && token) {
+    const checkAuth = async () => {
       try {
-        const user = JSON.parse(storedUser);
-        setState(s => ({ ...s, user }));
+        const response = await fetch('/api/auth/me', {
+          credentials: 'include'
+        });
+        
+        if (response.ok) {
+          const userData = await response.json();
+          setState(s => ({ ...s, user: userData }));
+        }
       } catch (err) {
-        console.error('Error parsing user data:', err);
-        localStorage.removeItem('admin_user');
-        localStorage.removeItem('admin_token');
+        console.error('Error checking auth:', err);
       }
-    }
+    };
+    
+    checkAuth();
   }, []);
   
   const sendOTP = useCallback(async (email) => {
@@ -63,6 +66,7 @@ export const useAuthProvider = () => {
         headers: {
           'Content-Type': 'application/json',
         },
+        credentials: 'include',
         body: JSON.stringify({ email }),
       });
       
@@ -104,6 +108,7 @@ export const useAuthProvider = () => {
         headers: {
           'Content-Type': 'application/json',
         },
+        credentials: 'include',
         body: JSON.stringify({ email: actualEmail, otp }),
       });
 
@@ -117,11 +122,6 @@ export const useAuthProvider = () => {
         };
         
         setState(s => ({ ...s, user: adminUser }));
-        
-        // Save session
-        localStorage.setItem('admin_user', JSON.stringify(adminUser));
-        localStorage.setItem('admin_token', data.token);
-        
         return { success: true };
       } else {
         return { 
@@ -140,7 +140,16 @@ export const useAuthProvider = () => {
     }
   }, [state.email]);
   
-  const logout = useCallback(() => {
+  const logout = useCallback(async () => {
+    try {
+      await fetch('/api/auth/logout', {
+        method: 'POST',
+        credentials: 'include'
+      });
+    } catch (error) {
+      console.error('Logout error:', error);
+    }
+    
     setState({
       user: null,
       isOTPSent: false,
@@ -148,9 +157,6 @@ export const useAuthProvider = () => {
       countdown: 0,
       email: ''
     });
-    
-    localStorage.removeItem('admin_user');
-    localStorage.removeItem('admin_token');
   }, []);
   
   return {

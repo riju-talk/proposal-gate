@@ -1,11 +1,11 @@
 import type { Express, Request, Response } from "express";
 import { createServer, type Server } from "http";
-import { eq, and, desc } from "drizzle-orm";
+import { eq, and, desc, asc } from "drizzle-orm";
 import { db } from "./db";
-import { eventProposals, eventApprovals, authorizedAdmins } from "@shared/schema";
+import { eventProposals, eventApprovals, authorizedAdmins, clubFormationRequests, clubs } from "@shared/schema";
 import { sendOTP, verifyOTP } from "./auth";
-import { securityMiddleware, otpRateLimit, verifyRateLimit, requireAdmin } from "./middleware";
-import { generateJWT } from "./jwt";
+import { securityMiddleware, otpRateLimit, verifyRateLimit, requireAdmin, optionalAuth } from "./middleware";
+import { generateJWT, setAuthCookie, clearAuthCookie } from "./jwt";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Apply security middleware
@@ -13,7 +13,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // ==================== AUTHENTICATION ROUTES ====================
   
-  // Send OTP for admin login
   app.post("/api/auth/send-otp", otpRateLimit, async (req: Request, res: Response) => {
     try {
       const { email } = req.body;
@@ -35,7 +34,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Verify OTP and login
   app.post("/api/auth/verify-otp", verifyRateLimit, async (req: Request, res: Response) => {
     try {
       const { email, otp } = req.body;
@@ -50,13 +48,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const token = generateJWT(result.admin);
         
         // Set HTTP-only cookie
-        res.cookie('auth_token', token, {
-          httpOnly: true,
-          secure: process.env.NODE_ENV === 'production',
-          sameSite: 'strict',
-          maxAge: 24 * 60 * 60 * 1000, // 24 hours
-          path: '/',
-        });
+        setAuthCookie(res, token);
         
         res.json({ 
           success: true,
@@ -71,32 +63,51 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // ==================== EVENT ROUTES ====================
+  app.post("/api/auth/logout", (req: Request, res: Response) => {
+    clearAuthCookie(res);
+    res.json({ success: true, message: "Logged out successfully" });
+  });
+
+  // ==================== PUBLIC EVENT ROUTES ====================
   
-  // Get all events (public)
-  app.get("/api/events", async (req: Request, res: Response) => {
+  // Get all events for public view (approved events only)
+  app.get("/api/events", optionalAuth, async (req: Request, res: Response) => {
     try {
-      const events = await db
+      let query = db
         .select({
           id: eventProposals.id,
-          eventName: eventProposals.eventName,
-          organizerName: eventProposals.organizerName,
-          organizerEmail: eventProposals.organizerEmail,
-          eventType: eventProposals.eventType,
-          eventDate: eventProposals.eventDate,
-          startTime: eventProposals.startTime,
-          endTime: eventProposals.endTime,
+          event_name: eventProposals.eventName,
+          organizer_name: eventProposals.organizerName,
+          organizer_email: eventProposals.organizerEmail,
+          organizer_phone: eventProposals.organizerPhone,
+          event_type: eventProposals.eventType,
+          event_date: eventProposals.eventDate,
+          start_time: eventProposals.startTime,
+          end_time: eventProposals.endTime,
           venue: eventProposals.venue,
-          expectedParticipants: eventProposals.expectedParticipants,
-          budgetEstimate: eventProposals.budgetEstimate,
+          expected_participants: eventProposals.expectedParticipants,
+          budget_estimate: eventProposals.budgetEstimate,
           description: eventProposals.description,
           objectives: eventProposals.objectives,
+          additional_requirements: eventProposals.additionalRequirements,
+          pdf_document_url: eventProposals.pdfDocumentUrl,
           status: eventProposals.status,
-          createdAt: eventProposals.createdAt,
+          created_at: eventProposals.createdAt,
+          updated_at: eventProposals.updatedAt,
         })
-        .from(eventProposals)
-        .orderBy(desc(eventProposals.createdAt));
+        .from(eventProposals);
 
+      // Filter based on user role
+      if (!req.user) {
+        // Public users - only approved events
+        query = query.where(eq(eventProposals.status, 'approved'));
+      } else if (req.user.role !== 'admin') {
+        // Coordinators - pending and approved events
+        query = query.where(eq(eventProposals.status, 'pending'));
+      }
+      // Admins see all events
+
+      const events = await query.orderBy(desc(eventProposals.createdAt));
       res.json(events);
     } catch (error) {
       console.error("Get events error:", error);
@@ -104,134 +115,119 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Get event details by ID (public)
-  app.get("/api/events/:id", async (req: Request, res: Response) => {
+  // Get single event details
+  app.get("/api/events/:id", optionalAuth, async (req: Request, res: Response) => {
     try {
       const { id } = req.params;
-
-      const event = await db
+      
+      const [event] = await db
         .select()
         .from(eventProposals)
         .where(eq(eventProposals.id, id))
         .limit(1);
 
-      if (!event.length) {
+      if (!event) {
         return res.status(404).json({ error: "Event not found" });
       }
 
-      // Get approval details
-      const approvals = await db
-        .select({
-          adminEmail: eventApprovals.adminEmail,
-          status: eventApprovals.status,
-          comments: eventApprovals.comments,
-          approvedAt: eventApprovals.approvedAt,
-        })
-        .from(eventApprovals)
-        .where(eq(eventApprovals.eventProposalId, id));
+      // Check access permissions
+      if (!req.user && event.status !== 'approved') {
+        return res.status(403).json({ error: "Access denied" });
+      }
+
+      // Get approval details for admins
+      let approvals = [];
+      if (req.user?.role === 'admin') {
+        approvals = await db
+          .select({
+            id: eventApprovals.id,
+            admin_email: eventApprovals.adminEmail,
+            status: eventApprovals.status,
+            comments: eventApprovals.comments,
+            approved_at: eventApprovals.approvedAt,
+            created_at: eventApprovals.createdAt,
+            updated_at: eventApprovals.updatedAt,
+            admin_name: authorizedAdmins.name,
+            admin_role: authorizedAdmins.role,
+            approval_order: authorizedAdmins.approvalOrder,
+          })
+          .from(eventApprovals)
+          .leftJoin(authorizedAdmins, eq(eventApprovals.adminEmail, authorizedAdmins.email))
+          .where(eq(eventApprovals.eventProposalId, id))
+          .orderBy(asc(authorizedAdmins.approvalOrder));
+      }
 
       res.json({
-        event: event[0],
-        approvals: approvals
+        ...event,
+        approvals
       });
     } catch (error) {
-      console.error("Get event details error:", error);
+      console.error("Get event error:", error);
       res.status(500).json({ error: "Internal server error" });
     }
   });
 
-  // Approve event (protected)
-  app.patch("/api/events/approve/:id", requireAdmin, async (req: Request, res: Response) => {
+  // ==================== ADMIN EVENT APPROVAL ROUTES ====================
+  
+  // Approve event
+  app.patch("/api/events/:id/approve", requireAdmin, async (req: Request, res: Response) => {
     try {
       const { id } = req.params;
       const { comments } = req.body;
-      const adminEmail = req.user?.email;
+      const currentAdminEmail = req.user?.email;
 
-      if (!adminEmail) {
-        return res.status(401).json({ error: "Admin authentication required" });
+      // Update the approval
+      const [updatedApproval] = await db
+        .update(eventApprovals)
+        .set({
+          status: 'approved',
+          comments: comments || null,
+          approvedAt: new Date(),
+          updatedAt: new Date(),
+        })
+        .where(and(
+          eq(eventApprovals.eventProposalId, id),
+          eq(eventApprovals.adminEmail, currentAdminEmail)
+        ))
+        .returning();
+
+      if (!updatedApproval) {
+        return res.status(404).json({ error: "Approval record not found" });
       }
 
-      // Check if event exists
-      const event = await db
-        .select()
-        .from(eventProposals)
-        .where(eq(eventProposals.id, id))
-        .limit(1);
-
-      if (!event.length) {
-        return res.status(404).json({ error: "Event not found" });
-      }
-
-      // Update or create approval record for this admin
-      const existingApproval = await db
-        .select()
-        .from(eventApprovals)
-        .where(
-          and(
-            eq(eventApprovals.eventProposalId, id),
-            eq(eventApprovals.adminEmail, adminEmail)
-          )
-        )
-        .limit(1);
-
-      if (existingApproval.length) {
-        // Update existing approval
-        await db
-          .update(eventApprovals)
-          .set({
-            status: 'approved',
-            comments,
-            approvedAt: new Date()
-          })
-          .where(eq(eventApprovals.id, existingApproval[0].id));
-      } else {
-        // Create new approval record
-        await db
-          .insert(eventApprovals)
-          .values({
-            eventProposalId: id,
-            adminEmail,
-            status: 'approved',
-            comments,
-            approvedAt: new Date()
-          });
-      }
-
-      // Check if all active admins have approved
-      const allAdmins = await db
-        .select()
-        .from(authorizedAdmins)
-        .where(eq(authorizedAdmins.isActive, true));
-
+      // Check if all admins have approved
       const allApprovals = await db
         .select()
         .from(eventApprovals)
-        .where(eq(eventApprovals.eventProposalId, id));
+        .leftJoin(authorizedAdmins, eq(eventApprovals.adminEmail, authorizedAdmins.email))
+        .where(and(
+          eq(eventApprovals.eventProposalId, id),
+          eq(authorizedAdmins.isActive, true),
+          eq(authorizedAdmins.role, 'developer') // Exclude developer
+        ));
 
-      const approvedCount = allApprovals.filter(approval => approval.status === 'approved').length;
-      const rejectedCount = allApprovals.filter(approval => approval.status === 'rejected').length;
+      const approvedCount = allApprovals.filter(a => a.event_approvals?.status === 'approved').length;
+      const totalAdmins = allApprovals.length;
 
       let eventStatus = 'pending';
-      
-      // If any admin rejected, event is rejected
-      if (rejectedCount > 0) {
-        eventStatus = 'rejected';
-      } 
-      // If all admins approved, event is approved
-      else if (approvedCount === allAdmins.length) {
+      if (approvedCount === totalAdmins) {
         eventStatus = 'approved';
       }
 
       // Update event status
       await db
         .update(eventProposals)
-        .set({ status: eventStatus })
+        .set({
+          status: eventStatus,
+          updatedAt: new Date(),
+        })
         .where(eq(eventProposals.id, id));
 
-      res.json({ 
-        success: true, 
-        message: "Event approved successfully",
-        eventStatus 
+      res.json({
+        success: true,
+        approval: updatedApproval,
+        eventStatus,
+        message: `Event ${eventStatus === 'approved' ? 'fully approved' : 'approval recorded'}`
       });
     } catch (error) {
       console.error("Approve event error:", error);
@@ -239,73 +235,81 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Reject event (protected)
-  app.patch("/api/events/reject/:id", requireAdmin, async (req: Request, res: Response) => {
+  // Mark event for review
+  app.patch("/api/events/:id/review", requireAdmin, async (req: Request, res: Response) => {
     try {
       const { id } = req.params;
       const { comments } = req.body;
-      const adminEmail = req.user?.email;
+      const currentAdminEmail = req.user?.email;
 
-      if (!adminEmail) {
-        return res.status(401).json({ error: "Admin authentication required" });
+      // Update the approval to under review
+      const [updatedApproval] = await db
+        .update(eventApprovals)
+        .set({
+          status: 'under_review',
+          comments: comments || null,
+          updatedAt: new Date(),
+        })
+        .where(and(
+          eq(eventApprovals.eventProposalId, id),
+          eq(eventApprovals.adminEmail, currentAdminEmail)
+        ))
+        .returning();
+
+      if (!updatedApproval) {
+        return res.status(404).json({ error: "Approval record not found" });
       }
 
-      // Check if event exists
-      const event = await db
-        .select()
-        .from(eventProposals)
-        .where(eq(eventProposals.id, id))
-        .limit(1);
+      res.json({
+        success: true,
+        approval: updatedApproval,
+        message: "Event marked for further review"
+      });
+    } catch (error) {
+      console.error("Mark for review error:", error);
+      res.status(500).json({ error: "Internal server error" });
+    }
+  });
 
-      if (!event.length) {
-        return res.status(404).json({ error: "Event not found" });
+  // Reject event
+  app.patch("/api/events/:id/reject", requireAdmin, async (req: Request, res: Response) => {
+    try {
+      const { id } = req.params;
+      const { comments } = req.body;
+      const currentAdminEmail = req.user?.email;
+
+      // Update the approval
+      const [updatedApproval] = await db
+        .update(eventApprovals)
+        .set({
+          status: 'rejected',
+          comments: comments || null,
+          updatedAt: new Date(),
+        })
+        .where(and(
+          eq(eventApprovals.eventProposalId, id),
+          eq(eventApprovals.adminEmail, currentAdminEmail)
+        ))
+        .returning();
+
+      if (!updatedApproval) {
+        return res.status(404).json({ error: "Approval record not found" });
       }
 
-      // Update or create approval record for this admin
-      const existingApproval = await db
-        .select()
-        .from(eventApprovals)
-        .where(
-          and(
-            eq(eventApprovals.eventProposalId, id),
-            eq(eventApprovals.adminEmail, adminEmail)
-          )
-        )
-        .limit(1);
-
-      if (existingApproval.length) {
-        // Update existing approval
-        await db
-          .update(eventApprovals)
-          .set({
-            status: 'rejected',
-            comments,
-            approvedAt: null
-          })
-          .where(eq(eventApprovals.id, existingApproval[0].id));
-      } else {
-        // Create new approval record
-        await db
-          .insert(eventApprovals)
-          .values({
-            eventProposalId: id,
-            adminEmail,
-            status: 'rejected',
-            comments,
-            approvedAt: null
-          });
-      }
-
-      // Since any rejection means event is rejected, update event status immediately
+      // Update event status to rejected
       await db
         .update(eventProposals)
-        .set({ status: 'rejected' })
+        .set({
+          status: 'rejected',
+          updatedAt: new Date(),
+        })
         .where(eq(eventProposals.id, id));
 
-      res.json({ 
-        success: true, 
-        message: "Event rejected successfully",
-        eventStatus: 'rejected'
+      res.json({
+        success: true,
+        approval: updatedApproval,
+        eventStatus: 'rejected',
+        message: "Event rejected"
       });
     } catch (error) {
       console.error("Reject event error:", error);
@@ -313,9 +317,134 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // ==================== CLUB ROUTES ====================
+  
+  // Get all clubs (public)
+  app.get("/api/clubs", async (req: Request, res: Response) => {
+    try {
+      const clubs = await db
+        .select()
+        .from(clubs)
+        .where(eq(clubs.isActive, true))
+        .orderBy(desc(clubs.createdAt));
+
+      res.json(clubs);
+    } catch (error) {
+      console.error("Get clubs error:", error);
+      res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
+  // Get club formation requests
+  app.get("/api/club-formation-requests", optionalAuth, async (req: Request, res: Response) => {
+    try {
+      let query = db.select().from(clubFormationRequests);
+
+      // Filter based on user role
+      if (!req.user) {
+        // Public users - only approved clubs
+        query = query.where(eq(clubFormationRequests.status, 'approved'));
+      }
+      // Admins and coordinators see all
+
+      const requests = await query.orderBy(desc(clubFormationRequests.createdAt));
+      res.json(requests);
+    } catch (error) {
+      console.error("Get club requests error:", error);
+      res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
+  // Approve club formation request
+  app.patch("/api/club-formation-requests/:id/approve", requireAdmin, async (req: Request, res: Response) => {
+    try {
+      const { id } = req.params;
+      const { comments } = req.body;
+
+      const [updatedRequest] = await db
+        .update(clubFormationRequests)
+        .set({
+          status: 'approved',
+          updatedAt: new Date(),
+        })
+        .where(eq(clubFormationRequests.id, id))
+        .returning();
+
+      if (!updatedRequest) {
+        return res.status(404).json({ error: "Club request not found" });
+      }
+
+      res.json({
+        success: true,
+        request: updatedRequest,
+        message: "Club formation request approved"
+      });
+    } catch (error) {
+      console.error("Approve club error:", error);
+      res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
+  // Reject club formation request
+  app.patch("/api/club-formation-requests/:id/reject", requireAdmin, async (req: Request, res: Response) => {
+    try {
+      const { id } = req.params;
+      const { comments } = req.body;
+
+      const [updatedRequest] = await db
+        .update(clubFormationRequests)
+        .set({
+          status: 'rejected',
+          updatedAt: new Date(),
+        })
+        .where(eq(clubFormationRequests.id, id))
+        .returning();
+
+      if (!updatedRequest) {
+        return res.status(404).json({ error: "Club request not found" });
+      }
+
+      res.json({
+        success: true,
+        request: updatedRequest,
+        message: "Club formation request rejected"
+      });
+    } catch (error) {
+      console.error("Reject club error:", error);
+      res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
+  // Get authorized admins list
+  app.get("/api/admins", async (req: Request, res: Response) => {
+    try {
+      const admins = await db
+        .select({
+          id: authorizedAdmins.id,
+          email: authorizedAdmins.email,
+          name: authorizedAdmins.name,
+          role: authorizedAdmins.role,
+          approval_order: authorizedAdmins.approvalOrder,
+          is_active: authorizedAdmins.isActive,
+        })
+        .from(authorizedAdmins)
+        .where(eq(authorizedAdmins.isActive, true))
+        .orderBy(asc(authorizedAdmins.approvalOrder));
+
+      res.json(admins);
+    } catch (error) {
+      console.error("Get admins error:", error);
+      res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
   // Health check endpoint
   app.get("/api/health", (req: Request, res: Response) => {
-    res.json({ status: "OK", timestamp: new Date().toISOString() });
+    res.json({ 
+      status: "OK", 
+      timestamp: new Date().toISOString(),
+      environment: process.env.NODE_ENV || 'development'
+    });
   });
 
   const httpServer = createServer(app);

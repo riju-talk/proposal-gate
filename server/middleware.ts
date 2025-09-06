@@ -2,6 +2,7 @@ import { Request, Response, NextFunction } from 'express';
 import rateLimit from 'express-rate-limit';
 import helmet from 'helmet';
 import cors from 'cors';
+import cookieParser from 'cookie-parser';
 import { verifyJWT } from './jwt';
 
 // Rate limiting for OTP requests
@@ -42,12 +43,13 @@ export const securityMiddleware = [
       : ['http://localhost:5000', 'http://localhost:8080', 'http://localhost:3000'],
     credentials: true,
   }),
+  cookieParser(),
 ];
 
 // Admin authentication middleware using JWT from HTTP-only cookies
 export const requireAdmin = (req: Request, res: Response, next: NextFunction) => {
   try {
-    const token = req.cookies?.auth_token;
+    const token = req.cookies.auth_token;
     
     if (!token) {
       return res.status(401).json({ error: 'No authentication token provided' });
@@ -59,6 +61,11 @@ export const requireAdmin = (req: Request, res: Response, next: NextFunction) =>
       return res.status(401).json({ error: 'Invalid or expired token' });
     }
     
+    // Exclude developer role from admin actions
+    if (decoded.role === 'developer') {
+      return res.status(403).json({ error: 'Developer role cannot perform admin actions' });
+    }
+    
     req.user = decoded;
     next();
   } catch (error) {
@@ -67,15 +74,30 @@ export const requireAdmin = (req: Request, res: Response, next: NextFunction) =>
   }
 };
 
+// Optional authentication middleware for public routes
+export const optionalAuth = (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const token = req.cookies.auth_token;
+    
+    if (token) {
+      const decoded = verifyJWT(token);
+      if (decoded) {
+        req.user = decoded;
+      }
+    }
+    
+    next();
+  } catch (error) {
+    // Continue without authentication
+    next();
+  }
+};
+
 // Extend Request type
 declare global {
   namespace Express {
     interface Request {
-      user?: {
-        email: string;
-        name: string;
-        role: string;
-      };
+      user?: any;
     }
   }
 }

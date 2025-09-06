@@ -82,7 +82,7 @@ export const eventApprovals = pgTable("event_approvals", {
   adminEmail: text("admin_email").notNull().references(() => authorizedAdmins.email),
   approvedAt: timestamp("approved_at"),
   comments: text("comments"),
-  status: text("status").notNull().default("pending"),
+  status: text("status").notNull().default("pending"), // pending, approved, rejected, under_review
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
 });

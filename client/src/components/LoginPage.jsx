@@ -5,7 +5,7 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
-import { ArrowLeft, Mail, Shield, Zap, Loader2 } from 'lucide-react';
+import { ArrowLeft, Mail, Shield, Zap, Loader2, Sparkles } from 'lucide-react';
 
 export const LoginPage = ({ onBack }) => {
   const [view, setView] = useState('email');
@@ -28,16 +28,15 @@ export const LoginPage = ({ onBack }) => {
       treasurer: 'treasurer@sc.iiitd.ac.in',
       sa_office: 'admin-saoffice@iiitd.ac.in',
       faculty: 'ravi@iiitd.ac.in',
-      final: 'smriti@iiitd.ac.in',
-      developer: 'rijusmit22400@iiitd.ac.in'
+      final: 'smriti@iiitd.ac.in'
     };
     
     if (!quickEmails[role]) {
-      setEmail('')
+      setEmail('');
       toast({
         title: 'Unauthorized',
         description: 'Unauthorized admin access',
-        variant: 'destructive', // Add this line
+        variant: 'destructive',
       });
       return;
     }
@@ -129,17 +128,27 @@ export const LoginPage = ({ onBack }) => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-background p-4">
-      <div className="w-full max-w-md">
-        <Card className="professional-card">
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 p-4">
+      {/* Animated background elements */}
+      <div className="absolute inset-0 overflow-hidden">
+        <div className="absolute -top-40 -right-40 w-80 h-80 bg-purple-500 rounded-full mix-blend-multiply filter blur-xl opacity-20 animate-pulse"></div>
+        <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-cyan-500 rounded-full mix-blend-multiply filter blur-xl opacity-20 animate-pulse delay-1000"></div>
+        <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-80 h-80 bg-pink-500 rounded-full mix-blend-multiply filter blur-xl opacity-10 animate-pulse delay-500"></div>
+      </div>
+
+      <div className="w-full max-w-md relative z-10">
+        <Card className="bg-card/80 backdrop-blur-xl border-border/50 shadow-2xl">
           <CardHeader className="text-center space-y-4">
             <div className="flex justify-center">
-              <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center border border-primary/20">
-                <Shield className="h-8 w-8 text-primary" />
+              <div className="w-16 h-16 rounded-full bg-gradient-to-r from-cyan-500 to-purple-500 flex items-center justify-center shadow-lg">
+                <Shield className="h-8 w-8 text-white" />
               </div>
             </div>
             <div>
-              <CardTitle className="text-2xl font-bold text-foreground">Admin Access</CardTitle>
+              <CardTitle className="text-2xl font-bold text-foreground flex items-center justify-center gap-2">
+                <Sparkles className="h-5 w-5 text-primary" />
+                Admin Access
+              </CardTitle>
               <CardDescription className="text-muted-foreground mt-2">
                 {view === 'email' 
                   ? 'Enter your authorized email to receive a verification code'
@@ -160,7 +169,7 @@ export const LoginPage = ({ onBack }) => {
                       variant="outline"
                       size="sm"
                       onClick={() => handleQuickLogin('president')}
-                      className="text-xs border-border hover:bg-muted"
+                      className="text-xs border-border/50 hover:bg-primary/10 hover:border-primary/30"
                     >
                       President
                     </Button>
@@ -169,7 +178,7 @@ export const LoginPage = ({ onBack }) => {
                       variant="outline"
                       size="sm"
                       onClick={() => handleQuickLogin('vp')}
-                      className="text-xs border-border hover:bg-muted"
+                      className="text-xs border-border/50 hover:bg-primary/10 hover:border-primary/30"
                     >
                       Vice President
                     </Button>
@@ -178,7 +187,7 @@ export const LoginPage = ({ onBack }) => {
                       variant="outline"
                       size="sm"
                       onClick={() => handleQuickLogin('treasurer')}
-                      className="text-xs border-border hover:bg-muted"
+                      className="text-xs border-border/50 hover:bg-primary/10 hover:border-primary/30"
                     >
                       Treasurer
                     </Button>
@@ -187,7 +196,7 @@ export const LoginPage = ({ onBack }) => {
                       variant="outline"
                       size="sm"
                       onClick={() => handleQuickLogin('sa_office')}
-                      className="text-xs border-border hover:bg-muted"
+                      className="text-xs border-border/50 hover:bg-primary/10 hover:border-primary/30"
                     >
                       SA Office
                     </Button>
@@ -196,7 +205,7 @@ export const LoginPage = ({ onBack }) => {
                       variant="outline"
                       size="sm"
                       onClick={() => handleQuickLogin('faculty')}
-                      className="text-xs border-border hover:bg-muted"
+                      className="text-xs border-border/50 hover:bg-primary/10 hover:border-primary/30"
                     >
                       Faculty
                     </Button>
@@ -205,7 +214,7 @@ export const LoginPage = ({ onBack }) => {
                       variant="outline"
                       size="sm"
                       onClick={() => handleQuickLogin('final')}
-                      className="text-xs border-border hover:bg-muted"
+                      className="text-xs border-border/50 hover:bg-primary/10 hover:border-primary/30"
                     >
                       Final Approver
                     </Button>
@@ -225,7 +234,7 @@ export const LoginPage = ({ onBack }) => {
                       required
                       disabled={isLoading}
                       autoFocus
-                      className="pl-10 bg-background border-border focus:border-primary/50 focus:ring-1 focus:ring-primary/20"
+                      className="pl-10 bg-background/50 border-border/50 focus:border-primary/50 focus:ring-1 focus:ring-primary/20"
                     />
                   </div>
                 </div>
@@ -238,7 +247,7 @@ export const LoginPage = ({ onBack }) => {
                 
                 <Button 
                   type="submit" 
-                  className="w-full btn-primary" 
+                  className="w-full bg-gradient-to-r from-cyan-500 to-purple-500 hover:from-cyan-600 hover:to-purple-600 text-white border-0 shadow-lg" 
                   disabled={isLoading}
                 >
                   {isLoading ? (
@@ -279,7 +288,7 @@ export const LoginPage = ({ onBack }) => {
                     required
                     disabled={isLoading}
                     autoFocus
-                    className="text-center text-2xl tracking-widest bg-background border-border focus:border-primary/50 focus:ring-1 focus:ring-primary/20"
+                    className="text-center text-2xl tracking-widest bg-background/50 border-border/50 focus:border-primary/50 focus:ring-1 focus:ring-primary/20"
                   />
                 </div>
                 
@@ -322,7 +331,7 @@ export const LoginPage = ({ onBack }) => {
                 
                 <Button 
                   type="submit" 
-                  className="w-full btn-primary" 
+                  className="w-full bg-gradient-to-r from-cyan-500 to-purple-500 hover:from-cyan-600 hover:to-purple-600 text-white border-0 shadow-lg" 
                   disabled={isLoading || otp.length !== 6}
                 >
                   {isLoading ? (
