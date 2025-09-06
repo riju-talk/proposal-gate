@@ -1,17 +1,18 @@
 import { useState, useMemo } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { EventsView } from "@/components/EventsView";
-import { LogOut, Filter, Shield, Users, GraduationCap } from "lucide-react";
+import { LogOut, Search, Filter, Shield, Users, Calendar, GraduationCap, Plus, Home } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import SearchInput from "@/components/SearchInput";
 
 export const AppLayout = ({ userRole, onRequestAdminLogin }) => {
   const { user, logout } = useAuth();
   const { toast } = useToast();
+  const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
-  const [filteredData, setFilteredData] = useState([]);
 
   const handleLogout = async () => {
     try {
@@ -29,18 +30,19 @@ export const AppLayout = ({ userRole, onRequestAdminLogin }) => {
     }
   };
 
+  // Filter options based on user role
   const availableStatusFilters = useMemo(() => {
-    if (userRole === "admin") {
+    if (userRole === 'admin') {
       return [
         { value: "all", label: "All Events" },
         { value: "pending", label: "Pending Approval" },
         { value: "approved", label: "Approved" },
-        { value: "rejected", label: "Rejected" },
+        { value: "rejected", label: "Rejected" }
       ];
     } else {
       return [
         { value: "all", label: "All Events" },
-        { value: "approved", label: "Approved Events" },
+        { value: "approved", label: "Approved Events" }
       ];
     }
   }, [userRole]);
@@ -53,6 +55,13 @@ export const AppLayout = ({ userRole, onRequestAdminLogin }) => {
           text: user?.name || 'Admin Panel', 
           subtitle: 'Administrative Access',
           color: 'text-primary' 
+        };
+      case 'coordinator':
+        return { 
+          icon: Users, 
+          text: 'Coordinator View', 
+          subtitle: 'Event Coordination',
+          color: 'text-blue-400' 
         };
       default:
         return { 
@@ -173,17 +182,16 @@ export const AppLayout = ({ userRole, onRequestAdminLogin }) => {
 
             {/* Search and Filter Controls */}
             <div className="flex flex-col md:flex-row gap-4 items-center justify-between max-w-4xl mx-auto">
-              <SearchInput
-                searchKeys={[
-                  "event_name",
-                  "organizer_name",
-                  "description",
-                  "venue",
-                ]}
-                placeholder="Search events..."
-                onFilter={setFilteredData}
-                className="w-full md:w-96"
-              />
+              <div className="relative flex-1 max-w-md">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
+                <Input
+                  type="text"
+                  placeholder="Search events..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="pl-10 bg-card border-border focus:border-primary/50 focus:ring-1 focus:ring-primary/20"
+                />
+              </div>
 
               <div className="flex items-center space-x-2">
                 <Filter className="h-4 w-4 text-muted-foreground" />
@@ -193,8 +201,8 @@ export const AppLayout = ({ userRole, onRequestAdminLogin }) => {
                   </SelectTrigger>
                   <SelectContent className="bg-card border-border">
                     {availableStatusFilters.map((filter) => (
-                      <SelectItem
-                        key={filter.value}
+                      <SelectItem 
+                        key={filter.value} 
                         value={filter.value}
                         className="hover:bg-muted focus:bg-muted"
                       >
@@ -208,8 +216,8 @@ export const AppLayout = ({ userRole, onRequestAdminLogin }) => {
 
             {/* Events Grid */}
             <div className="max-w-7xl mx-auto">
-              <EventsView
-                searchTerm={filteredData}
+              <EventsView 
+                searchTerm={searchTerm} 
                 statusFilter={statusFilter}
                 userRole={userRole}
               />

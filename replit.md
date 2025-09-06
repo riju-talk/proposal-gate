@@ -45,6 +45,7 @@ Preferred communication style: Simple, everyday language.
 
 ## Third-party Services
 - **Supabase**: Backend-as-a-Service for authentication, database, and file storage
+- **Neon Database**: Serverless PostgreSQL hosting
 - **Replit**: Development environment with integrated deployment
 
 ## Key Libraries

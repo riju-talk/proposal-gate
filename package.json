@@ -98,7 +98,6 @@
     "recharts": "^2.15.2",
     "rehype-raw": "^7.0.0",
     "remark-gfm": "^4.0.0",
-    "resend": "^6.0.2",
     "sonner": "^1.4.0",
     "tailwind-merge": "^2.6.0",
     "tailwindcss-animate": "^1.0.7",

@@ -2,7 +2,8 @@ import { useState } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { LoginPage } from "@/components/LoginPage";
 import { AppLayout } from "@/components/AppLayout";
-import { Loader2 } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Shield, Sparkles, Users, Calendar, GraduationCap, Loader2 } from "lucide-react";
 
 export const MainApp = () => {
   const { user, isLoading } = useAuth();

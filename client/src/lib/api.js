@@ -1,101 +1,153 @@
-// client/src/lib/api.js
+// API client to replace Supabase calls
 class ApiClient {
-  baseUrl = "/api";
+  baseUrl = '/api';
 
   async request(endpoint, options = {}) {
-    const url = `${this.baseUrl}${endpoint}`;
-    console.log(`🌐 API Request: ${options.method || 'GET'} ${url}`);
-    
     try {
-      const response = await fetch(url, {
+      const response = await fetch(`${this.baseUrl}${endpoint}`, {
         headers: {
-          "Content-Type": "application/json",
+          'Content-Type': 'application/json',
           ...options.headers,
         },
-        credentials: "include", // send cookies (JWT)
         ...options,
       });
 
-      console.log(`📡 API Response: ${response.status} ${url}`);
-
       if (!response.ok) {
-        let errorMessage = `Request failed with status ${response.status}`;
-        try {
-          const errorData = await response.json();
-          errorMessage = errorData.error || errorData.message || errorMessage;
-        } catch {
-          // ignore parsing error, use default message
-        }
-        console.error(`❌ API Error: ${errorMessage}`);
-        return { error: errorMessage };
+        const errorData = await response.json();
+        return { error: errorData.error || 'Request failed' };
       }
 
       const data = await response.json();
-      console.log(`✅ API Success: ${url}`, data);
       return { data };
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : "Unknown error";
-      console.error(`❌ API Network Error: ${errorMessage}`);
-      return { error: errorMessage };
+      return { error: error instanceof Error ? error.message : 'Unknown error' };
     }
   }
 
-  // ================== AUTH ==================
   async sendOTP(email) {
-    return this.request("/auth/send-otp", {
-      method: "POST",
+    return this.request('/auth/send-otp', {
+      method: 'POST',
       body: JSON.stringify({ email }),
     });
   }
 
   async verifyOTP(email, otp) {
-    return this.request("/auth/verify-otp", {
-      method: "POST",
+    return this.request('/auth/verify-otp', {
+      method: 'POST',
       body: JSON.stringify({ email, otp }),
     });
   }
 
-  async logout() {
-    return this.request("/auth/logout", { method: "POST" });
+  // Profile methods
+  async getProfile(id) {
+    return this.request(`/profiles/${id}`);
   }
 
-  async getCurrentUser() {
-    return this.request("/auth/me");
-  }
-
-  // ================== EVENTS ==================
+  // Event proposal methods
   async getEventProposals() {
-    return this.request("/event-proposals");
+    return this.request('/event-proposals');
+  }
+
+  async createEventProposal(proposal) {
+    return this.request('/event-proposals', {
+      method: 'POST',
+      body: JSON.stringify(proposal),
+    });
   }
 
   async getEventProposal(id) {
     return this.request(`/event-proposals/${id}`);
   }
 
-  // ================== APPROVALS ==================
+  async updateEventProposalStatus(id, status) {
+    return this.request(`/event-proposals/${id}/status`, {
+      method: 'PATCH',
+      body: JSON.stringify({ status }),
+    });
+  }
+
+  // Event approval methods
   async getEventApprovals(eventId) {
     return this.request(`/event-proposals/${eventId}/approvals`);
   }
 
-  async getAdminApprovalStatus(eventId, adminEmail) {
-    return this.request(
-      `/event-proposals/${eventId}/approvals/${encodeURIComponent(adminEmail)}`
-    );
-  }
-
-  async approveEvent(eventId, comments = "") {
-    return this.request(`/event-proposals/${eventId}/approve`, {
-      method: "POST",
-      body: JSON.stringify({ comments }),
+  async updateEventApproval(id, status, comments) {
+    return this.request(`/event-approvals/${id}`, {
+      method: 'PATCH',
+      body: JSON.stringify({ status, comments }),
     });
   }
 
-  async rejectEvent(eventId, comments = "") {
-    return this.request(`/event-proposals/${eventId}/reject`, {
-      method: "POST",
-      body: JSON.stringify({ comments }),
+  // Authorized admin methods
+  async getAuthorizedAdmins() {
+    return this.request('/authorized-admins');
+  }
+
+  // Club methods
+  async getClubs() {
+    return this.request('/clubs');
+  }
+
+  // Club formation request methods
+  async getClubFormationRequests() {
+    return this.request('/club-formation-requests');
+  }
+
+  async createClubFormationRequest(request) {
+    return this.request('/club-formation-requests', {
+      method: 'POST',
+      body: JSON.stringify(request),
     });
   }
+
+  async updateClubFormationRequestStatus(id, status) {
+    return this.request(`/club-formation-requests/${id}`, {
+      method: 'PATCH',
+      body: JSON.stringify({ status }),
+    });
+  }
+
+  async updateEventApprovalByProposalAndAdmin(eventProposalId, adminEmail, status, comments) {
+    // Since we don't have individual approval IDs in the client, we'll create a special endpoint
+    return this.request(`/event-proposals/${eventProposalId}/approvals/${encodeURIComponent(adminEmail)}`, {
+      method: 'PATCH',
+      body: JSON.stringify({ status, comments }),
+    });
+  }
+
+  async createAdminUsers() {
+    return this.request('/create-admin-users', {
+      method: 'POST',
+    });
+  }
+
+  async updateEventProposal(id, data) {
+    return this.request(`/event-proposals/${id}`, {
+      method: 'PATCH',
+      body: JSON.stringify(data),
+    });
+  }
+
+  // Student representative methods
+  async getStudentRepresentatives() {
+    return this.request('/student-representatives');
+  }
+
+  // Important contact methods
+  async getImportantContacts() {
+    return this.request('/important-contacts');
+  }
+
+  // Hostel info methods
+  async getHostelInfo() {
+    return this.request('/hostel-info');
+  }
+
+  // Mess hostel committee methods
+  async getMessHostelCommittee() {
+    return this.request('/mess-hostel-committee');
+  }
+
 }
 
 export const apiClient = new ApiClient();
