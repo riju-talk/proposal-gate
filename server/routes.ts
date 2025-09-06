@@ -32,7 +32,6 @@ export function registerRoutes(app: Express) {
   // ================= APPROVALS =================
   app.get(
     "/api/event-proposals/:id/approvals",
-    requireAuth(["admin"]),
     async (req: Request, res: Response) => {
       try {
         const approvals = await storage.getApprovals(req.params.id);

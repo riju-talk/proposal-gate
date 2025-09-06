@@ -50,7 +50,7 @@ export const EventApprovalTracker = ({ eventId, showActions = true }) => {
         description: `Approval ${status === "approved" ? "granted" : "rejected"} successfully.`,
       });
 
-      await refetch(); // refresh list
+      await refetch(); // Refresh approvals
     } catch (err) {
       console.error("Error updating approval:", err);
       toast({
@@ -126,6 +126,7 @@ export const EventApprovalTracker = ({ eventId, showActions = true }) => {
           Approval Status
         </CardTitle>
       </CardHeader>
+
       <CardContent className="space-y-4">
         {approvals.length === 0 ? (
           <p className="text-muted-foreground">No approvals found for this event.</p>
@@ -137,11 +138,10 @@ export const EventApprovalTracker = ({ eventId, showActions = true }) => {
                   <User className="h-4 w-4 text-primary" />
                   <div>
                     <h4 className="font-medium text-foreground">
-                      {approval.admin_name || "Admin"}
+                      {approval.admin?.name || "Admin"}
                     </h4>
                     <p className="text-sm text-muted-foreground capitalize">
-                      {approval.admin_role?.replace("_", " ") || "Reviewer"} (Order:{" "}
-                      {approval.approval_order})
+                      {approval.admin?.role?.replace("_", " ") || "Reviewer"}
                     </p>
                   </div>
                 </div>
@@ -157,15 +157,15 @@ export const EventApprovalTracker = ({ eventId, showActions = true }) => {
                 </div>
               )}
 
-              {canUserApprove(approval.admin_email, approval.status) && (
+              {canUserApprove(approval.admin?.email, approval.status) && (
                 <div className="space-y-3 pt-3 border-t border-border">
                   <Textarea
                     placeholder="Add a comment (optional)"
-                    value={comments[approval.admin_email] || ""}
+                    value={comments[approval.admin?.email] || ""}
                     onChange={(e) =>
                       setComments((prev) => ({
                         ...prev,
-                        [approval.admin_email]: e.target.value,
+                        [approval.admin?.email]: e.target.value,
                       }))
                     }
                     className="text-sm bg-background border-border"
@@ -175,12 +175,16 @@ export const EventApprovalTracker = ({ eventId, showActions = true }) => {
                       variant="outline"
                       size="sm"
                       onClick={() =>
-                        handleApprove(approval.admin_email, "rejected", comments[approval.admin_email])
+                        handleApprove(
+                          approval.admin?.email,
+                          "rejected",
+                          comments[approval.admin?.email]
+                        )
                       }
-                      disabled={approving === approval.admin_email}
+                      disabled={approving === approval.admin?.email}
                       className="border-destructive/30 text-destructive hover:bg-destructive/10"
                     >
-                      {approving === approval.admin_email ? (
+                      {approving === approval.admin?.email ? (
                         <Loader2 className="h-4 w-4 animate-spin" />
                       ) : (
                         "Reject"
@@ -189,12 +193,16 @@ export const EventApprovalTracker = ({ eventId, showActions = true }) => {
                     <Button
                       size="sm"
                       onClick={() =>
-                        handleApprove(approval.admin_email, "approved", comments[approval.admin_email])
+                        handleApprove(
+                          approval.admin?.email,
+                          "approved",
+                          comments[approval.admin?.email]
+                        )
                       }
-                      disabled={approving === approval.admin_email}
+                      disabled={approving === approval.admin?.email}
                       className="bg-success/20 border-success/30 text-success hover:bg-success/30"
                     >
-                      {approving === approval.admin_email ? (
+                      {approving === approval.admin?.email ? (
                         <Loader2 className="h-4 w-4 animate-spin" />
                       ) : (
                         "Approve"

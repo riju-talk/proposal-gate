@@ -1,41 +1,31 @@
-// server/email.ts
 import nodemailer from "nodemailer";
 import type SMTPTransport from "nodemailer/lib/smtp-transport";
-import { generateAuthToken } from "./jwt";
+
+
 
 // ---- Env & config ----------------------------------------------------------
-const {
-  SMTP_USER,
-  SMTP_PASSWORD,
-  SMTP_HOST = "smtp.gmail.com",
-  SMTP_PORT = "587",
-  SMTP_SECURE = "false",
-  EMAIL_FROM,
-  EMAIL_FROM_NAME = "Proposal Gate",
-  APP_URL,
-  NODE_ENV = "development",
-} = process.env;
 
-const requiredEnvVars = ["SMTP_USER", "SMTP_PASSWORD", "EMAIL_FROM", "APP_URL"] as const;
-const missing = requiredEnvVars.filter((k) => !process.env[k]);
-if (missing.length) {
-  throw new Error(`Missing required environment variables: ${missing.join(", ")}`);
-}
+const SMTP_USER = process.env.SMTP_USER!;
+const SMTP_PASSWORD = process.env.SMTP_PASSWORD!;
+const SMTP_HOST = "smtp.gmail.com";
+const SMTP_PORT = 465;
+const SMTP_SECURE = true;
+const EMAIL_FROM = process.env.EMAIL_FROM!;
+const EMAIL_FROM_NAME = "Proposal Gate";
 
-const isProd = NODE_ENV === "production";
-const portNum = Number(SMTP_PORT);
-const secure = SMTP_SECURE === "true" || portNum === 465;
-
+console.log(SMTP_USER)
+console.log(SMTP_HOST)
+console.log(SMTP_PASSWORD)
 // ---- Transporter -----------------------------------------------------------
+
 const transporter = nodemailer.createTransport({
   host: SMTP_HOST,
-  port: portNum,
-  secure,
+  port: SMTP_PORT,
+  secure: SMTP_SECURE,
   auth: {
-    user: SMTP_USER!,
-    pass: SMTP_PASSWORD!,
+    user: SMTP_USER,
+    pass: SMTP_PASSWORD,
   },
-  ...(isProd ? {} : { tls: { rejectUnauthorized: false } }),
 } as SMTPTransport.Options);
 
 transporter.verify().then(
@@ -44,6 +34,7 @@ transporter.verify().then(
 );
 
 // ---- Helpers ---------------------------------------------------------------
+
 function htmlToText(html: string): string {
   return html
     .replace(/<style[\s\S]*?<\/style>/gi, "")
@@ -72,19 +63,14 @@ interface EmailOptions {
 async function sendEmail({ to, subject, html, text }: EmailOptions): Promise<boolean> {
   try {
     const info = await transporter.sendMail({
-      from: `"${EMAIL_FROM_NAME}" <${EMAIL_FROM!}>`,
+      from: `"${EMAIL_FROM_NAME}" <${EMAIL_FROM}>`,
       to,
       subject,
       html,
       text: text ?? htmlToText(html),
     });
 
-    if (!isProd) {
-      const preview = nodemailer.getTestMessageUrl(info);
-      if (preview) console.log("[mailer] Preview URL:", preview);
-      else console.log("[mailer] Message sent:", info.messageId);
-    }
-
+    console.log("[mailer] Email sent:", info.messageId);
     return true;
   } catch (error) {
     console.error("[mailer] sendEmail error:", error);
@@ -94,50 +80,35 @@ async function sendEmail({ to, subject, html, text }: EmailOptions): Promise<boo
 
 // ---- Public API ------------------------------------------------------------
 
-/**
- * Send verification email
- * Caller must provide user info (id, email, role)
- */
-export const sendVerificationEmail = async (
-  user: { id: string; email: string; name?: string; role: string }
+export const sendOtpEmail = async (
+  email: string,
+  otp: string
 ): Promise<{ success: boolean; message: string }> => {
   try {
-    const token = generateAuthToken(user);
-
-    const verificationUrl = `${APP_URL}/verify-email?token=${encodeURIComponent(token)}`;
-
     const sent = await sendEmail({
-      to: user.email,
-      subject: "Verify Your Email Address",
+      to: email,
+      subject: "Your OTP Code for Proposal Gate",
       html: `
         <div style="font-family:Arial, sans-serif; max-width:600px; margin:0 auto;">
-          <h2>Welcome to ${escapeHtml(EMAIL_FROM_NAME)}</h2>
-          <p>Please verify your email address by clicking the button below:</p>
-          <div style="margin:30px 0; text-align:center;">
-            <a href="${verificationUrl}"
-               style="background:#4CAF50; color:#fff; padding:12px 24px; text-decoration:none; border-radius:4px; font-weight:bold;">
-              Verify Email
-            </a>
+          <h2>Your OTP Code</h2>
+          <p>Your OTP code to login is:</p>
+          <div style="font-size:24px; font-weight:bold; padding:20px; background:#f1f1f1; text-align:center; border-radius:4px;">
+            ${escapeHtml(otp)}
           </div>
-          <p>Or copy this link:</p>
-          <p style="word-break:break-all;">${verificationUrl}</p>
-          <p><strong>Note:</strong> This link expires in 24 hours.</p>
+          <p><strong>Note:</strong> This OTP expires in 5 minutes. Do not share it with anyone.</p>
         </div>
       `,
     });
 
-    if (!sent) throw new Error("Failed to send verification email");
+    if (!sent) throw new Error("Failed to send OTP email");
 
-    return { success: true, message: "Verification email sent" };
+    return { success: true, message: "OTP sent successfully" };
   } catch (error) {
-    console.error("[mailer] sendVerificationEmail:", error);
-    return { success: false, message: "Failed to send verification email" };
+    console.error("[mailer] sendOtpEmail:", error);
+    return { success: false, message: "Failed to send OTP email" };
   }
 };
 
-/**
- * Send event status update email
- */
 export const sendEventStatusUpdateEmail = async (
   email: string,
   eventName: string,
@@ -156,20 +127,7 @@ export const sendEventStatusUpdateEmail = async (
         <div style="font-family:Arial, sans-serif; max-width:600px; margin:0 auto;">
           <h2>Event Status Update: ${escapeHtml(eventName)}</h2>
           <p>Status updated to: <strong style="color:${color};">${statusText}</strong></p>
-          ${
-            safeComments
-              ? `<div style="background:#f8f9fa; padding:15px; border-left:4px solid #6c757d; margin:15px 0;">
-                  <p style="margin:0; font-style:italic;">${safeComments}</p>
-                </div>`
-              : ""
-          }
-          <p>You can view more details here:</p>
-          <div style="margin:30px 0; text-align:center;">
-            <a href="${APP_URL}/dashboard"
-               style="background:#4CAF50; color:#fff; padding:12px 24px; text-decoration:none; border-radius:4px; font-weight:bold;">
-              View Dashboard
-            </a>
-          </div>
+          ${safeComments ? `<p><strong>Admin Comments:</strong><br>${safeComments}</p>` : ""}
         </div>
       `,
     });
