@@ -3,8 +3,11 @@ class ApiClient {
   baseUrl = "/api";
 
   async request(endpoint, options = {}) {
+    const url = `${this.baseUrl}${endpoint}`;
+    console.log(`🌐 API Request: ${options.method || 'GET'} ${url}`);
+    
     try {
-      const response = await fetch(`${this.baseUrl}${endpoint}`, {
+      const response = await fetch(url, {
         headers: {
           "Content-Type": "application/json",
           ...options.headers,
@@ -13,23 +16,27 @@ class ApiClient {
         ...options,
       });
 
+      console.log(`📡 API Response: ${response.status} ${url}`);
+
       if (!response.ok) {
-        let errorMessage = "Request failed";
+        let errorMessage = `Request failed with status ${response.status}`;
         try {
           const errorData = await response.json();
-          errorMessage = errorData.error || errorMessage;
+          errorMessage = errorData.error || errorData.message || errorMessage;
         } catch {
-          // ignore parsing error
+          // ignore parsing error, use default message
         }
+        console.error(`❌ API Error: ${errorMessage}`);
         return { error: errorMessage };
       }
 
       const data = await response.json();
+      console.log(`✅ API Success: ${url}`, data);
       return { data };
     } catch (error) {
-      return {
-        error: error instanceof Error ? error.message : "Unknown error",
-      };
+      const errorMessage = error instanceof Error ? error.message : "Unknown error";
+      console.error(`❌ API Network Error: ${errorMessage}`);
+      return { error: errorMessage };
     }
   }
 
@@ -52,13 +59,13 @@ class ApiClient {
     return this.request("/auth/logout", { method: "POST" });
   }
 
-  // ================== EVENTS ==================
-  async getPublicEventProposals() {
-    return this.request("/event-proposals/public");
+  async getCurrentUser() {
+    return this.request("/auth/me");
   }
 
-  async getAdminEventProposals() {
-    return this.request("/event-proposals/admin");
+  // ================== EVENTS ==================
+  async getEventProposals() {
+    return this.request("/event-proposals");
   }
 
   async getEventProposal(id) {
@@ -67,26 +74,26 @@ class ApiClient {
 
   // ================== APPROVALS ==================
   async getEventApprovals(eventId) {
-    return this.request(`/events/${eventId}/approvals`);
+    return this.request(`/event-proposals/${eventId}/approvals`);
   }
 
   async getAdminApprovalStatus(eventId, adminEmail) {
     return this.request(
-      `/events/${eventId}/approvals/${encodeURIComponent(adminEmail)}`
+      `/event-proposals/${eventId}/approvals/${encodeURIComponent(adminEmail)}`
     );
   }
 
   async approveEvent(eventId, comments = "") {
-    return this.request(`/events/${eventId}/approve`, {
+    return this.request(`/event-proposals/${eventId}/approve`, {
       method: "POST",
-      body: JSON.stringify({ status: "approved", comments }),
+      body: JSON.stringify({ comments }),
     });
   }
 
   async rejectEvent(eventId, comments = "") {
-    return this.request(`/events/${eventId}/approve`, {
+    return this.request(`/event-proposals/${eventId}/reject`, {
       method: "POST",
-      body: JSON.stringify({ status: "rejected", comments }),
+      body: JSON.stringify({ comments }),
     });
   }
 }

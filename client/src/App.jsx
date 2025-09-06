@@ -3,38 +3,34 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { ThemeProvider } from "next-themes";
-import { AuthProvider } from "@/components/AuthProvider";
+import { AuthProvider } from "@/hooks/useAuth";
 import { MainApp } from "@/components/MainApp";
-import { ToastProvider as ToastProviderPrimitive, ToastViewport } from "@radix-ui/react-toast";
-import { useToast } from "@/hooks/use-toast";
 
-const queryClient = new QueryClient();
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      retry: 1,
+      refetchOnWindowFocus: false,
+    },
+  },
+});
 
-// Wrapper component to provide toast context
-const ToastWrapper = ({ children }) => {
-  const { toasts } = useToast();
+const App = () => {
+  console.log("🚀 App starting...");
+  
   return (
-    <ToastProviderPrimitive>
-      {children}
-      <Toaster />
-      <Sonner />
-      <ToastViewport />
-    </ToastProviderPrimitive>
+    <QueryClientProvider client={queryClient}>
+      <ThemeProvider attribute="class" defaultTheme="dark" enableSystem={false} forcedTheme="dark">
+        <TooltipProvider>
+          <AuthProvider>
+            <MainApp />
+            <Toaster />
+            <Sonner />
+          </AuthProvider>
+        </TooltipProvider>
+      </ThemeProvider>
+    </QueryClientProvider>
   );
 };
-
-const App = () => (
-  <QueryClientProvider client={queryClient}>
-    <ThemeProvider attribute="class" defaultTheme="dark" enableSystem={false} forcedTheme="dark">
-      <TooltipProvider>
-        <AuthProvider>
-          <ToastWrapper>
-            <MainApp />
-          </ToastWrapper>
-        </AuthProvider>
-      </TooltipProvider>
-    </ThemeProvider>
-  </QueryClientProvider>
-);
 
 export default App;

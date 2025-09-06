@@ -1,13 +1,4 @@
-import { AuthContext, useAuthProvider } from '@/hooks/useAuth';
+import { AuthProvider } from '@/hooks/useAuth';
 
-const AuthProvider = ({ children }) => {
-  const auth = useAuthProvider();
-  
-  return (
-    <AuthContext.Provider value={auth}>
-      {children}
-    </AuthContext.Provider>
-  );
-};
-
+export { AuthProvider };
 export default AuthProvider;
