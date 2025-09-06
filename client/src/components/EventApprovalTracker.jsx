@@ -65,10 +65,7 @@ export const EventApprovalTracker = ({ eventId, showActions = true }) => {
       
       // Clear comment
       setComments(prev => ({ ...prev, [user?.email]: '' }));
-<<<<<<< HEAD
       
-=======
->>>>>>> cfa5683aff27004fd9b7a1f5d6b1fc9d8cdd01c4
       toast({
         title: 'Success',
         description: result.message || `Event ${action} successfully`,
