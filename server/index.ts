@@ -1,95 +1,77 @@
-// server/index.ts
-import express, { type Request, type Response, type NextFunction } from "express";
-import { createServer } from "http";
-import { fileURLToPath } from "url";
-import path from "path";
-import dotenv from "dotenv";
-import helmet from "helmet";
-import cors from "cors";
-import cookieParser from "cookie-parser";
-
-import { setupVite, serveStatic } from "./vite";
-import { registerRoutes } from "./routes";
-
-// ==================== Environment Setup ====================
+import * as dotenv from 'dotenv';
 dotenv.config();
 
-const NODE_ENV = process.env.NODE_ENV || "development";
-const PORT = process.env.PORT || 3000;
-const CLIENT_PORT = process.env.VITE_PORT || 5000;
+import express, { type Request, Response, NextFunction } from "express";
+import cookieParser from 'cookie-parser';
+import { registerRoutes } from "./routes";
+import { setupVite, serveStatic, log } from "./vite";
 
-const allowedOrigins = [
-  `http://localhost:${CLIENT_PORT}`,
-  `http://127.0.0.1:${CLIENT_PORT}`,
-  // Add production domains here
-];
-
-// ==================== Paths ====================
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
-
-// ==================== App & Server ====================
 const app = express();
-const server = createServer(app);
 
-// ==================== Middleware ====================
-// Parse requests
-app.use(express.json({ limit: "10mb" }));
-app.use(express.urlencoded({ extended: true }));
+// Trust proxy for rate limiting
+app.set('trust proxy', 1);
 
+app.use(express.json({ limit: '10mb' }));
+app.use(express.urlencoded({ extended: false, limit: '10mb' }));
 app.use(cookieParser());
 
-// Security headers
-app.use(
-  helmet({
-    contentSecurityPolicy: NODE_ENV === "production", // disable CSP in dev
-  })
-);
+// Request logging middleware
+app.use((req, res, next) => {
+  const start = Date.now();
+  const path = req.path;
+  let capturedJsonResponse: Record<string, any> | undefined = undefined;
 
-// CORS
-app.use(
-  cors({
-    origin: (origin, callback) => {
-      if (!origin || allowedOrigins.includes(origin)) {
-        callback(null, true);
-      } else {
-        callback(new Error("Not allowed by CORS"));
+  const originalResJson = res.json;
+  res.json = function (bodyJson, ...args) {
+    capturedJsonResponse = bodyJson;
+    return originalResJson.apply(res, [bodyJson, ...args]);
+  };
+
+  res.on("finish", () => {
+    const duration = Date.now() - start;
+    if (path.startsWith("/api")) {
+      let logLine = `${req.method} ${path} ${res.statusCode} in ${duration}ms`;
+      if (capturedJsonResponse && !path.includes('/auth/')) {
+        logLine += ` :: ${JSON.stringify(capturedJsonResponse)}`;
       }
-    },
-    credentials: true,
-    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],
-  })
-);
 
-// ==================== Routes ====================
-registerRoutes(app);
+      if (logLine.length > 80) {
+        logLine = logLine.slice(0, 79) + "…";
+      }
 
-// Dev mode: setup Vite middleware
-if (NODE_ENV === "development") {
-  setupVite(app, server).catch((err) => {
-    console.error("⚠️ Failed to setup Vite middleware:", err);
-    process.exit(1);
+      log(logLine);
+    }
   });
-}
 
-// Prod mode: serve built client
-if (NODE_ENV === "production") {
-  serveStatic(app);
-}
-
-// ==================== Error Handling ====================
-// 404 handler
-app.use((req: Request, res: Response) => {
-  res.status(404).json({ error: "Not Found" });
+  next();
 });
 
-// Error handler
-app.use((err: Error, req: Request, res: Response, next: NextFunction) => {
-  console.error("[server] Uncaught error:", err.stack || err.message);
-  res.status(500).json({ error: "Internal Server Error" });
-});
+(async () => {
+  const server = await registerRoutes(app);
 
-// ==================== Server Start ====================
-server.listen(PORT, () => {
-  console.log(`🚀 Server running on http://localhost:${PORT}`);
-  console.log(`🌐 Environment: ${NODE_ENV}`);
-});
+  // Global error handler
+  app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
+    const status = err.status || err.statusCode || 500;
+    const message = err.message || "Internal Server Error";
+
+    log(`Error ${status}: ${message}`, "error");
+    res.status(status).json({ error: message });
+  });
+
+  // Setup Vite in development or serve static files in production
+  if (app.get("env") === "development") {
+    await setupVite(app, server);
+  } else {
+    serveStatic(app);
+  }
+
+  // Start Express server on port 3000 for API, Vite will proxy to it
+  const port = parseInt(process.env.API_PORT || "3000");
+  server.listen(port, "0.0.0.0", () => {
+    log(`🚀 Express API Server running on port ${port}`);
+    log(`📧 SMTP configured: ${process.env.SMTP_USER ? 'Yes' : 'No (using console logs)'}`);
+    log(`🔒 Environment: ${app.get("env")}`);
+    log(`🔑 JWT Secret configured: ${process.env.JWT_SECRET ? 'Yes' : 'Using default (change in production)'}`);
+    console.log("✅ API Server started successfully with database and routes");
+  });
+})();
