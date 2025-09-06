@@ -1,5 +1,4 @@
 import { useState, useEffect, useCallback } from "react";
-import { apiClient } from "@/lib/api";
 
 export const useEventProposals = (statusFilter, userRole = "public") => {
   const [proposals, setProposals] = useState([]);
@@ -12,22 +11,19 @@ export const useEventProposals = (statusFilter, userRole = "public") => {
     console.log("🔄 Fetching proposals for role:", userRole, "filter:", statusFilter);
 
     try {
-      let response;
-      if (userRole === "admin") {
-        response = await apiClient.getEventProposals();
-      } else {
-        response = await apiClient.getEventProposals();
+      const response = await fetch('/api/events', {
+        credentials: 'include'
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
       }
 
-      if (response.error) {
-        throw new Error(response.error);
-      }
-
-      const proposalsData = Array.isArray(response.data) ? response.data : [];
+      const proposalsData = await response.json();
       console.log("✅ Fetched proposals:", proposalsData.length);
 
       // Normalize field names to snake_case for consistency
-      const normalized = proposalsData.map((proposal) => ({
+      const normalized = Array.isArray(proposalsData) ? proposalsData.map((proposal) => ({
         id: proposal.id,
         event_name: proposal.event_name || proposal.eventName,
         organizer_name: proposal.organizer_name || proposal.organizerName,
@@ -48,7 +44,7 @@ export const useEventProposals = (statusFilter, userRole = "public") => {
         created_at: proposal.created_at || proposal.createdAt,
         updated_at: proposal.updated_at || proposal.updatedAt,
         approvals: proposal.approvals || [],
-      }));
+      })) : [];
 
       setProposals(normalized);
     } catch (err) {
@@ -70,18 +66,26 @@ export const useEventProposals = (statusFilter, userRole = "public") => {
       
       try {
         const endpoint = status === "approved" 
-          ? `/event-proposals/${id}/approve`
-          : `/event-proposals/${id}/reject`;
+          ? `/api/events/${id}/approve`
+          : status === "rejected"
+          ? `/api/events/${id}/reject`
+          : `/api/events/${id}/review`;
           
-        const { data, error } = await apiClient.request(endpoint, {
-          method: "POST",
+        const response = await fetch(endpoint, {
+          method: "PATCH",
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          credentials: 'include',
           body: JSON.stringify({ comments }),
         });
 
-        if (error) {
-          throw new Error(error);
+        if (!response.ok) {
+          const errorData = await response.json();
+          throw new Error(errorData.error || `Failed to ${status} proposal`);
         }
 
+        const data = await response.json();
         console.log("✅ Proposal status updated successfully");
 
         // Update local state
@@ -90,7 +94,7 @@ export const useEventProposals = (statusFilter, userRole = "public") => {
             proposal.id === id
               ? {
                   ...proposal,
-                  status: status,
+                  status: data.eventStatus || status,
                   updated_at: new Date().toISOString(),
                 }
               : proposal

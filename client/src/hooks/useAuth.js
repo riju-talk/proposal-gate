@@ -1,45 +1,32 @@
-import { createContext, useContext, useState, useEffect, useCallback } from 'react';
-import { useToast } from '@/hooks/use-toast';
+import { createContext, useContext, useState, useEffect, useCallback } from "react";
+import { useToast } from "@/hooks/use-toast";
 
+// Create the AuthContext
 export const AuthContext = createContext(undefined);
 
-export const useAuthProvider = () => {
-  const [state, setState] = useState({
-    user: null,
-    isOTPSent: false,
-    lastSentTime: null,
-    countdown: 0,
-    email: ''
-  });
-  
-  const { user, isOTPSent, lastSentTime, countdown, email } = state;
+// Custom Hook for easier usage
+export const useAuth = () => {
+  const context = useContext(AuthContext);
+  if (!context) {
+    throw new Error("useAuth must be used within an AuthProvider");
+  }
+  return context;
+};
+
+// AuthProvider Component
+export const AuthProvider = ({ children }) => {
+  const [user, setUser] = useState(null);
+  const [isOTPSent, setIsOTPSent] = useState(false);
+  const [lastSentTime, setLastSentTime] = useState(null);
+  const [countdown, setCountdown] = useState(0);
+  const [email, setEmail] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+
   const { toast } = useToast();
-  
-  // Countdown effect for OTP resend
+
+  // Restore session on mount
   useEffect(() => {
-    if (!lastSentTime) return;
-    
-    const now = Date.now();
-    const timeLeft = Math.ceil((lastSentTime + 60000 - now) / 1000);
-    
-    if (timeLeft <= 0) {
-      setState(s => ({ ...s, countdown: 0 }));
-      return;
-    }
-    
-    setState(s => ({ ...s, countdown: timeLeft }));
-    
-    const timer = setTimeout(() => {
-      setState(s => ({ ...s, countdown: s.countdown - 1 }));
-    }, 1000);
-    
-    return () => clearTimeout(timer);
-  }, [lastSentTime, countdown]);
-  
-  // Check for existing session on mount
-  useEffect(() => {
-    const checkAuth = async () => {
+    const restoreSession = async () => {
       try {
         const response = await fetch('/api/auth/me', {
           credentials: 'include'
@@ -47,119 +34,177 @@ export const useAuthProvider = () => {
         
         if (response.ok) {
           const userData = await response.json();
-          setState(s => ({ ...s, user: userData }));
+          setUser(userData);
+          console.log("✅ Session restored:", userData);
         }
       } catch (err) {
-        console.error('Error checking auth:', err);
+        console.warn("⚠️ No active session:", err);
       }
     };
-    
-    checkAuth();
+    restoreSession();
   }, []);
-  
-  const sendOTP = useCallback(async (email) => {
-    setIsLoading(true);
-    
-    try {
-      const response = await fetch('/api/auth/send-otp', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        credentials: 'include',
-        body: JSON.stringify({ email }),
-      });
-      
-      const data = await response.json();
-      
-      if (response.ok) {
-        setState(s => ({
-          ...s,
-          isOTPSent: true,
-          lastSentTime: Date.now(),
-          email,
-          countdown: 60
-        }));
-        return { success: true };
-      } else {
-        return { 
-          success: false, 
-          error: data.error || 'Failed to send OTP' 
-        };
-      }
-    } catch (error) {
-      console.error('Error sending OTP:', error);
-      return { 
-        success: false, 
-        error: 'An error occurred while sending OTP' 
-      };
-    } finally {
-      setIsLoading(false);
-    }
-  }, []);
-  
-  const verifyOTP = useCallback(async (email, otp) => {
-    setIsLoading(true);
-    
-    try {
-      const actualEmail = email || state.email;
-      const response = await fetch('/api/auth/verify-otp', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        credentials: 'include',
-        body: JSON.stringify({ email: actualEmail, otp }),
-      });
 
-      const data = await response.json();
-      
-      if (response.ok && data.success) {
-        const adminUser = {
-          email: data.admin.email,
-          name: data.admin.name,
-          role: data.admin.role
-        };
-        
-        setState(s => ({ ...s, user: adminUser }));
-        return { success: true };
-      } else {
-        return { 
-          success: false, 
-          error: data.error || 'Invalid OTP' 
-        };
+  // Countdown logic for OTP resend
+  useEffect(() => {
+    if (!lastSentTime) return;
+
+    const interval = setInterval(() => {
+      const timeLeft = Math.max(
+        0,
+        Math.ceil((lastSentTime + 60000 - Date.now()) / 1000)
+      );
+      setCountdown(timeLeft);
+
+      if (timeLeft === 0) {
+        clearInterval(interval);
       }
-    } catch (error) {
-      console.error('Error verifying OTP:', error);
-      return { 
-        success: false, 
-        error: 'An error occurred while verifying OTP' 
-      };
-    } finally {
-      setIsLoading(false);
-    }
-  }, [state.email]);
-  
+    }, 1000);
+
+    return () => clearInterval(interval);
+  }, [lastSentTime]);
+
+  // Send OTP method
+  const sendOTP = useCallback(
+    async (targetEmail) => {
+      setIsLoading(true);
+      console.log("📧 Sending OTP to:", targetEmail);
+
+      try {
+        const response = await fetch('/api/auth/send-otp', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          credentials: 'include',
+          body: JSON.stringify({ email: targetEmail }),
+        });
+
+        const data = await response.json();
+
+        if (response.ok && data.success) {
+          setIsOTPSent(true);
+          setLastSentTime(Date.now());
+          setEmail(targetEmail);
+          setCountdown(60);
+          toast({ 
+            title: "OTP sent", 
+            description: "Check your email inbox.",
+            duration: 3000
+          });
+          console.log("✅ OTP sent successfully");
+          return { success: true };
+        } else {
+          console.error("❌ OTP send failed:", data.error);
+          toast({
+            title: "Error",
+            description: data.error || "Failed to send OTP",
+            variant: "destructive",
+            duration: 5000
+          });
+          return { success: false, error: data.error || "Failed to send OTP" };
+        }
+      } catch (err) {
+        console.error("❌ OTP send error:", err);
+        const errorMessage = err.message || "Network error occurred";
+        toast({
+          title: "Error",
+          description: errorMessage,
+          variant: "destructive",
+          duration: 5000
+        });
+        return { success: false, error: errorMessage };
+      } finally {
+        setIsLoading(false);
+      }
+    },
+    [toast]
+  );
+
+  // Verify OTP method
+  const verifyOTP = useCallback(
+    async (targetEmail, otp) => {
+      setIsLoading(true);
+      console.log("🔐 Verifying OTP for:", targetEmail || email);
+
+      try {
+        const response = await fetch('/api/auth/verify-otp', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          credentials: 'include',
+          body: JSON.stringify({ 
+            email: targetEmail || email, 
+            otp: otp 
+          }),
+        });
+
+        const data = await response.json();
+
+        if (response.ok && data.success && data.admin) {
+          setUser(data.admin);
+          setIsOTPSent(false);
+          setLastSentTime(null);
+          setCountdown(0);
+          toast({ 
+            title: "Logged in", 
+            description: `Welcome back, ${data.admin.name}!`,
+            duration: 3000
+          });
+          console.log("✅ Login successful:", data.admin);
+          return { success: true };
+        } else {
+          console.error("❌ OTP verification failed:", data.error);
+          toast({
+            title: "Invalid OTP",
+            description: data.error || "Please check your code and try again",
+            variant: "destructive",
+            duration: 5000
+          });
+          return { success: false, error: data.error || "Invalid OTP" };
+        }
+      } catch (err) {
+        console.error("❌ OTP verification error:", err);
+        const errorMessage = err.message || "Verification failed";
+        toast({
+          title: "Error",
+          description: errorMessage,
+          variant: "destructive",
+          duration: 5000
+        });
+        return { success: false, error: errorMessage };
+      } finally {
+        setIsLoading(false);
+      }
+    },
+    [email, toast]
+  );
+
+  // Logout method
   const logout = useCallback(async () => {
     try {
       await fetch('/api/auth/logout', {
         method: 'POST',
         credentials: 'include'
       });
-    } catch (error) {
-      console.error('Logout error:', error);
+      setUser(null);
+      setIsOTPSent(false);
+      setLastSentTime(null);
+      setCountdown(0);
+      setEmail("");
+      toast({ 
+        title: "Logged out",
+        description: "You have been logged out successfully",
+        duration: 3000
+      });
+      console.log("✅ Logout successful");
+    } catch (err) {
+      console.error("❌ Logout error:", err);
     }
-    
-    setState({
-      user: null,
-      isOTPSent: false,
-      lastSentTime: null,
-      countdown: 0,
-      email: ''
-    });
-  }, []);
-  
-  return {
+  }, [toast]);
+
+  // Provide Context Values
+  const contextValue = {
     user,
     isOTPSent,
     isLoading,
@@ -167,10 +212,14 @@ export const useAuthProvider = () => {
     email,
     sendOTP,
     verifyOTP,
-    logout
+    logout,
   };
+
+  return (
+    <AuthContext.Provider value={contextValue}>
+      {children}
+    </AuthContext.Provider>
+  );
 };
 
-export const useAuth = () => {
-  return useContext(AuthContext);
-};
+export default AuthProvider;

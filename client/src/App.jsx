@@ -16,8 +16,6 @@ const queryClient = new QueryClient({
 });
 
 const App = () => {
-  console.log("🚀 App starting...");
-  
   return (
     <QueryClientProvider client={queryClient}>
       <ThemeProvider attribute="class" defaultTheme="dark" enableSystem={false} forcedTheme="dark">

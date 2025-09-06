@@ -5,7 +5,7 @@ import { ProposalDetailsModal } from "@/components/ProposalDetailsModal";
 import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/hooks/use-toast";
-import { Search, CheckCircle, Clock, XCircle } from "lucide-react";
+import { Search, CheckCircle, Clock, XCircle, Eye } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 export const EventsView = ({ searchTerm = "", statusFilter, userRole }) => {
@@ -27,7 +27,7 @@ export const EventsView = ({ searchTerm = "", statusFilter, userRole }) => {
 
       const searchLower = searchTerm.toLowerCase();
 
-      // ✅ Use normalized snake_case field names
+      // Use normalized snake_case field names
       const eventName = (proposal.event_name || "").toLowerCase();
       const organizerName = (proposal.organizer_name || "").toLowerCase();
       const description = (proposal.description || "").toLowerCase();
@@ -46,7 +46,8 @@ export const EventsView = ({ searchTerm = "", statusFilter, userRole }) => {
         const matchesStatusTab =
           (activeStatusTab === "pending" && status === "pending") ||
           (activeStatusTab === "approved" && status === "approved") ||
-          (activeStatusTab === "rejected" && status === "rejected");
+          (activeStatusTab === "rejected" && status === "rejected") ||
+          (activeStatusTab === "under_review" && status === "under_review");
 
         return matchesSearch && matchesStatusTab;
       }
@@ -85,7 +86,7 @@ export const EventsView = ({ searchTerm = "", statusFilter, userRole }) => {
     }
   };
 
-  // 🔄 Loading state
+  // Loading state
   if (isLoading) {
     return (
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
@@ -108,7 +109,7 @@ export const EventsView = ({ searchTerm = "", statusFilter, userRole }) => {
     );
   }
 
-  // ❌ Error state
+  // Error state
   if (error) {
     return (
       <div className="flex flex-col items-center justify-center py-16 text-center">
@@ -123,7 +124,7 @@ export const EventsView = ({ searchTerm = "", statusFilter, userRole }) => {
     );
   }
 
-  // 📭 Empty state
+  // Empty state
   if (filteredProposals.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center py-16 text-center">
@@ -142,7 +143,7 @@ export const EventsView = ({ searchTerm = "", statusFilter, userRole }) => {
     );
   }
 
-  // 🛡 Admin view with tabs
+  // Admin view with tabs
   if (userRole === "admin") {
     return (
       <>
@@ -159,6 +160,13 @@ export const EventsView = ({ searchTerm = "", statusFilter, userRole }) => {
               >
                 <Clock className="h-4 w-4 mr-2" />
                 Pending Approval
+              </TabsTrigger>
+              <TabsTrigger
+                value="under_review"
+                className="data-[state=active]:bg-warning data-[state=active]:text-warning-foreground"
+              >
+                <Eye className="h-4 w-4 mr-2" />
+                Under Review
               </TabsTrigger>
               <TabsTrigger
                 value="approved"
@@ -206,7 +214,7 @@ export const EventsView = ({ searchTerm = "", statusFilter, userRole }) => {
     );
   }
 
-  // 👥 Coordinator / Public view
+  // Coordinator / Public view
   return (
     <>
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
