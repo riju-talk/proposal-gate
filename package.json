@@ -4,9 +4,9 @@
   "type": "module",
   "license": "MIT",
   "scripts": {
-    "server:dev": "cross-env NODE_ENV=development tsx watch server/index.ts --ignore-watch 'client/**' --ignore-watch 'dist/**' --ignore-watch '**/*.timestamp-*.mjs'",
-    "client:dev": "vite dev --port 5000 --host 0.0.0.0",
-    "dev": "concurrently \"npm run server:dev\" \"npm run client:dev\" --names \"SERVER,CLIENT\" --prefix-colors \"blue,green\"",
+    "server:dev": "cross-env NODE_ENV=development tsx watch server/index.ts --ignore-watch 'client/**' --ignore-watch 'dist/**' --ignore-watch '**/*.timestamp-*.mjs' --clear-screen=false",
+    "client:dev": "vite dev --port 5000 --host 0.0.0.0 --clearScreen false",
+    "dev": "concurrently --handle-close \"npm run server:dev\" \"npm run client:dev\" --names \"🚀 SERVER,⚡ CLIENT\" --prefix-colors \"blue,green\" --restart-tries 3 --restart-after 2000",
     "build": "vite build && esbuild server/index.ts --platform=node --packages=external --bundle --format=esm --outdir=dist",
     "build:client": "vite build",
     "build:server": "esbuild server/index.ts --platform=node --packages=external --bundle --format=esm --outdir=dist",
@@ -18,7 +18,8 @@
     "db:migrate": "drizzle-kit migrate",
     "db:studio": "drizzle-kit studio",
     "clean": "rm -rf dist node_modules/.vite",
-    "reset": "npm run clean && npm install"
+    "reset": "npm run clean && npm install",
+    "logs": "echo 'Use Ctrl+C to stop. Logs will persist until restart.' && npm run dev"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.10.0",
