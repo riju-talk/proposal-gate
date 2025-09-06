@@ -4,7 +4,12 @@ dotenv.config();
 import express, { type Request, Response, NextFunction } from "express";
 import cookieParser from 'cookie-parser';
 import { registerRoutes } from "./routes";
-import { setupVite, serveStatic, log } from "./vite";
+import { setupVite, serveStatic } from "./vite";
+
+const log = (message: string, level: string = "info") => {
+  const timestamp = new Date().toISOString();
+  console.log(`[${timestamp}] ${message}`);
+};
 
 const app = express();
 
