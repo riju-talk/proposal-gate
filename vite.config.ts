@@ -13,6 +13,20 @@ export default defineConfig({
     exclude: [],
   },
   
+  esbuild: {
+    include: /src\/.*\.[jt]sx?$/,
+    exclude: [],
+  },
+  
+  optimizeDeps: {
+    esbuildOptions: {
+      loader: {
+        '.js': 'jsx',
+        '.ts': 'tsx',
+      },
+    },
+  },
+  
   resolve: {
     alias: {
       '@': path.resolve(__dirname, 'client/src'),

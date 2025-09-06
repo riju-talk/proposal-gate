@@ -1,5 +1,6 @@
 import { createContext, useContext, useState, useEffect, useCallback } from "react";
 import { useToast } from "@/hooks/use-toast";
+import { apiClient } from "@/lib/api";
 
 // Create the AuthContext
 export const AuthContext = createContext(undefined);
@@ -27,18 +28,12 @@ export const AuthProvider = ({ children }) => {
   // Restore session on mount
   useEffect(() => {
     const restoreSession = async () => {
-      try {
-        const response = await fetch('/api/auth/me', {
-          credentials: 'include'
-        });
-        
-        if (response.ok) {
-          const userData = await response.json();
-          setUser(userData);
-          console.log("✅ Session restored:", userData);
-        }
-      } catch (err) {
-        console.warn("⚠️ No active session:", err);
+      const result = await apiClient.getCurrentUser();
+      if (result.data) {
+        setUser(result.data);
+        console.log("✅ Session restored:", result.data);
+      } else if (result.error) {
+        console.warn("⚠️ No active session:", result.error);
       }
     };
     restoreSession();
@@ -70,18 +65,9 @@ export const AuthProvider = ({ children }) => {
       console.log("📧 Sending OTP to:", targetEmail);
 
       try {
-        const response = await fetch('/api/auth/send-otp', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          credentials: 'include',
-          body: JSON.stringify({ email: targetEmail }),
-        });
+        const result = await apiClient.sendOTP(targetEmail);
 
-        const data = await response.json();
-
-        if (response.ok && data.success) {
+        if (result.data) {
           setIsOTPSent(true);
           setLastSentTime(Date.now());
           setEmail(targetEmail);
@@ -94,14 +80,14 @@ export const AuthProvider = ({ children }) => {
           console.log("✅ OTP sent successfully");
           return { success: true };
         } else {
-          console.error("❌ OTP send failed:", data.error);
+          console.error("❌ OTP send failed:", result.error);
           toast({
             title: "Error",
-            description: data.error || "Failed to send OTP",
+            description: result.error || "Failed to send OTP",
             variant: "destructive",
             duration: 5000
           });
-          return { success: false, error: data.error || "Failed to send OTP" };
+          return { success: false, error: result.error || "Failed to send OTP" };
         }
       } catch (err) {
         console.error("❌ OTP send error:", err);
@@ -127,41 +113,29 @@ export const AuthProvider = ({ children }) => {
       console.log("🔐 Verifying OTP for:", targetEmail || email);
 
       try {
-        const response = await fetch('/api/auth/verify-otp', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          credentials: 'include',
-          body: JSON.stringify({ 
-            email: targetEmail || email, 
-            otp: otp 
-          }),
-        });
+        const result = await apiClient.verifyOTP(targetEmail || email, otp);
 
-        const data = await response.json();
-
-        if (response.ok && data.success && data.admin) {
-          setUser(data.admin);
+        if (result.data && result.data.admin) {
+          setUser(result.data.admin);
           setIsOTPSent(false);
           setLastSentTime(null);
           setCountdown(0);
           toast({ 
             title: "Logged in", 
-            description: `Welcome back, ${data.admin.name}!`,
+            description: `Welcome back, ${result.data.admin.name}!`,
             duration: 3000
           });
-          console.log("✅ Login successful:", data.admin);
+          console.log("✅ Login successful:", result.data.admin);
           return { success: true };
         } else {
-          console.error("❌ OTP verification failed:", data.error);
+          console.error("❌ OTP verification failed:", result.error);
           toast({
             title: "Invalid OTP",
-            description: data.error || "Please check your code and try again",
+            description: result.error || "Please check your code and try again",
             variant: "destructive",
             duration: 5000
           });
-          return { success: false, error: data.error || "Invalid OTP" };
+          return { success: false, error: result.error || "Invalid OTP" };
         }
       } catch (err) {
         console.error("❌ OTP verification error:", err);
@@ -183,10 +157,7 @@ export const AuthProvider = ({ children }) => {
   // Logout method
   const logout = useCallback(async () => {
     try {
-      await fetch('/api/auth/logout', {
-        method: 'POST',
-        credentials: 'include'
-      });
+      await apiClient.logout();
       setUser(null);
       setIsOTPSent(false);
       setLastSentTime(null);
