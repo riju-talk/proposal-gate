@@ -2,7 +2,7 @@ import type { Express, Request, Response } from "express";
 import { createServer, type Server } from "http";
 import { eq, and, desc, asc } from "drizzle-orm";
 import { db } from "./db";
-import { eventProposals, eventApprovals, authorizedAdmins, clubFormationRequests, clubs } from "@shared/schema";
+import { eventProposals, eventApprovals, authorizedAdmins, clubFormationRequests, clubs as clubsTable } from "../shared/schema";
 import { sendOTP, verifyOTP } from "./auth";
 import { securityMiddleware, otpRateLimit, verifyRateLimit, requireAdmin, optionalAuth } from "./middleware";
 import { generateJWT, setAuthCookie, clearAuthCookie } from "./jwt";
@@ -172,13 +172,38 @@ export async function registerRoutes(app: Express): Promise<Server> {
     "/api/event-proposals/:id/approvals",
     async (req: Request, res: Response) => {
       try {
-        const approvals = await storage.getApprovals(req.params.id);
-        res.json(approvals);
+        const { id } = req.params;
+        const approvals = await db
+          .select({
+            admin_email: eventApprovals.adminEmail,
+            status: eventApprovals.status,
+            comments: eventApprovals.comments,
+            approved_at: eventApprovals.approvedAt,
+            created_at: eventApprovals.createdAt,
+            updated_at: eventApprovals.updatedAt,
+            admin_name: authorizedAdmins.name,
+            admin_role: authorizedAdmins.role,
+            approval_order: authorizedAdmins.approvalOrder,
+          })
+          .from(eventApprovals)
+          .leftJoin(authorizedAdmins, eq(eventApprovals.adminEmail, authorizedAdmins.email))
+          .where(eq(eventApprovals.eventProposalId, id))
+          .orderBy(asc(authorizedAdmins.approvalOrder));
+        
+        res.json({ approvals });
       } catch (err) {
+        console.error("Get approvals error:", err);
         res.status(500).json({ error: "Failed to fetch approvals" });
       }
     }
   );
+
+  // Approve event
+  app.patch("/api/events/:id/approve", requireAdmin, async (req: Request, res: Response) => {
+    try {
+      const { id } = req.params;
+      const { comments } = req.body;
+      const currentAdminEmail = req.user?.email;
 
       // Update the approval
       const [updatedApproval] = await db
@@ -328,9 +353,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const clubs = await db
         .select()
-        .from(clubs)
-        .where(eq(clubs.isActive, true))
-        .orderBy(desc(clubs.createdAt));
+        .from(clubsTable)
+        .where(eq(clubsTable.isActive, true))
+        .orderBy(desc(clubsTable.createdAt));
 
       res.json(clubs);
     } catch (error) {
