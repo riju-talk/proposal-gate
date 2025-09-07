@@ -6,7 +6,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
 import { apiClient } from '@/lib/api';
-import { CheckCircle, XCircle, Clock, AlertCircle, MessageSquare, Shield, User, Loader2, Eye } from 'lucide-react';
+import { CheckCircle, XCircle, Clock, Shield, User, Loader2, MessageSquare } from 'lucide-react';
 
 export const EventApprovalTracker = ({ eventId, showActions = true }) => {
   const { user } = useAuth();
@@ -16,16 +16,24 @@ export const EventApprovalTracker = ({ eventId, showActions = true }) => {
   const [error, setError] = useState(null);
   const [comments, setComments] = useState({});
   const [approving, setApproving] = useState(null);
+  const [overallStatus, setOverallStatus] = useState('pending');
+
+  const computeOverallStatus = (approvals) => {
+    if (approvals.every(a => a.status === 'approved')) return 'approved';
+    if (approvals.every(a => a.status === 'rejected')) return 'rejected';
+    return 'pending';
+  };
 
   useEffect(() => {
     const fetchApprovals = async () => {
       try {
         setLoading(true);
-        const result = await apiClient.getEventProposal(eventId);
-        if (result.data) {
-          setApprovals(result.data.approvals || []);
+        const result = await apiClient.getEventApprovals(eventId);
+        if (result.data?.approvals) {
+          setApprovals(result.data.approvals);
+          setOverallStatus(computeOverallStatus(result.data.approvals));
         } else {
-          throw new Error(result.error || 'Failed to fetch event details');
+          throw new Error(result.error || 'Failed to fetch event approvals');
         }
       } catch (err) {
         console.error('Error fetching approvals:', err);
@@ -34,16 +42,14 @@ export const EventApprovalTracker = ({ eventId, showActions = true }) => {
         setLoading(false);
       }
     };
-
-    if (eventId) {
-      fetchApprovals();
-    }
+  
+    if (eventId) fetchApprovals();
   }, [eventId]);
-
+  
   const handleAction = async (action, comment = '') => {
     try {
       setApproving(action);
-      
+  
       let result;
       if (action === 'approve') {
         result = await apiClient.approveEvent(eventId, comment);
@@ -52,20 +58,17 @@ export const EventApprovalTracker = ({ eventId, showActions = true }) => {
       } else {
         throw new Error(`Unknown action: ${action}`);
       }
-
-      if (result.error) {
-        throw new Error(result.error);
+  
+      if (result.error) throw new Error(result.error);
+  
+      const updatedResult = await apiClient.getEventApprovals(eventId);
+      if (updatedResult.data?.approvals) {
+        setApprovals(updatedResult.data.approvals);
+        setOverallStatus(computeOverallStatus(updatedResult.data.approvals));
       }
-      
-      // Refresh approvals
-      const updatedResult = await apiClient.getEventProposal(eventId);
-      if (updatedResult.data) {
-        setApprovals(updatedResult.data.approvals || []);
-      }
-      
-      // Clear comment
+  
       setComments(prev => ({ ...prev, [user?.email]: '' }));
-      
+  
       toast({
         title: 'Success',
         description: result.message || `Event ${action} successfully`,
@@ -87,30 +90,20 @@ export const EventApprovalTracker = ({ eventId, showActions = true }) => {
       case 'approved':
         return (
           <Badge className="bg-gradient-to-r from-green-500 to-emerald-500 text-white shadow-lg border-0">
-            <CheckCircle className="w-3 h-3 mr-1" />
-            Approved
+            <CheckCircle className="w-3 h-3 mr-1" /> Approved
           </Badge>
         );
       case 'rejected':
         return (
           <Badge className="bg-gradient-to-r from-red-500 to-pink-500 text-white shadow-lg border-0">
-            <XCircle className="w-3 h-3 mr-1" />
-            Rejected
-          </Badge>
-        );
-      case 'under_review':
-        return (
-          <Badge className="bg-gradient-to-r from-yellow-500 to-orange-500 text-white shadow-lg border-0">
-            <Eye className="w-3 h-3 mr-1" />
-            Under Review
+            <XCircle className="w-3 h-3 mr-1" /> Rejected
           </Badge>
         );
       case 'pending':
       default:
         return (
           <Badge className="bg-gradient-to-r from-blue-500 to-purple-500 text-white shadow-lg border-0">
-            <Clock className="w-3 h-3 mr-1" />
-            Pending
+            <Clock className="w-3 h-3 mr-1" /> Pending
           </Badge>
         );
     }
@@ -120,9 +113,7 @@ export const EventApprovalTracker = ({ eventId, showActions = true }) => {
     return user?.email === adminEmail && showActions && user?.role !== 'developer';
   };
 
-  const getUserApproval = () => {
-    return approvals.find(a => a.admin_email === user?.email);
-  };
+  const getUserApproval = () => approvals.find(a => a.admin_email === user?.email);
 
   if (loading) {
     return (
@@ -156,25 +147,23 @@ export const EventApprovalTracker = ({ eventId, showActions = true }) => {
     <Card className="bg-card/50 backdrop-blur-sm border-border/50">
       <CardHeader>
         <CardTitle className="text-foreground flex items-center gap-2">
-          <Shield className="h-5 w-5 text-primary" />
-          Approval Status
+          <Shield className="h-5 w-5 text-primary" /> Approval Status
         </CardTitle>
       </CardHeader>
 
       <CardContent className="space-y-4">
-        {/* Current User's Action Panel */}
+        <div className="mb-4">
+          <h4 className="font-medium text-lg">Overall Event Status</h4>
+          {getStatusBadge(overallStatus)}
+        </div>
+
         {user && userApproval && canUserApprove(user.email) && userApproval.status === 'pending' && (
           <div className="bg-gradient-to-r from-primary/10 to-purple-500/10 rounded-lg p-4 border border-primary/20">
             <h4 className="font-medium text-foreground mb-3">Your Action Required</h4>
             <Textarea
               placeholder="Add a comment (optional)"
               value={comments[user.email] || ''}
-              onChange={(e) =>
-                setComments(prev => ({
-                  ...prev,
-                  [user.email]: e.target.value
-                }))
-              }
+              onChange={(e) => setComments(prev => ({ ...prev, [user.email]: e.target.value }))}
               className="text-sm bg-background/50 border-border mb-3"
             />
             <div className="flex space-x-2">
@@ -182,134 +171,51 @@ export const EventApprovalTracker = ({ eventId, showActions = true }) => {
                 variant="outline"
                 size="sm"
                 onClick={() => handleAction('reject', comments[user.email])}
-                disabled={approving}
+                disabled={approving === 'reject'}
                 className="border-red-500/30 text-red-400 hover:bg-red-500/10"
               >
-                {approving === 'reject' ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                ) : (
-                  'Reject'
-                )}
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => handleAction('review', comments[user.email])}
-                disabled={approving}
-                className="border-yellow-500/30 text-yellow-400 hover:bg-yellow-500/10"
-              >
-                {approving === 'review' ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                ) : (
-                  'Mark for Review'
-                )}
+                {approving === 'reject' ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Reject'}
               </Button>
               <Button
                 size="sm"
                 onClick={() => handleAction('approve', comments[user.email])}
-                disabled={approving}
-                className="bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600 text-white border-0"
+                disabled={approving === 'approve'}
+                className="bg-gradient-to-r from-green-500 to-emerald-500 text-white border-0"
               >
-                {approving === 'approve' ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                ) : (
-                  'Approve'
-                )}
+                {approving === 'approve' ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Approve'}
               </Button>
             </div>
           </div>
         )}
 
-        {/* All Approvals List */}
         {approvals.length === 0 ? (
           <p className="text-muted-foreground">No approvals found for this event.</p>
         ) : (
-          approvals
-            .filter(approval => approval.admin_role !== 'developer') // Exclude developer
-            .map((approval) => (
-            <div key={approval.id} className="border border-border/50 rounded-lg p-4 bg-card/30 backdrop-blur-sm">
+          approvals.map((approval) => (
+            <div key={approval.admin_email} className="border border-border/50 rounded-lg p-4 bg-card/30 backdrop-blur-sm">
               <div className="flex justify-between items-start mb-3">
                 <div className="flex items-center gap-2">
                   <User className="h-4 w-4 text-primary" />
                   <div>
-                    <h4 className="font-medium text-foreground">
-                      {approval.admin?.name || "Admin"}
-                    </h4>
-                    <p className="text-sm text-muted-foreground capitalize">
-                      {approval.admin?.role?.replace("_", " ") || "Reviewer"}
-                    </p>
+                    <h4 className="font-medium text-foreground">{approval.admin_name}</h4>
+                    <p className="text-sm text-muted-foreground">{approval.admin_email}</p>
                   </div>
                 </div>
                 {getStatusBadge(approval.status)}
               </div>
-              
+
               {approval.comments && (
                 <div className="mb-3 text-sm text-muted-foreground flex items-start">
-                  <MessageSquare className="w-4 h-4 mr-2 mt-0.5 flex-shrink-0 text-blue-400" />
+                  <MessageSquare className="w-4 h-4 mr-2 mt-0.5 text-blue-400" />
                   <p className="bg-muted/50 rounded p-3 border border-border flex-1">
                     {approval.comments}
                   </p>
                 </div>
               )}
 
-              {canUserApprove(approval.admin?.email, approval.status) && (
-                <div className="space-y-3 pt-3 border-t border-border">
-                  <Textarea
-                    placeholder="Add a comment (optional)"
-                    value={comments[approval.admin?.email] || ""}
-                    onChange={(e) =>
-                      setComments((prev) => ({
-                        ...prev,
-                        [approval.admin?.email]: e.target.value,
-                      }))
-                    }
-                    className="text-sm bg-background border-border"
-                  />
-                  <div className="flex space-x-2">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() =>
-                        handleApprove(
-                          approval.admin?.email,
-                          "rejected",
-                          comments[approval.admin?.email]
-                        )
-                      }
-                      disabled={approving === approval.admin?.email}
-                      className="border-destructive/30 text-destructive hover:bg-destructive/10"
-                    >
-                      {approving === approval.admin?.email ? (
-                        <Loader2 className="h-4 w-4 animate-spin" />
-                      ) : (
-                        "Reject"
-                      )}
-                    </Button>
-                    <Button
-                      size="sm"
-                      onClick={() =>
-                        handleApprove(
-                          approval.admin?.email,
-                          "approved",
-                          comments[approval.admin?.email]
-                        )
-                      }
-                      disabled={approving === approval.admin?.email}
-                      className="bg-success/20 border-success/30 text-success hover:bg-success/30"
-                    >
-                      {approving === approval.admin?.email ? (
-                        <Loader2 className="h-4 w-4 animate-spin" />
-                      ) : (
-                        "Approve"
-                      )}
-                    </Button>
-                  </div>
-                </div>
-              )}
-
               {approval.approved_at && (
                 <div className="text-xs text-muted-foreground mt-2">
-                  {approval.status === 'approved' ? 'Approved' : 'Updated'} on{' '}
+                  {approval.status === 'approved' ? 'Approved' : 'Rejected'} on{' '}
                   {new Date(approval.approved_at).toLocaleDateString()}
                 </div>
               )}

@@ -40,14 +40,18 @@ npm run server:dev
 
 # Start both server and client
 npm run dev
+
+# Optional: Start server with embedded Vite (single process)
+npm run dev:integrated
 ```
 
 ### Environment Variables
 Required environment variables:
-- `DATABASE_URL` - PostgreSQL connection string (automatically provided by Replit)
+- `DATABASE_URL` - PostgreSQL connection string
 - `JWT_SECRET` - Secret key for signing JWT tokens
 - `NODE_ENV` - Set to 'development' for dev mode
 - `API_PORT` - Server port (default: 3000)
+- `INTEGRATED_DEV` - Set to `true` only if you want the server to embed Vite (use `npm run dev:integrated`)
 
 ### Development Features
 - **Hot Reload**: Server automatically restarts on file changes
@@ -143,19 +147,14 @@ Required environment variables:
 
 ## Common Issues & Solutions
 
-### Database Connection
-- Ensure DATABASE_URL is set correctly
-- Check if database is provisioned in Replit
-- Run `npm run db:push` to sync schema
-
 ### JWT Secret Missing
-- Add JWT_SECRET via Replit secrets
+- Add JWT_SECRET via environment variable
 - Use a strong, random string (32+ characters)
 
-### Port Conflicts
-- Server runs on port 3000
-- Client proxies API requests to server
-- WebSocket might conflict - ignore warnings if app works
+### Port & Proxy
+- API server runs on port `3000`
+- Client dev server runs on port `5000` and proxies `/api` to `http://localhost:3000`
+- In integrated mode, the Express process mounts Vite as middleware for the SPA
 
 ### TypeScript Errors
 - Most type errors don't prevent runtime execution

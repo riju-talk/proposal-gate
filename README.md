@@ -23,15 +23,15 @@ A comprehensive web application for managing student council events, clubs, and 
 ### Backend
 - Express.js with TypeScript
 - PostgreSQL with Drizzle ORM
-- Supabase for authentication and storage
-- Nodemailer for OTP emails
+- Authentication via JWT (HTTP-only cookies) + Email OTP verification
+- Nodemailer for sending OTP emails
 
 ## Getting Started
 
 ### Prerequisites
 
 - Node.js 18+ 
-- PostgreSQL database (or Supabase account)
+- PostgreSQL database
 - Gmail account for SMTP (or other email service)
 
 ### Installation
@@ -54,18 +54,11 @@ cp .env.example .env
 
 Edit `.env` with your actual values:
 - Database connection string
-- Supabase credentials
 - SMTP configuration
 
 ### Database Setup
 
-#### Option 1: Using Supabase (Recommended)
-
-1. Create a new Supabase project
-2. Copy your project URL and anon key to `.env`
-3. The migrations will run automatically
-
-#### Option 2: Local PostgreSQL
+#### Option 1: Local PostgreSQL
 
 1. Create a PostgreSQL database
 2. Update `DATABASE_URL` in `.env`
@@ -82,8 +75,8 @@ npm run dev
 ```
 
 This will start:
-- Backend server on `http://localhost:5000`
-- Frontend dev server on `http://localhost:8080`
+- Backend API server on `http://localhost:3000`
+- Frontend dev server on `http://localhost:5000` (proxies `/api` to the backend)
 
 ### Production Build
 
@@ -101,21 +94,22 @@ npm start
 
 ```
 ├── client/                 # Frontend React application
-│   ├── src/
-│   │   ├── components/     # React components
-│   │   ├── hooks/          # Custom React hooks
-│   │   ├── lib/            # Utility libraries
-│   │   └── utils/          # Helper functions
+│   ├── public/             # Static assets
+│   └── src/
+│       ├── components/     # React components
+│       ├── hooks/          # Custom React hooks (Auth, data fetching)
+│       ├── lib/            # API client and utilities
+│       └── utils/          # Helper functions
 ├── server/                 # Backend Express application
-│   ├── auth.ts            # Authentication logic
-│   ├── middleware.ts      # Express middleware
-│   ├── routes.ts          # API routes
-│   └── storage.ts         # Database operations
-├── shared/                 # Shared types and schemas
-│   └── schema.ts          # Database schema definitions
-└── supabase/              # Supabase configuration
-    ├── functions/         # Edge functions
-    └── migrations/        # Database migrations
+│   ├── index.ts            # Server entrypoint
+│   ├── routes.ts           # API routes
+│   ├── vite.ts             # Vite integration for integrated dev/prod static
+│   ├── db.ts               # Database connection
+│   ├── services/           # Auth/email/JWT services
+│   └── middleware/         # Security/auth middleware
+├── shared/                 # Shared types and database schema
+│   └── schema.ts           # Drizzle ORM schema definitions
+└── docs/                   # Project documentation
 ```
 
 ## API Endpoints

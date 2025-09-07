@@ -46,9 +46,7 @@ export const EventsView = ({ searchTerm = "", statusFilter, userRole }) => {
         const matchesStatusTab =
           (activeStatusTab === "pending" && status === "pending") ||
           (activeStatusTab === "approved" && status === "approved") ||
-          (activeStatusTab === "rejected" && status === "rejected") ||
-          (activeStatusTab === "under_review" && status === "under_review");
-
+          (activeStatusTab === "rejected" && status === "rejected")
         return matchesSearch && matchesStatusTab;
       }
 

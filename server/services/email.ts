@@ -1,8 +1,5 @@
 import nodemailer from "nodemailer";
 import type SMTPTransport from "nodemailer/lib/smtp-transport";
-
-
-
 // ---- Env & config ----------------------------------------------------------
 
 const SMTP_USER = process.env.SMTP_USER!;
@@ -13,9 +10,6 @@ const SMTP_SECURE = true;
 const EMAIL_FROM = process.env.EMAIL_FROM!;
 const EMAIL_FROM_NAME = "Proposal Gate";
 
-console.log(SMTP_USER)
-console.log(SMTP_HOST)
-console.log(SMTP_PASSWORD)
 // ---- Transporter -----------------------------------------------------------
 
 const transporter = nodemailer.createTransport({

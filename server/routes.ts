@@ -97,16 +97,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
         })
         .from(eventProposals);
 
-      // Filter based on user role
-      if (!req.user) {
-        // Public users - only approved events
-        query = query.where(eq(eventProposals.status, 'approved'));
-      } else if (req.user.role !== 'admin') {
-        // Coordinators - pending and approved events
-        query = query.where(eq(eventProposals.status, 'pending'));
-      }
-      // Admins see all events
-
       const events = await query.orderBy(desc(eventProposals.createdAt));
       res.json(events);
     } catch (error) {
@@ -168,8 +158,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // ================= APPROVALS =================
-  app.get(
-    "/api/event-proposals/:id/approvals",
+  app.get("/api/event-proposals/:id/approvals", optionalAuth, 
     async (req: Request, res: Response) => {
       try {
         const { id } = req.params;
@@ -264,42 +253,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Mark event for review
-  app.patch("/api/events/:id/review", requireAdmin, async (req: Request, res: Response) => {
-    try {
-      const { id } = req.params;
-      const { comments } = req.body;
-      const currentAdminEmail = req.user?.email;
-
-      // Update the approval to under review
-      const [updatedApproval] = await db
-        .update(eventApprovals)
-        .set({
-          status: 'under_review',
-          comments: comments || null,
-          updatedAt: new Date(),
-        })
-        .where(and(
-          eq(eventApprovals.eventProposalId, id),
-          eq(eventApprovals.adminEmail, currentAdminEmail)
-        ))
-        .returning();
-
-      if (!updatedApproval) {
-        return res.status(404).json({ error: "Approval record not found" });
-      }
-
-      res.json({
-        success: true,
-        approval: updatedApproval,
-        message: "Event marked for further review"
-      });
-    } catch (error) {
-      console.error("Mark for review error:", error);
-      res.status(500).json({ error: "Internal server error" });
-    }
-  });
-
   // Reject event
   app.patch("/api/events/:id/reject", requireAdmin, async (req: Request, res: Response) => {
     try {
@@ -342,127 +295,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
     } catch (error) {
       console.error("Reject event error:", error);
-      res.status(500).json({ error: "Internal server error" });
-    }
-  });
-
-  // ==================== CLUB ROUTES ====================
-  
-  // Get all clubs (public)
-  app.get("/api/clubs", async (req: Request, res: Response) => {
-    try {
-      const clubs = await db
-        .select()
-        .from(clubsTable)
-        .where(eq(clubsTable.isActive, true))
-        .orderBy(desc(clubsTable.createdAt));
-
-      res.json(clubs);
-    } catch (error) {
-      console.error("Get clubs error:", error);
-      res.status(500).json({ error: "Internal server error" });
-    }
-  });
-
-  // Get club formation requests
-  app.get("/api/club-formation-requests", optionalAuth, async (req: Request, res: Response) => {
-    try {
-      let query = db.select().from(clubFormationRequests);
-
-      // Filter based on user role
-      if (!req.user) {
-        // Public users - only approved clubs
-        query = query.where(eq(clubFormationRequests.status, 'approved'));
-      }
-      // Admins and coordinators see all
-
-      const requests = await query.orderBy(desc(clubFormationRequests.createdAt));
-      res.json(requests);
-    } catch (error) {
-      console.error("Get club requests error:", error);
-      res.status(500).json({ error: "Internal server error" });
-    }
-  });
-
-  // Approve club formation request
-  app.patch("/api/club-formation-requests/:id/approve", requireAdmin, async (req: Request, res: Response) => {
-    try {
-      const { id } = req.params;
-      const { comments } = req.body;
-
-      const [updatedRequest] = await db
-        .update(clubFormationRequests)
-        .set({
-          status: 'approved',
-          updatedAt: new Date(),
-        })
-        .where(eq(clubFormationRequests.id, id))
-        .returning();
-
-      if (!updatedRequest) {
-        return res.status(404).json({ error: "Club request not found" });
-      }
-
-      res.json({
-        success: true,
-        request: updatedRequest,
-        message: "Club formation request approved"
-      });
-    } catch (error) {
-      console.error("Approve club error:", error);
-      res.status(500).json({ error: "Internal server error" });
-    }
-  });
-
-  // Reject club formation request
-  app.patch("/api/club-formation-requests/:id/reject", requireAdmin, async (req: Request, res: Response) => {
-    try {
-      const { id } = req.params;
-      const { comments } = req.body;
-
-      const [updatedRequest] = await db
-        .update(clubFormationRequests)
-        .set({
-          status: 'rejected',
-          updatedAt: new Date(),
-        })
-        .where(eq(clubFormationRequests.id, id))
-        .returning();
-
-      if (!updatedRequest) {
-        return res.status(404).json({ error: "Club request not found" });
-      }
-
-      res.json({
-        success: true,
-        request: updatedRequest,
-        message: "Club formation request rejected"
-      });
-    } catch (error) {
-      console.error("Reject club error:", error);
-      res.status(500).json({ error: "Internal server error" });
-    }
-  });
-
-  // Get authorized admins list
-  app.get("/api/admins", async (req: Request, res: Response) => {
-    try {
-      const admins = await db
-        .select({
-          id: authorizedAdmins.id,
-          email: authorizedAdmins.email,
-          name: authorizedAdmins.name,
-          role: authorizedAdmins.role,
-          approval_order: authorizedAdmins.approvalOrder,
-          is_active: authorizedAdmins.isActive,
-        })
-        .from(authorizedAdmins)
-        .where(eq(authorizedAdmins.isActive, true))
-        .orderBy(asc(authorizedAdmins.approvalOrder));
-
-      res.json(admins);
-    } catch (error) {
-      console.error("Get admins error:", error);
       res.status(500).json({ error: "Internal server error" });
     }
   });

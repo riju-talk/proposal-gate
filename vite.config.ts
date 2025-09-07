@@ -6,8 +6,17 @@ import { fileURLToPath } from 'url';
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 export default defineConfig({
+  root: path.resolve(__dirname, 'client'),
+
   plugins: [react()],
-  
+
+  resolve: {
+    alias: {
+      '@': path.resolve(__dirname, 'client/src'),
+      '@shared': path.resolve(__dirname, 'shared'),
+    },
+  },
+
   optimizeDeps: {
     esbuildOptions: {
       loader: {
@@ -17,15 +26,6 @@ export default defineConfig({
       },
     },
   },
-  
-  resolve: {
-    alias: {
-      '@': path.resolve(__dirname, 'client/src'),
-      '@shared': path.resolve(__dirname, 'shared'),
-    },
-  },
-
-  root: path.resolve(__dirname, 'client'),
 
   server: {
     port: 5000,
@@ -48,7 +48,7 @@ export default defineConfig({
     },
     hmr: { 
       overlay: true,
-      port: 5001
+      port: 5000,
     },
   },
 

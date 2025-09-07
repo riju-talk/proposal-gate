@@ -59,17 +59,13 @@ class ApiClient {
     return this.request("/auth/logout", { method: "POST" });
   }
 
-  async getCurrentUser() {
-    return this.request("/auth/me");
-  }
-
   // ================== EVENTS ==================
   async getEventProposals() {
-    return this.request("/event-proposals");
+    return this.request("/events");
   }
 
   async getEventProposal(id) {
-    return this.request(`/event-proposals/${id}`);
+    return this.request(`/events/${id}`);
   }
 
   // ================== APPROVALS ==================
@@ -84,14 +80,14 @@ class ApiClient {
   }
 
   async approveEvent(eventId, comments = "") {
-    return this.request(`/event-proposals/${eventId}/approve`, {
+    return this.request(`/events/${eventId}/approve`, {
       method: "POST",
       body: JSON.stringify({ comments }),
     });
   }
 
   async rejectEvent(eventId, comments = "") {
-    return this.request(`/event-proposals/${eventId}/reject`, {
+    return this.request(`/events/${eventId}/reject`, {
       method: "POST",
       body: JSON.stringify({ comments }),
     });
