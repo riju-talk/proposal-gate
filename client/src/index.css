@@ -8,52 +8,54 @@
   :root {
     color-scheme: dark;
     
-    /* IIIT Delhi Student Council Theme - Dark with Gold Accents */
-    --background: 220 20% 5%;         /* Deep navy background */
-    --foreground: 45 20% 95%;         /* Warm white text */
+    /* IIIT Delhi Student Council Theme - Dark with Gold & Teal Accents */
+    --background: 220 25% 4%;         /* Deep navy background */
+    --foreground: 45 15% 96%;         /* Crisp white text */
 
-    --card: 220 15% 8%;               /* Slightly lighter card background */
-    --card-foreground: 45 15% 92%;    /* Card text */
+    --card: 220 20% 7%;               /* Card background */
+    --card-foreground: 45 10% 94%;    /* Card text */
 
-    --popover: 220 15% 8%;
-    --popover-foreground: 45 15% 92%;
+    --popover: 220 20% 7%;
+    --popover-foreground: 45 10% 94%;
 
-    --primary: 45 90% 60%;            /* IIIT Delhi Gold */
-    --primary-foreground: 220 20% 8%;
+    --primary: 45 95% 58%;            /* IIIT Delhi Gold */
+    --primary-foreground: 220 25% 6%;
 
-    --secondary: 220 15% 12%;         /* Secondary background */
-    --secondary-foreground: 45 15% 88%;
+    --secondary: 220 20% 10%;         /* Secondary background */
+    --secondary-foreground: 45 10% 90%;
 
-    --muted: 220 12% 15%;             /* Muted backgrounds */
-    --muted-foreground: 220 8% 55%;   /* Muted text */
+    --muted: 220 15% 12%;             /* Muted backgrounds */
+    --muted-foreground: 220 10% 60%;   /* Muted text */
 
-    --accent: 45 85% 55%;             /* Gold accent */
-    --accent-foreground: 220 20% 8%;
+    --accent: 180 85% 55%;            /* Teal accent - matching reference */
+    --accent-foreground: 220 25% 6%;
 
-    --success: 120 60% 50%;           /* Green for approved */
-    --success-foreground: 220 20% 8%;
+    --success: 160 65% 50%;           /* Green for approved */
+    --success-foreground: 220 25% 6%;
 
-    --warning: 45 90% 60%;            /* Gold for pending */
-    --warning-foreground: 220 20% 8%;
+    --warning: 45 95% 58%;            /* Gold for pending */
+    --warning-foreground: 220 25% 6%;
 
-    --destructive: 0 70% 55%;         /* Red for rejected */
-    --destructive-foreground: 45 20% 95%;
+    --destructive: 0 75% 58%;         /* Red for rejected */
+    --destructive-foreground: 45 15% 96%;
 
-    --border: 220 15% 18%;            /* Subtle border */
-    --input: 220 15% 12%;             /* Input backgrounds */
-    --ring: 45 85% 55%;               /* Focus rings in gold */
+    --border: 220 20% 15%;            /* Subtle border */
+    --input: 220 20% 9%;              /* Input backgrounds */
+    --ring: 180 85% 55%;              /* Focus rings in teal */
 
     --radius: 0.5rem;
 
     /* IIIT Delhi themed gradients */
-    --gradient-primary: linear-gradient(135deg, hsl(45 90% 60%), hsl(35 85% 55%));
-    --gradient-hero: linear-gradient(135deg, hsl(220 20% 5%) 0%, hsl(220 15% 8%) 50%, hsl(45 90% 60% / 0.08) 100%);
-    --gradient-nav: linear-gradient(180deg, hsl(220 20% 5%) 0%, hsl(220 18% 7%) 100%);
+    --gradient-primary: linear-gradient(135deg, hsl(45 95% 58%), hsl(35 90% 55%));
+    --gradient-accent: linear-gradient(135deg, hsl(180 85% 55%), hsl(170 80% 50%));
+    --gradient-hero: linear-gradient(135deg, hsl(220 25% 4%) 0%, hsl(220 20% 7%) 50%, hsl(45 95% 58% / 0.06) 100%);
+    --gradient-nav: linear-gradient(180deg, hsl(220 25% 4%) 0%, hsl(220 22% 6%) 100%);
     
     /* Professional shadows with navy tint */
-    --shadow-elegant: 0 10px 25px -5px hsl(220 25% 3% / 0.6);
-    --shadow-card: 0 4px 12px -2px hsl(220 25% 3% / 0.4);
-    --shadow-gold: 0 0 20px hsl(45 90% 60% / 0.15);
+    --shadow-elegant: 0 12px 28px -6px hsl(220 30% 2% / 0.7);
+    --shadow-card: 0 4px 14px -2px hsl(220 30% 2% / 0.5);
+    --shadow-gold: 0 0 24px hsl(45 95% 58% / 0.18);
+    --shadow-teal: 0 0 24px hsl(180 85% 55% / 0.15);
   }
 }
 
@@ -138,6 +140,14 @@
     @apply transition-all duration-300 hover:scale-[1.02] hover:border-primary/30;
     &:hover {
       box-shadow: var(--shadow-elegant), var(--shadow-gold);
+    }
+  }
+  
+  /* Teal accent hover effects */
+  .card-hover-teal {
+    @apply transition-all duration-300 hover:scale-[1.02] hover:border-accent/30;
+    &:hover {
+      box-shadow: var(--shadow-elegant), var(--shadow-teal);
     }
   }
 
