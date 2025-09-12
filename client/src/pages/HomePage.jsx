@@ -9,7 +9,7 @@ import { EventProposalCard } from "@/components/EventProposalCard";
 import { ProposalDetailsModal } from "@/components/ProposalDetailsModal";
 import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Search, Filter, GraduationCap, LogIn, LogOut, CheckCircle, Clock, XCircle } from "lucide-react";
+import { Search, Filter, LogIn, LogOut, CheckCircle, Clock, XCircle } from "lucide-react";
 import { StudentCouncilLogo } from "@/components/StudentCouncilLogo";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
