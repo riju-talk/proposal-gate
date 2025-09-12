@@ -135,6 +135,40 @@ export const verifyOTP = async (
   }
 };
 
+// Get current authenticated user
+export const getCurrentUser = async (email: string) => {
+  try {
+    const [admin] = await db
+      .select({
+        email: authorizedAdmins.email,
+        name: authorizedAdmins.name,
+        role: authorizedAdmins.role,
+      })
+      .from(authorizedAdmins)
+      .where(and(
+        eq(authorizedAdmins.email, email),
+        eq(authorizedAdmins.isActive, true)
+      ))
+      .limit(1);
+
+    if (!admin) {
+      return { success: false, error: 'User not found or inactive' };
+    }
+
+    return { 
+      success: true, 
+      user: {
+        email: admin.email,
+        name: admin.name,
+        role: admin.role
+      }
+    };
+  } catch (error) {
+    console.error('Error getting current user:', error);
+    return { success: false, error: 'Failed to get user information' };
+  }
+};
+
 // Clean up expired OTPs periodically
 export const cleanupExpiredOTPs = async () => {
   try {

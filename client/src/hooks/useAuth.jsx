@@ -1,6 +1,9 @@
-import { createContext, useContext, useState, useEffect, useCallback } from "react";
+import { createContext, useContext, useState, useEffect, useCallback, useMemo } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { apiClient } from "@/lib/api";
+
+// Initialize API client with stored token
+const initializedApiClient = apiClient.initialize();
 
 // Create Auth Context
 export const AuthContext = createContext(undefined);
@@ -27,17 +30,41 @@ export const AuthProvider = ({ children }) => {
 
   // Restore session on mount
   useEffect(() => {
+    let isMounted = true;
+    
     const restoreSession = async () => {
-      console.log("🔄 Attempting to restore session...");
-      const { data, error } = await apiClient.getCurrentUser();
-      if (data?.user) {
-        setUser(data.user);
-        console.log("✅ Session restored:", data.user.email);
-      } else {
-        console.log("⚠️ No active session:", error);
+      try {
+        setIsLoading(true);
+        console.log("🔄 Attempting to restore session...");
+        const { data, error } = await initializedApiClient.getCurrentUser();
+        
+        if (!isMounted) return;
+        
+        if (data?.user) {
+          console.log("✅ Session restored:", data.user.email);
+          setUser(data.user);
+        } else {
+          console.log("⚠️ No active session:", error);
+          setUser(null);
+        }
+      } catch (error) {
+        console.error("Error restoring session:", error);
+        if (isMounted) setUser(null);
+      } finally {
+        if (isMounted) setIsLoading(false);
       }
     };
+    
+    // Initial session restore
     restoreSession();
+    
+    // Set up interval to check session periodically
+    const intervalId = setInterval(restoreSession, 5 * 60 * 1000); // Check every 5 minutes
+    
+    return () => {
+      isMounted = false;
+      clearInterval(intervalId);
+    };
   }, []);
 
   // Countdown logic for OTP resend
@@ -90,19 +117,27 @@ export const AuthProvider = ({ children }) => {
     console.log("🔐 Verifying OTP for:", targetEmail || email);
 
     try {
-      const { data, error } = await apiClient.verifyOTP(targetEmail || email, otp);
+      const { data, error } = await initializedApiClient.verifyOTP(targetEmail || email, otp);
 
-      if (data?.success && data.admin) {
-        setUser(data.admin);
-        setIsOTPSent(false);
-        setLastSentTime(null);
-        setCountdown(0);
-        console.log("✅ Login successful:", data.admin.email);
-        return { success: true };
-      } else {
+      if (!data?.success) {
         console.error("❌ OTP verification failed:", error);
         return { success: false, error: error || "Invalid OTP" };
       }
+
+      // The server should have set the HTTP-only cookie
+      // Now fetch the current user to get the user data
+      const { data: userData } = await initializedApiClient.getCurrentUser();
+      
+      if (userData?.user) {
+        setUser(userData.user);
+        setIsOTPSent(false);
+        setLastSentTime(null);
+        setCountdown(0);
+        console.log("✅ Login successful:", userData.user.email);
+        return { success: true };
+      }
+      
+      return { success: false, error: "Failed to fetch user data" };
     } catch (err) {
       console.error("❌ OTP verification error:", err);
       return { success: false, error: err.message || "Verification failed" };

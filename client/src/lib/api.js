@@ -1,22 +1,17 @@
 import axios from "axios";
 
-// Helper to parse cookies
-function parseCookies() {
-  return document.cookie.split(";").reduce((acc, cookieStr) => {
-    const separatorIndex = cookieStr.indexOf("=");
-    if (separatorIndex === -1) return acc;
-
-    const key = cookieStr.slice(0, separatorIndex).trim();
-    const value = cookieStr.slice(separatorIndex + 1).trim();
-
-    acc[key] = decodeURIComponent(value);
-    return acc;
-  }, {});
-}
-
-// Helper to delete a cookie
-function deleteCookie(name) {
-  document.cookie = `${name}=; Max-Age=0; path=/;`;
+// Helper to decode JWT token
+function decodeToken(token) {
+  try {
+    if (!token) return null;
+    const base64Url = token.split('.')[1];
+    if (!base64Url) return null;
+    const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+    return JSON.parse(atob(base64));
+  } catch (error) {
+    console.error("Error decoding token:", error);
+    return null;
+  }
 }
 
 class ApiClient {
@@ -59,49 +54,57 @@ class ApiClient {
   }
 
   async verifyOTP(email, otp) {
-    return this.request("/auth/verify-otp", {
+    const response = await this.request("/auth/verify-otp", {
       method: "POST",
       body: { email, otp },
     });
+    
+    if (response.data?.token) {
+      this.setAuthToken(response.data.token);
+    }
+    
+    return response;
   }
 
-  // Parse JWT from cookies directly for auth persistence
+  // Get current user from server
   async getCurrentUser() {
     try {
-      const cookies = parseCookies();
-      const token = cookies["auth_token"];
-
-      if (!token) {
-        return { error: "No auth token found in cookies" };
+      // The browser will automatically send the HTTP-only cookie with this request
+      const response = await this.request("/auth/me");
+      
+      if (response.data?.user) {
+        return { data: { user: response.data.user } };
       }
-
-      // Decode JWT payload (without verification - backend handles security)
-      const payloadBase64 = token.split(".")[1];
-      const payloadJson = atob(payloadBase64);
-      const payload = JSON.parse(payloadJson);
-
-      // Check if token is expired
-      if (payload.exp && payload.exp < Date.now() / 1000) {
-        return { error: "Token expired" };
-      }
-
-      return { data: { user: payload } };
+      
+      return { error: response.error || "Not authenticated" };
     } catch (error) {
-      return { error: "Failed to parse auth token" };
+      console.error("Error getting current user:", error);
+      return { error: "Failed to get current user" };
     }
+  }
+
+  // Set auth token in axios instance
+  setAuthToken() {
+    // No-op for HTTP-only cookies as the browser handles it
+  }
+
+  // Initialize auth - no token handling needed for HTTP-only cookies
+  initialize() {
+    // No need to set token in headers as it's handled by the browser
+    return this;
   }
 
   async logout() {
     try {
       // Call logout endpoint
       await this.request("/auth/logout", { method: "POST" });
-
-      // Delete auth_token cookie locally
-      deleteCookie("auth_token");
-
-      return { success: true };
     } catch (error) {
-      return { error: "Logout failed" };
+      // Continue even if the server logout fails
+      console.warn("Server logout failed:", error);
+    } finally {
+      // Always clear client-side auth state
+      this.setAuthToken(null);
+      return { success: true };
     }
   }
 

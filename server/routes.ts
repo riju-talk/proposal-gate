@@ -3,7 +3,7 @@ import { createServer, type Server } from "http";
 import { eq, and, desc, asc } from "drizzle-orm";
 import { db } from "./db";
 import { eventProposals, eventApprovals, authorizedAdmins } from "../shared/schema";
-import { sendOTP, verifyOTP } from "./auth";
+import { sendOTP, verifyOTP, getCurrentUser } from "./auth";
 import { securityMiddleware, otpRateLimit, verifyRateLimit, requireAdmin, optionalAuth } from "./middleware";
 import { generateJWT, setAuthCookie, clearAuthCookie } from "./jwt";
 
@@ -66,6 +66,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/auth/logout", (req: Request, res: Response) => {
     clearAuthCookie(res);
     res.json({ success: true, message: "Logged out successfully" });
+  });
+
+  // Get current authenticated user
+  app.get("/api/auth/me", optionalAuth, async (req: Request, res: Response) => {
+    try {
+      // Get email from the authenticated user (set by the optionalAuth middleware)
+      const userEmail = (req as any).user?.email;
+      
+      if (!userEmail) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
+
+      const result = await getCurrentUser(userEmail);
+      
+      if (result.success) {
+        res.json({ user: result.user });
+      } else {
+        res.status(404).json({ error: result.error || "User not found" });
+      }
+    } catch (error) {
+      console.error("Get current user error:", error);
+      res.status(500).json({ error: "Internal server error" });
+    }
   });
 
   // ==================== PUBLIC EVENT ROUTES ====================
