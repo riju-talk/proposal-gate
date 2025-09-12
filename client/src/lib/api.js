@@ -65,24 +65,9 @@ class ApiClient {
     });
   }
 
-  // Instead of calling /auth/me, parse cookies directly
+  // Get current authenticated user
   async getCurrentUser() {
-    try {
-      const cookies = parseCookies();
-      const token = cookies["auth_token"]; // Adjust key based on backend
-
-      if (!token) {
-        return { error: "No auth token found in cookies" };
-      }
-
-      const payloadBase64 = token.split(".")[1];
-      const payloadJson = atob(payloadBase64);
-      const payload = JSON.parse(payloadJson);
-
-      return { data: { user: payload } };
-    } catch (error) {
-      return { error: "Failed to parse auth token" };
-    }
+    return this.request("/auth/me");
   }
 
   async logout() {

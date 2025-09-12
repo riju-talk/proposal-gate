@@ -68,6 +68,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
     res.json({ success: true, message: "Logged out successfully" });
   });
 
+  // Get current user session (for auth persistence)
+  app.get("/api/auth/me", requireAdmin, async (req: Request, res: Response) => {
+    try {
+      if (!req.user) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
+      
+      res.json({ 
+        success: true,
+        user: req.user
+      });
+    } catch (error) {
+      console.error("Get current user error:", error);
+      res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
   // ==================== PUBLIC EVENT ROUTES ====================
   
   // Get all events for public view (approved events only)
