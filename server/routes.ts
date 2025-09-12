@@ -2,7 +2,7 @@ import type { Express, Request, Response } from "express";
 import { createServer, type Server } from "http";
 import { eq, and, desc, asc } from "drizzle-orm";
 import { db } from "./db";
-import { eventProposals, eventApprovals, authorizedAdmins, clubFormationRequests, clubs as clubsTable } from "../shared/schema";
+import { eventProposals, eventApprovals, authorizedAdmins } from "../shared/schema";
 import { sendOTP, verifyOTP } from "./auth";
 import { securityMiddleware, otpRateLimit, verifyRateLimit, requireAdmin, optionalAuth } from "./middleware";
 import { generateJWT, setAuthCookie, clearAuthCookie } from "./jwt";

@@ -2,30 +2,31 @@ import nodemailer from "nodemailer";
 import type SMTPTransport from "nodemailer/lib/smtp-transport";
 // ---- Env & config ----------------------------------------------------------
 
-const SMTP_USER = process.env.SMTP_USER!;
-const SMTP_PASSWORD = process.env.SMTP_PASSWORD!;
+const SMTP_USER = process.env.SMTP_USER;
+const SMTP_PASSWORD = process.env.SMTP_PASSWORD;
+console.log(SMTP_USER, SMTP_PASSWORD)
 const SMTP_HOST = "smtp.gmail.com";
 const SMTP_PORT = 465;
-const SMTP_SECURE = true;
-const EMAIL_FROM = process.env.EMAIL_FROM!;
-const EMAIL_FROM_NAME = "Proposal Gate";
+const EMAIL_FROM = process.env.SMTP_USER;
 
 // ---- Transporter -----------------------------------------------------------
 
 const transporter = nodemailer.createTransport({
   host: SMTP_HOST,
   port: SMTP_PORT,
-  secure: SMTP_SECURE,
+  secure: true, 
   auth: {
     user: SMTP_USER,
     pass: SMTP_PASSWORD,
   },
+  logger: true,
+  debug: true, 
 } as SMTPTransport.Options);
 
 transporter.verify().then(
   () => console.log("[mailer] SMTP connection OK"),
   (err) => console.warn("[mailer] SMTP verify failed:", err?.message || err)
-);
+)
 
 // ---- Helpers ---------------------------------------------------------------
 
@@ -52,19 +53,34 @@ interface EmailOptions {
   subject: string;
   html: string;
   text?: string;
+  // Add headers for better deliverability
+  headers?: {
+    'List-Unsubscribe'?: string;
+    'X-Priority'?: string;
+    'X-Mailer'?: string;
+  };
 }
 
-async function sendEmail({ to, subject, html, text }: EmailOptions): Promise<boolean> {
+async function sendEmail({ to, subject, html, text, headers }: EmailOptions): Promise<boolean> {
   try {
     const info = await transporter.sendMail({
-      from: `"${EMAIL_FROM_NAME}" <${EMAIL_FROM}>`,
+      from: EMAIL_FROM,
       to,
       subject,
       html,
       text: text ?? htmlToText(html),
+      // Add headers to prevent marking as spam
+      headers: {
+        'List-Unsubscribe': '<mailto:no-reply@yourdomain.com?subject=unsubscribe>',
+        'X-Priority': '3', // Normal priority
+        'X-Mailer': 'ProposalGate/1.0',
+        ...headers,
+      },
+      // Add important email fields
+      priority: 'normal',
     });
 
-    console.log("[mailer] Email sent:", info.messageId);
+    console.log("[mailer] Email sent:", info.messageId, "Preview URL:", nodemailer.getTestMessageUrl(info));
     return true;
   } catch (error) {
     console.error("[mailer] sendEmail error:", error);
@@ -72,7 +88,7 @@ async function sendEmail({ to, subject, html, text }: EmailOptions): Promise<boo
   }
 }
 
-// ---- Public API ------------------------------------------------------------
+// ---- Public API -----------------------------------------------------------
 
 export const sendOtpEmail = async (
   email: string,

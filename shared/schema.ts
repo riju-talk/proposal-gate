@@ -1,43 +1,16 @@
-import { pgTable, text, serial, integer, boolean, timestamp, uuid, varchar, json, numeric, pgSchema } from "drizzle-orm/pg-core";
-import { z } from "zod";
+import { pgTable, text, integer, boolean, timestamp, uuid, numeric } from "drizzle-orm/pg-core";
 import { sql } from "drizzle-orm";
 
 // Create schema for better organization
-const authSchema = pgSchema("auth");
 
 // OTP Verification Table
-export const otpVerifications = authSchema.table("otp_verifications", {
+export const otpVerifications =pgTable("otp_verifications", {
   id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
   email: text("email").notNull(),
   otp: text("otp").notNull(),
   used: boolean("used").notNull().default(false),
   expiresAt: timestamp("expires_at").notNull(),
   createdAt: timestamp("created_at").notNull().defaultNow(),
-});
-
-// User Sessions Table
-export const userSessions = authSchema.table("user_sessions", {
-  id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
-  userId: uuid("user_id").notNull().references(() => profiles.id, { onDelete: "cascade" }),
-  token: text("token").notNull().unique(),
-  userAgent: text("user_agent"),
-  ipAddress: text("ip_address"),
-  expiresAt: timestamp("expires_at").notNull(),
-  createdAt: timestamp("created_at").notNull().defaultNow(),
-});
-
-// Profiles table
-export const profiles = pgTable("profiles", {
-  id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
-  email: text("email").notNull().unique(),
-  username: text("username").notNull(),
-  fullName: text("full_name"),
-  role: text("role").notNull().default("user"),
-  approvalOrder: integer("approval_order"),
-  isEmailVerified: boolean("is_email_verified").notNull().default(false),
-  lastLoginAt: timestamp("last_login_at"),
-  createdAt: timestamp("created_at").notNull().defaultNow(),
-  updatedAt: timestamp("updated_at").notNull().defaultNow(),
 });
 
 // Event proposals table
@@ -87,38 +60,6 @@ export const eventApprovals = pgTable("event_approvals", {
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
 });
 
-// Clubs table
-export const clubs = pgTable("clubs", {
-  id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
-  name: text("name").notNull(),
-  description: text("description"),
-  avatarUrl: text("avatar_url").default(""),
-  coordinatorNames: text("coordinator_names").notNull(),
-  coordinatorEmails: text("coordinator_emails").notNull(),
-  channelLinks: text("channel_links"),
-  isActive: boolean("is_active").default(true),
-  createdAt: timestamp("created_at").notNull().defaultNow(),
-  updatedAt: timestamp("updated_at").notNull().defaultNow(),
-});
-
-// Club formation requests table
-export const clubFormationRequests = pgTable("club_formation_requests", {
-  id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
-  clubName: text("club_name").notNull(),
-  clubDescription: text("club_description").notNull(),
-  clubObjectives: text("club_objectives").notNull(),
-  proposedByName: text("proposed_by_name").notNull(),
-  proposedByEmail: text("proposed_by_email").notNull(),
-  proposedByPhone: text("proposed_by_phone"),
-  facultyAdvisor: text("faculty_advisor"),
-  initialMembers: json("initial_members").$type<string[]>(),
-  proposedActivities: text("proposed_activities"),
-  charterDocumentUrl: text("charter_document_url"),
-  status: text("status").default("pending"),
-  createdAt: timestamp("created_at").notNull().defaultNow(),
-  updatedAt: timestamp("updated_at").notNull().defaultNow(),
-});
-
 // Student representatives table
 export const studentRepresentatives = pgTable("student_representatives", {
   id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
@@ -133,94 +74,11 @@ export const studentRepresentatives = pgTable("student_representatives", {
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
 });
 
-// Important contacts table
-export const importantContacts = pgTable("important_contacts", {
-  id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
-  name: text("name").notNull(),
-  phoneNumber: text("phone_number").notNull(),
-  email: text("email"),
-  designation: text("designation"),
-  department: text("department"),
-  isEmergency: boolean("is_emergency").default(false),
-  displayOrder: integer("display_order"),
-  createdAt: timestamp("created_at").notNull().defaultNow(),
-  updatedAt: timestamp("updated_at").notNull().defaultNow(),
-});
 
-// Hostel info table
-export const hostelInfo = pgTable("hostel_info", {
-  id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
-  hostelName: text("hostel_name").notNull(),
-  wardenName: text("warden_name"),
-  wardenContact: text("warden_contact"),
-  emergencyContact: text("emergency_contact"),
-  capacity: integer("capacity"),
-  facilities: json("facilities").$type<string[]>(),
-  rules: json("rules").$type<string[]>(),
-  timings: json("timings"),
-  createdAt: timestamp("created_at").notNull().defaultNow(),
-  updatedAt: timestamp("updated_at").notNull().defaultNow(),
-});
 
-// Mess hostel committee table
-export const messHostelCommittee = pgTable("mess_hostel_committee", {
-  id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
-  name: text("name").notNull(),
-  email: text("email").notNull(),
-  createdAt: timestamp("created_at").notNull().defaultNow(),
-  updatedAt: timestamp("updated_at").notNull().defaultNow(),
-});
-
-// Keep the original users table for compatibility
-export const users = pgTable("users", {
-  id: serial("id").primaryKey(),
-  username: text("username").notNull().unique(),
-  password: text("password").notNull(),
-});
-
-// Schemas for validation using Zod directly
-export const insertProfileSchema = z.object({
-  email: z.string().email(),
-  username: z.string().min(1),
-  fullName: z.string().optional(),
-  role: z.string().default("user"),
-});
-
-export const insertEventProposalSchema = z.object({
-  eventName: z.string().min(1),
-  eventType: z.string().min(1),
-  description: z.string().min(1),
-  eventDate: z.string().min(1),
-  startTime: z.string().min(1),
-  endTime: z.string().min(1),
-  venue: z.string().min(1),
-  expectedParticipants: z.number().int().positive(),
-  budgetEstimate: z.string().optional(),
-  objectives: z.string().optional(),
-  additionalRequirements: z.string().optional(),
-  organizerName: z.string().min(1),
-  organizerEmail: z.string().email(),
-  organizerPhone: z.string().optional(),
-  pdfDocumentUrl: z.string().optional(),
-});
-
-export const insertUserSchema = z.object({
-  username: z.string().min(1),
-  password: z.string().min(1),
-});
 
 // Export types
-export type InsertUser = z.infer<typeof insertUserSchema>;
-export type User = typeof users.$inferSelect;
-export type Profile = typeof profiles.$inferSelect;
-export type InsertProfile = z.infer<typeof insertProfileSchema>;
 export type EventProposal = typeof eventProposals.$inferSelect;
-export type InsertEventProposal = z.infer<typeof insertEventProposalSchema>;
 export type AuthorizedAdmin = typeof authorizedAdmins.$inferSelect;
 export type EventApproval = typeof eventApprovals.$inferSelect;
-export type Club = typeof clubs.$inferSelect;
-export type ClubFormationRequest = typeof clubFormationRequests.$inferSelect;
 export type StudentRepresentative = typeof studentRepresentatives.$inferSelect;
-export type ImportantContact = typeof importantContacts.$inferSelect;
-export type HostelInfo = typeof hostelInfo.$inferSelect;
-export type MessHostelCommittee = typeof messHostelCommittee.$inferSelect;
