@@ -10,6 +10,7 @@ import { ProposalDetailsModal } from "@/components/ProposalDetailsModal";
 import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Search, Filter, GraduationCap, LogIn, LogOut, CheckCircle, Clock, XCircle } from "lucide-react";
+import { StudentCouncilLogo } from "@/components/StudentCouncilLogo";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
 
@@ -125,16 +126,15 @@ const HomePage = () => {
   // Loading state
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-[#0F0F1A] text-white">
-        <header className="bg-[#1A1A2E] border-b border-[#2D2D42] p-6">
-          <div className="container mx-auto flex flex-col md:flex-row justify-between items-center gap-6">
-            <div className="flex items-center gap-4">
-              <div className="bg-gradient-to-r from-purple-500 to-blue-500 p-3 rounded-full">
-                <GraduationCap className="h-8 w-8 text-white" />
-              </div>
-              <div>
-                <h1 className="text-2xl font-bold">IIIT Delhi Student Council</h1>
-                <p className="text-gray-400">Your voice, our mission. Connecting students, fostering growth.</p>
+      <div className="min-h-screen bg-background text-foreground">
+        <header className="nav-header p-6">
+          <div className="container-centered flex flex-col lg:flex-row justify-between items-center gap-6">
+            <div className="flex items-center gap-6">
+              <StudentCouncilLogo size="default" showText={true} />
+              <div className="hidden md:block">
+                <p className="text-muted-foreground text-sm">
+                  Loading your dashboard...
+                </p>
               </div>
             </div>
           </div>
@@ -165,42 +165,57 @@ const HomePage = () => {
   // Error state
   if (error) {
     return (
-      <div className="min-h-screen bg-[#0F0F1A] text-white flex items-center justify-center">
-        <div className="text-center">
-          <div className="bg-destructive/10 rounded-full p-6 mb-6 border border-destructive/20 mx-auto w-fit">
-            <XCircle className="h-12 w-12 text-destructive" />
+      <div className="min-h-screen bg-background text-foreground">
+        <header className="nav-header p-6">
+          <div className="container-centered flex flex-col lg:flex-row justify-between items-center gap-6">
+            <div className="flex items-center gap-6">
+              <StudentCouncilLogo size="default" showText={true} />
+              <div className="hidden md:block">
+                <p className="text-muted-foreground text-sm">
+                  Empowering voices, fostering innovation, and building an<br />
+                  extraordinary campus community through collaborative leadership
+                </p>
+              </div>
+            </div>
           </div>
-          <h3 className="text-xl font-semibold mb-2 text-foreground">
-            Error Loading Events
-          </h3>
-          <p className="text-muted-foreground max-w-md">{error}</p>
-        </div>
+        </header>
+        <main className="flex items-center justify-center flex-1 min-h-[80vh]">
+          <div className="text-center">
+            <div className="bg-destructive/10 rounded-full p-6 mb-6 border border-destructive/20 mx-auto w-fit">
+              <XCircle className="h-12 w-12 text-destructive" />
+            </div>
+            <h3 className="text-xl font-semibold mb-2 text-foreground">
+              Error Loading Events
+            </h3>
+            <p className="text-muted-foreground max-w-md">{error}</p>
+          </div>
+        </main>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-[#0F0F1A] text-white">
+    <div className="min-h-screen bg-background text-foreground">
       {/* Header */}
-      <header className="bg-[#1A1A2E] border-b border-[#2D2D42] p-6">
-        <div className="container mx-auto flex flex-col md:flex-row justify-between items-center gap-6">
-          <div className="flex items-center gap-4">
-            <div className="bg-gradient-to-r from-purple-500 to-blue-500 p-3 rounded-full">
-              <GraduationCap className="h-8 w-8 text-white" />
-            </div>
-            <div>
-              <h1 className="text-2xl font-bold">IIIT Delhi Student Council</h1>
-              <p className="text-gray-400">Your voice, our mission. Connecting students, fostering growth.</p>
+      <header className="nav-header p-6 sticky top-0 z-50">
+        <div className="container-centered flex flex-col lg:flex-row justify-between items-center gap-6">
+          <div className="flex items-center gap-6">
+            <StudentCouncilLogo size="default" showText={true} />
+            <div className="hidden md:block">
+              <p className="text-muted-foreground text-sm">
+                Empowering voices, fostering innovation, and building an<br />
+                extraordinary campus community through collaborative leadership
+              </p>
             </div>
           </div>
 
           <div className="flex items-center gap-4 flex-wrap justify-center">
             <div className="relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
                 type="text"
                 placeholder="Search events..."
-                className="pl-10 w-64 bg-[#0F0F1A] border-[#2D2D42] text-white placeholder-gray-400 focus-visible:ring-1 focus-visible:ring-purple-500"
+                className="input-styled pl-10 w-64"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
               />
@@ -208,16 +223,16 @@ const HomePage = () => {
 
             {userRole !== "admin" && (
               <Select value={statusFilter} onValueChange={setStatusFilter}>
-                <SelectTrigger className="w-48 bg-[#0F0F1A] border-[#2D2D42] text-white">
-                  <Filter className="h-4 w-4 mr-2 text-gray-400" />
+                <SelectTrigger className="w-48 input-styled">
+                  <Filter className="h-4 w-4 mr-2 text-muted-foreground" />
                   <SelectValue placeholder="Filter by status" />
                 </SelectTrigger>
-                <SelectContent className="bg-[#1A1A2E] border-[#2D2D42] text-white">
+                <SelectContent className="bg-popover border-border">
                   {availableStatusFilters.map((filter) => (
                     <SelectItem 
                       key={filter.value} 
                       value={filter.value}
-                      className="hover:bg-[#2D2D42] focus:bg-[#2D2D42]"
+                      className="hover:bg-accent focus:bg-accent"
                     >
                       {filter.label}
                     </SelectItem>
@@ -228,10 +243,10 @@ const HomePage = () => {
 
             {user ? (
               <>
-                <span className="text-gray-300">Hello, {user.name || user.email}</span>
+                <span className="text-muted-foreground">Hello, <span className="text-primary font-medium">{user.name || user.email}</span></span>
                 <Button 
                   onClick={handleLogout}
-                  className="bg-gradient-to-r from-purple-500 to-blue-500 hover:opacity-90"
+                  className="btn-primary"
                 >
                   <LogOut className="h-4 w-4 mr-2" />
                   Logout
@@ -240,7 +255,7 @@ const HomePage = () => {
             ) : (
               <Button 
                 onClick={handleLoginClick}
-                className="bg-gradient-to-r from-purple-500 to-blue-500 hover:opacity-90"
+                className="btn-primary"
               >
                 <LogIn className="h-4 w-4 mr-2" />
                 Admin Login
