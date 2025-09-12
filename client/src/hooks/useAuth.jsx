@@ -2,10 +2,10 @@ import { createContext, useContext, useState, useEffect, useCallback } from "rea
 import { useToast } from "@/hooks/use-toast";
 import { apiClient } from "@/lib/api";
 
-// 1️⃣ Create the AuthContext
+// Create the AuthContext
 export const AuthContext = createContext(undefined);
 
-// 2️⃣ Custom Hook for easier usage
+// Custom Hook for easier usage
 export const useAuth = () => {
   const context = useContext(AuthContext);
   if (!context) {
@@ -14,7 +14,7 @@ export const useAuth = () => {
   return context;
 };
 
-// 3️⃣ AuthProvider Component
+// AuthProvider Component
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [isOTPSent, setIsOTPSent] = useState(false);
@@ -25,17 +25,17 @@ export const AuthProvider = ({ children }) => {
 
   const { toast } = useToast();
 
-  // 4️⃣ Restore session on mount
+  // Restore session on mount
   useEffect(() => {
     const restoreSession = async () => {
       try {
+        console.log("🔄 Attempting to restore session...");
         const { data, error } = await apiClient.getCurrentUser();
         if (data?.user) {
           setUser(data.user);
-          console.log("✅ Session restored:", data.user);
-        }
-        if (error) {
-          console.warn("⚠️ No active session:", error);
+          console.log("✅ Session restored:", data.user.email);
+        } else if (error) {
+          console.log("⚠️ No active session:", error);
         }
       } catch (err) {
         console.error("❌ Session restore error:", err);
@@ -44,7 +44,7 @@ export const AuthProvider = ({ children }) => {
     restoreSession();
   }, []);
 
-  // 5️⃣ Countdown logic for OTP resend
+  // Countdown logic for OTP resend
   useEffect(() => {
     if (!lastSentTime) return;
 
@@ -63,7 +63,7 @@ export const AuthProvider = ({ children }) => {
     return () => clearInterval(interval);
   }, [lastSentTime]);
 
-  // 6️⃣ Send OTP method
+  // Send OTP method
   const sendOTP = useCallback(
     async (targetEmail) => {
       setIsLoading(true);
@@ -77,41 +77,24 @@ export const AuthProvider = ({ children }) => {
           setLastSentTime(Date.now());
           setEmail(targetEmail);
           setCountdown(60);
-          toast({ 
-            title: "OTP sent", 
-            description: "Check your email inbox.",
-            duration: 3000
-          });
           console.log("✅ OTP sent successfully");
           return { success: true };
         } else {
           console.error("❌ OTP send failed:", error);
-          toast({
-            title: "Error",
-            description: error || "Failed to send OTP",
-            variant: "destructive",
-            duration: 5000
-          });
           return { success: false, error: error || "Failed to send OTP" };
         }
       } catch (err) {
         console.error("❌ OTP send error:", err);
         const errorMessage = err.message || "Network error occurred";
-        toast({
-          title: "Error",
-          description: errorMessage,
-          variant: "destructive",
-          duration: 5000
-        });
         return { success: false, error: errorMessage };
       } finally {
         setIsLoading(false);
       }
     },
-    [toast]
+    []
   );
 
-  // 7️⃣ Verify OTP method
+  // Verify OTP method
   const verifyOTP = useCallback(
     async (targetEmail, otp) => {
       setIsLoading(true);
@@ -128,61 +111,59 @@ export const AuthProvider = ({ children }) => {
           setIsOTPSent(false);
           setLastSentTime(null);
           setCountdown(0);
-          toast({ 
-            title: "Logged in", 
-            description: `Welcome back, ${data.admin.name}!`,
-            duration: 3000
-          });
-          console.log("✅ Login successful:", data.admin);
+          console.log("✅ Login successful:", data.admin.email);
           return { success: true };
         } else {
           console.error("❌ OTP verification failed:", error);
-          toast({
-            title: "Invalid OTP",
-            description: error || "Please check your code and try again",
-            variant: "destructive",
-            duration: 5000
-          });
           return { success: false, error: error || "Invalid OTP" };
         }
       } catch (err) {
         console.error("❌ OTP verification error:", err);
         const errorMessage = err.message || "Verification failed";
-        toast({
-          title: "Error",
-          description: errorMessage,
-          variant: "destructive",
-          duration: 5000
-        });
         return { success: false, error: errorMessage };
       } finally {
         setIsLoading(false);
       }
     },
-    [email, toast]
+    [email]
   );
 
-  // 8️⃣ Logout method
+  // Get current user method
+  const getCurrentUser = useCallback(async () => {
+    try {
+      console.log("🔄 Fetching current user...");
+      const { data, error } = await apiClient.getCurrentUser();
+      if (data?.user) {
+        setUser(data.user);
+        console.log("✅ Current user fetched:", data.user.email);
+        return { success: true, user: data.user };
+      } else {
+        console.log("⚠️ No current user:", error);
+        return { success: false, error: error || "No user found" };
+      }
+    } catch (err) {
+      console.error("❌ Get current user error:", err);
+      return { success: false, error: err.message || "Failed to get user" };
+    }
+  }, []);
+
+  // Logout method
   const logout = useCallback(async () => {
     try {
+      console.log("🚪 Logging out user...");
       await apiClient.logout();
       setUser(null);
       setIsOTPSent(false);
       setLastSentTime(null);
       setCountdown(0);
       setEmail("");
-      toast({ 
-        title: "Logged out",
-        description: "You have been logged out successfully",
-        duration: 3000
-      });
       console.log("✅ Logout successful");
     } catch (err) {
       console.error("❌ Logout error:", err);
     }
-  }, [toast]);
+  }, []);
 
-  // 9️⃣ Provide Context Values
+  // Provide Context Values
   const contextValue = {
     user,
     isOTPSent,
@@ -191,6 +172,7 @@ export const AuthProvider = ({ children }) => {
     email,
     sendOTP,
     verifyOTP,
+    getCurrentUser,
     logout,
   };
 
