@@ -167,4 +167,40 @@
     @apply bg-input border-border focus:border-primary focus:ring-primary/20;
     transition: all 0.2s ease-in-out;
   }
+  
+  /* Modern animations for page elements */
+  .animate-fade-in {
+    @apply animate-fade-in;
+  }
+  
+  .animate-slide-in {
+    @apply animate-slide-in;
+  }
+  
+  /* Enhanced mobile responsiveness */
+  @media (max-width: 640px) {
+    .container-centered {
+      @apply px-3;
+    }
+    
+    .gradient-text {
+      font-size: clamp(1.5rem, 4vw, 2.5rem);
+    }
+    
+    .sc-branding {
+      font-size: clamp(1rem, 3vw, 1.25rem);
+    }
+  }
+  
+  /* Improved accessibility and focus states */
+  .focus-ring {
+    @apply focus:ring-2 focus:ring-accent focus:ring-offset-2 focus:ring-offset-background focus:outline-none;
+  }
+  
+  /* Modern glass effect for cards */
+  .glass-effect {
+    backdrop-filter: blur(16px) saturate(180%);
+    background-color: hsl(var(--card) / 0.75);
+    border: 1px solid hsl(var(--border) / 0.5);
+  }
 }
