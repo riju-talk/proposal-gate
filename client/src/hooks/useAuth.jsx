@@ -2,10 +2,10 @@ import { createContext, useContext, useState, useEffect, useCallback } from "rea
 import { useToast } from "@/hooks/use-toast";
 import { apiClient } from "@/lib/api";
 
-// Create the AuthContext
+// Create Auth Context
 export const AuthContext = createContext(undefined);
 
-// Custom Hook for easier usage
+// Custom Hook to use Auth Context
 export const useAuth = () => {
   const context = useContext(AuthContext);
   if (!context) {
@@ -28,17 +28,13 @@ export const AuthProvider = ({ children }) => {
   // Restore session on mount
   useEffect(() => {
     const restoreSession = async () => {
-      try {
-        console.log("🔄 Attempting to restore session...");
-        const { data, error } = await apiClient.getCurrentUser();
-        if (data?.user) {
-          setUser(data.user);
-          console.log("✅ Session restored:", data.user.email);
-        } else if (error) {
-          console.log("⚠️ No active session:", error);
-        }
-      } catch (err) {
-        console.error("❌ Session restore error:", err);
+      console.log("🔄 Attempting to restore session...");
+      const { data, error } = await apiClient.getCurrentUser();
+      if (data?.user) {
+        setUser(data.user);
+        console.log("✅ Session restored:", data.user.email);
+      } else {
+        console.log("⚠️ No active session:", error);
       }
     };
     restoreSession();
@@ -55,115 +51,99 @@ export const AuthProvider = ({ children }) => {
       );
       setCountdown(timeLeft);
 
-      if (timeLeft === 0) {
-        clearInterval(interval);
-      }
+      if (timeLeft === 0) clearInterval(interval);
     }, 1000);
 
     return () => clearInterval(interval);
   }, [lastSentTime]);
 
   // Send OTP method
-  const sendOTP = useCallback(
-    async (targetEmail) => {
-      setIsLoading(true);
-      console.log("📧 Sending OTP to:", targetEmail);
+  const sendOTP = useCallback(async (targetEmail) => {
+    setIsLoading(true);
+    console.log("📧 Sending OTP to:", targetEmail);
 
-      try {
-        const { data, error } = await apiClient.sendOTP(targetEmail);
+    try {
+      const { data, error } = await apiClient.sendOTP(targetEmail);
 
-        if (data && data.success) {
-          setIsOTPSent(true);
-          setLastSentTime(Date.now());
-          setEmail(targetEmail);
-          setCountdown(60);
-          console.log("✅ OTP sent successfully");
-          return { success: true };
-        } else {
-          console.error("❌ OTP send failed:", error);
-          return { success: false, error: error || "Failed to send OTP" };
-        }
-      } catch (err) {
-        console.error("❌ OTP send error:", err);
-        const errorMessage = err.message || "Network error occurred";
-        return { success: false, error: errorMessage };
-      } finally {
-        setIsLoading(false);
+      if (data?.success) {
+        setIsOTPSent(true);
+        setLastSentTime(Date.now());
+        setEmail(targetEmail);
+        setCountdown(60);
+        console.log("✅ OTP sent successfully");
+        return { success: true };
+      } else {
+        console.error("❌ OTP send failed:", error);
+        return { success: false, error: error || "Failed to send OTP" };
       }
-    },
-    []
-  );
+    } catch (err) {
+      console.error("❌ OTP send error:", err);
+      return { success: false, error: err.message || "Network error occurred" };
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
 
   // Verify OTP method
-  const verifyOTP = useCallback(
-    async (targetEmail, otp) => {
-      setIsLoading(true);
-      console.log("🔐 Verifying OTP for:", targetEmail || email);
+  const verifyOTP = useCallback(async (targetEmail, otp) => {
+    setIsLoading(true);
+    console.log("🔐 Verifying OTP for:", targetEmail || email);
 
-      try {
-        const { data, error } = await apiClient.verifyOTP(
-          targetEmail || email,
-          otp
-        );
+    try {
+      const { data, error } = await apiClient.verifyOTP(targetEmail || email, otp);
 
-        if (data?.success && data.admin) {
-          setUser(data.admin);
-          setIsOTPSent(false);
-          setLastSentTime(null);
-          setCountdown(0);
-          console.log("✅ Login successful:", data.admin.email);
-          return { success: true };
-        } else {
-          console.error("❌ OTP verification failed:", error);
-          return { success: false, error: error || "Invalid OTP" };
-        }
-      } catch (err) {
-        console.error("❌ OTP verification error:", err);
-        const errorMessage = err.message || "Verification failed";
-        return { success: false, error: errorMessage };
-      } finally {
-        setIsLoading(false);
+      if (data?.success && data.admin) {
+        setUser(data.admin);
+        setIsOTPSent(false);
+        setLastSentTime(null);
+        setCountdown(0);
+        console.log("✅ Login successful:", data.admin.email);
+        return { success: true };
+      } else {
+        console.error("❌ OTP verification failed:", error);
+        return { success: false, error: error || "Invalid OTP" };
       }
-    },
-    [email]
-  );
+    } catch (err) {
+      console.error("❌ OTP verification error:", err);
+      return { success: false, error: err.message || "Verification failed" };
+    } finally {
+      setIsLoading(false);
+    }
+  }, [email]);
 
   // Get current user method
   const getCurrentUser = useCallback(async () => {
-    try {
-      console.log("🔄 Fetching current user...");
-      const { data, error } = await apiClient.getCurrentUser();
-      if (data?.user) {
-        setUser(data.user);
-        console.log("✅ Current user fetched:", data.user.email);
-        return { success: true, user: data.user };
-      } else {
-        console.log("⚠️ No current user:", error);
-        return { success: false, error: error || "No user found" };
-      }
-    } catch (err) {
-      console.error("❌ Get current user error:", err);
-      return { success: false, error: err.message || "Failed to get user" };
+    const { data, error } = await apiClient.getCurrentUser();
+    if (data?.user) {
+      setUser(data.user);
+      console.log("✅ Current user fetched:", data.user.email);
+      return { success: true, user: data.user };
+    } else {
+      console.log("⚠️ No current user:", error);
+      return { success: false, error };
     }
   }, []);
 
   // Logout method
   const logout = useCallback(async () => {
-    try {
-      console.log("🚪 Logging out user...");
-      await apiClient.logout();
+    console.log("🚪 Logging out user...");
+    const { error } = await apiClient.logout();
+
+    if (!error) {
       setUser(null);
       setIsOTPSent(false);
       setLastSentTime(null);
       setCountdown(0);
       setEmail("");
       console.log("✅ Logout successful");
-    } catch (err) {
-      console.error("❌ Logout error:", err);
+      return { success: true };
+    } else {
+      console.error("❌ Logout failed:", error);
+      return { success: false, error };
     }
   }, []);
 
-  // Provide Context Values
+  // Provide context values
   const contextValue = {
     user,
     isOTPSent,

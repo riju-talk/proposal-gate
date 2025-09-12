@@ -1,7 +1,7 @@
 import { db } from './db';
 import { authorizedAdmins, otpVerifications } from '../shared/schema';
 import { eq, and, desc } from 'drizzle-orm';
-// Consolidated OTP functionality - no external dependencies needed
+import { sendEmail } from './email';
 
 export const sendOTP = async (email: string): Promise<{ success: boolean; error?: string }> => {
   try {
@@ -44,16 +44,27 @@ export const sendOTP = async (email: string): Promise<{ success: boolean; error?
       createdAt: new Date(),
     });
 
-    // In development, just log OTP to console
-    if (process.env.NODE_ENV === 'development' || !process.env.SMTP_USER) {
-      console.log(`🔐 OTP for ${email}: ${otp} (expires in 10 minutes)`);
-      return { success: true };
+    // Send OTP via email or log to console
+    const emailContent = {
+      subject: 'Your OTP for Proposal Gate',
+      html: `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+          <h2>Proposal Gate Authentication</h2>
+          <p>Your one-time password (OTP) is:</p>
+          <div style="font-size: 24px; font-weight: bold; text-align: center; padding: 20px; background: #f1f1f1; border-radius: 4px;">
+            ${otp}
+          </div>
+          <p>This OTP will expire in 10 minutes. Do not share it with anyone.</p>
+        </div>
+      `
+    };
+
+    const emailSent = await sendEmail(email, emailContent);
+    
+    if (!emailSent) {
+      return { success: false, error: 'Failed to send OTP email' };
     }
 
-    // In development, we'll just log the OTP since no email service is configured
-    // In production, you would integrate with your preferred email service here
-
-    console.log(`[OTP] Sent to ${email}: ${otp}`); // For debugging
     return { success: true };
   } catch (error) {
     console.error('Error sending OTP:', error);
@@ -81,14 +92,12 @@ export const verifyOTP = async (
 
     // Check expiration
     if (new Date(record.expiresAt) < now) {
-      // Delete all OTP records for this email
       await db.delete(otpVerifications).where(eq(otpVerifications.email, email));
       return { success: false, error: 'OTP has expired. Please request a new code.' };
     }
 
     // Verify OTP
     if (record.otp !== inputOTP) {
-      // Increment attempts (you might want to add an attempts column to your schema)
       return { success: false, error: 'Invalid OTP. Please try again.' };
     }
 
@@ -126,7 +135,7 @@ export const verifyOTP = async (
   }
 };
 
-// Optional: Clean up expired OTPs periodically
+// Clean up expired OTPs periodically
 export const cleanupExpiredOTPs = async () => {
   try {
     const now = new Date();
@@ -136,6 +145,3 @@ export const cleanupExpiredOTPs = async () => {
     console.error('Error cleaning up expired OTPs:', error);
   }
 };
-
-// Clean up expired OTPs every 5 minutes if needed
-// setInterval(cleanupExpiredOTPs, 5 * 60 * 1000);
