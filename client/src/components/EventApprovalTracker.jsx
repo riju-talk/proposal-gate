@@ -5,7 +5,8 @@ import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
-import { CheckCircle, XCircle, Clock, AlertCircle, MessageSquare, Shield, User, Loader2 } from 'lucide-react';
+import { apiClient } from '@/lib/api';
+import { CheckCircle, XCircle, Clock, Shield, User, Loader2, MessageSquare } from 'lucide-react';
 
 export const EventApprovalTracker = ({ eventId, showActions = true }) => {
   const { user } = useAuth();
@@ -15,17 +16,25 @@ export const EventApprovalTracker = ({ eventId, showActions = true }) => {
   const [error, setError] = useState(null);
   const [comments, setComments] = useState({});
   const [approving, setApproving] = useState(null);
+  const [overallStatus, setOverallStatus] = useState('pending');
+
+  const computeOverallStatus = (approvals) => {
+    if (approvals.every(a => a.status === 'approved')) return 'approved';
+    if (approvals.every(a => a.status === 'rejected')) return 'rejected';
+    return 'pending';
+  };
 
   useEffect(() => {
     const fetchApprovals = async () => {
       try {
         setLoading(true);
-        const response = await fetch(`/api/events/${eventId}/approvals`);
-        if (!response.ok) {
-          throw new Error('Failed to fetch approvals');
+        const result = await apiClient.getEventApprovals(eventId);
+        if (result.data?.approvals) {
+          setApprovals(result.data.approvals);
+          setOverallStatus(computeOverallStatus(result.data.approvals));
+        } else {
+          throw new Error(result.error || 'Failed to fetch event approvals');
         }
-        const data = await response.json();
-        setApprovals(data);
       } catch (err) {
         console.error('Error fetching approvals:', err);
         setError(err.message);
@@ -33,54 +42,42 @@ export const EventApprovalTracker = ({ eventId, showActions = true }) => {
         setLoading(false);
       }
     };
-
-    if (eventId) {
-      fetchApprovals();
-    }
+  
+    if (eventId) fetchApprovals();
   }, [eventId]);
-
-  const handleApprove = async (adminEmail, status, comment = '') => {
+  
+  const handleAction = async (action, comment = '') => {
     try {
-      setApproving(adminEmail);
-      const token = localStorage.getItem('admin_token');
-      
-      const response = await fetch(`/api/events/${eventId}/approve`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`,
-        },
-        body: JSON.stringify({
-          adminEmail,
-          status,
-          comments: comment,
-        }),
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Failed to update approval status');
+      setApproving(action);
+  
+      let result;
+      if (action === 'approve') {
+        result = await apiClient.approveEvent(eventId, comment);
+      } else if (action === 'reject') {
+        result = await apiClient.rejectEvent(eventId, comment);
+      } else {
+        throw new Error(`Unknown action: ${action}`);
       }
-
-      const result = await response.json();
-      
-      // Refresh approvals
-      const approvalsResponse = await fetch(`/api/events/${eventId}/approvals`);
-      const updatedApprovals = await approvalsResponse.json();
-      setApprovals(updatedApprovals);
-      
-      // Clear comment for this admin
-      setComments(prev => ({ ...prev, [adminEmail]: '' }));
-      
+  
+      if (result.error) throw new Error(result.error);
+  
+      const updatedResult = await apiClient.getEventApprovals(eventId);
+      if (updatedResult.data?.approvals) {
+        setApprovals(updatedResult.data.approvals);
+        setOverallStatus(computeOverallStatus(updatedResult.data.approvals));
+      }
+  
+      setComments(prev => ({ ...prev, [user?.email]: '' }));
+  
       toast({
         title: 'Success',
-        description: `Approval ${status === 'approved' ? 'granted' : 'rejected'} successfully. ${result.message}`,
+        description: result.message || `Event ${action} successfully`,
       });
     } catch (err) {
-      console.error('Error updating approval:', err);
+      console.error(`Error ${action} event:`, err);
       toast({
         title: 'Error',
-        description: err.message || 'Failed to update approval status',
+        description: err.message || `Failed to ${action} event`,
         variant: 'destructive',
       });
     } finally {
@@ -92,36 +89,35 @@ export const EventApprovalTracker = ({ eventId, showActions = true }) => {
     switch (status?.toLowerCase()) {
       case 'approved':
         return (
-          <Badge className="bg-success/20 text-success border-success/30">
-            <CheckCircle className="w-3 h-3 mr-1" />
-            Approved
+          <Badge className="bg-gradient-to-r from-green-500 to-emerald-500 text-white shadow-lg border-0">
+            <CheckCircle className="w-3 h-3 mr-1" /> Approved
           </Badge>
         );
       case 'rejected':
         return (
-          <Badge className="bg-destructive/20 text-destructive border-destructive/30">
-            <XCircle className="w-3 h-3 mr-1" />
-            Rejected
+          <Badge className="bg-gradient-to-r from-red-500 to-pink-500 text-white shadow-lg border-0">
+            <XCircle className="w-3 h-3 mr-1" /> Rejected
           </Badge>
         );
       case 'pending':
       default:
         return (
-          <Badge className="bg-primary/20 text-primary border-primary/30">
-            <Clock className="w-3 h-3 mr-1" />
-            Pending
+          <Badge className="bg-gradient-to-r from-blue-500 to-purple-500 text-white shadow-lg border-0">
+            <Clock className="w-3 h-3 mr-1" /> Pending
           </Badge>
         );
     }
   };
 
   const canUserApprove = (adminEmail) => {
-    return user?.email === adminEmail && showActions;
+    return user?.email === adminEmail && showActions && user?.role !== 'developer';
   };
+
+  const getUserApproval = () => approvals.find(a => a.admin_email === user?.email);
 
   if (loading) {
     return (
-      <Card className="professional-card">
+      <Card className="bg-card/50 backdrop-blur-sm border-border/50">
         <CardHeader>
           <CardTitle className="text-foreground flex items-center gap-2">
             <Loader2 className="h-5 w-5 text-primary animate-spin" />
@@ -134,7 +130,7 @@ export const EventApprovalTracker = ({ eventId, showActions = true }) => {
 
   if (error) {
     return (
-      <Card className="professional-card">
+      <Card className="bg-card/50 backdrop-blur-sm border-border/50">
         <CardHeader>
           <CardTitle className="text-foreground">Error Loading Approvals</CardTitle>
         </CardHeader>
@@ -145,86 +141,81 @@ export const EventApprovalTracker = ({ eventId, showActions = true }) => {
     );
   }
 
+  const userApproval = getUserApproval();
+
   return (
-    <Card className="professional-card">
+    <Card className="bg-card/50 backdrop-blur-sm border-border/50">
       <CardHeader>
         <CardTitle className="text-foreground flex items-center gap-2">
-          <Shield className="h-5 w-5 text-primary" />
-          Approval Status
+          <Shield className="h-5 w-5 text-primary" /> Approval Status
         </CardTitle>
       </CardHeader>
+
       <CardContent className="space-y-4">
+        <div className="mb-4">
+          <h4 className="font-medium text-lg">Overall Event Status</h4>
+          {getStatusBadge(overallStatus)}
+        </div>
+
+        {user && userApproval && canUserApprove(user.email) && userApproval.status === 'pending' && (
+          <div className="bg-gradient-to-r from-primary/10 to-purple-500/10 rounded-lg p-4 border border-primary/20">
+            <h4 className="font-medium text-foreground mb-3">Your Action Required</h4>
+            <Textarea
+              placeholder="Add a comment (optional)"
+              value={comments[user.email] || ''}
+              onChange={(e) => setComments(prev => ({ ...prev, [user.email]: e.target.value }))}
+              className="text-sm bg-background/50 border-border mb-3"
+            />
+            <div className="flex space-x-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => handleAction('reject', comments[user.email])}
+                disabled={approving === 'reject'}
+                className="border-red-500/30 text-red-400 hover:bg-red-500/10"
+              >
+                {approving === 'reject' ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Reject'}
+              </Button>
+              <Button
+                size="sm"
+                onClick={() => handleAction('approve', comments[user.email])}
+                disabled={approving === 'approve'}
+                className="bg-gradient-to-r from-green-500 to-emerald-500 text-white border-0"
+              >
+                {approving === 'approve' ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Approve'}
+              </Button>
+            </div>
+          </div>
+        )}
+
         {approvals.length === 0 ? (
           <p className="text-muted-foreground">No approvals found for this event.</p>
         ) : (
           approvals.map((approval) => (
-            <div key={approval.id} className="border border-border rounded-lg p-4 bg-card/50">
+            <div key={approval.admin_email} className="border border-border/50 rounded-lg p-4 bg-card/30 backdrop-blur-sm">
               <div className="flex justify-between items-start mb-3">
                 <div className="flex items-center gap-2">
                   <User className="h-4 w-4 text-primary" />
                   <div>
-                    <h4 className="font-medium text-foreground">{approval.admin_name || 'Admin'}</h4>
-                    <p className="text-sm text-muted-foreground capitalize">
-                      {approval.admin_role?.replace('_', ' ') || 'Reviewer'} (Order: {approval.approval_order})
-                    </p>
+                    <h4 className="font-medium text-foreground">{approval.admin_name}</h4>
+                    <p className="text-sm text-muted-foreground">{approval.admin_email}</p>
                   </div>
                 </div>
                 {getStatusBadge(approval.status)}
               </div>
-              
+
               {approval.comments && (
                 <div className="mb-3 text-sm text-muted-foreground flex items-start">
-                  <MessageSquare className="w-4 h-4 mr-2 mt-0.5 flex-shrink-0 text-blue-400" />
-                  <p className="bg-muted/50 rounded p-3 border border-border flex-1">{approval.comments}</p>
-                </div>
-              )}
-
-              {canUserApprove(approval.admin_email) && approval.status === 'pending' && (
-                <div className="space-y-3 pt-3 border-t border-border">
-                  <Textarea
-                    placeholder="Add a comment (optional)"
-                    value={comments[approval.admin_email] || ''}
-                    onChange={(e) =>
-                      setComments(prev => ({
-                        ...prev,
-                        [approval.admin_email]: e.target.value
-                      }))
-                    }
-                    className="text-sm bg-background border-border"
-                  />
-                  <div className="flex space-x-2">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => handleApprove(approval.admin_email, 'rejected', comments[approval.admin_email])}
-                      disabled={approving === approval.admin_email}
-                      className="border-destructive/30 text-destructive hover:bg-destructive/10"
-                    >
-                      {approving === approval.admin_email ? (
-                        <Loader2 className="h-4 w-4 animate-spin" />
-                      ) : (
-                        'Reject'
-                      )}
-                    </Button>
-                    <Button
-                      size="sm"
-                      onClick={() => handleApprove(approval.admin_email, 'approved', comments[approval.admin_email])}
-                      disabled={approving === approval.admin_email}
-                      className="bg-success/20 border-success/30 text-success hover:bg-success/30"
-                    >
-                      {approving === approval.admin_email ? (
-                        <Loader2 className="h-4 w-4 animate-spin" />
-                      ) : (
-                        'Approve'
-                      )}
-                    </Button>
-                  </div>
+                  <MessageSquare className="w-4 h-4 mr-2 mt-0.5 text-blue-400" />
+                  <p className="bg-muted/50 rounded p-3 border border-border flex-1">
+                    {approval.comments}
+                  </p>
                 </div>
               )}
 
               {approval.approved_at && (
                 <div className="text-xs text-muted-foreground mt-2">
-                  {approval.status === 'approved' ? 'Approved' : 'Updated'} on{' '}
+                  {approval.status === 'approved' ? 'Approved' : 'Rejected'} on{' '}
                   {new Date(approval.approved_at).toLocaleDateString()}
                 </div>
               )}

@@ -1,116 +1,115 @@
-import { randomInt } from 'crypto';
-import { addMinutes, isAfter } from 'date-fns';
-import { db } from '../db';
-import { otpVerifications } from '@shared/schema';
-import { and, eq, gte } from 'drizzle-orm';
+import { db } from "../db";
+import { otpVerifications, authorizedAdmins } from "../../shared/schema";
+import { eq, and, desc } from "drizzle-orm";
+import { sendOtpEmail } from "./email"; // Make sure this is the proper method to send OTP emails
 
-const OTP_EXPIRY_MINUTES = 15;
-const OTP_LENGTH = 6;
-
-/**
- * Generate a random OTP code
- */
-export const generateOTP = (): string => {
-  const min = Math.pow(10, OTP_LENGTH - 1);
-  const max = Math.pow(10, OTP_LENGTH) - 1;
-  return randomInt(min, max).toString();
+// Generate random 6-digit OTP
+const generateOTP = (): string => {
+  return Math.floor(100000 + Math.random() * 900000).toString();
 };
 
-/**
- * Create a new OTP for the given email
- */
-export const createOTP = async (email: string) => {
+// Send OTP function
+export const sendOTP = async (
+  email: string
+): Promise<{ success: boolean; error?: string }> => {
+  // Verify authorized admin
+  const [admin] = await db
+    .select()
+    .from(authorizedAdmins)
+    .where(and(eq(authorizedAdmins.email, email), eq(authorizedAdmins.isActive, true)))
+    .limit(1);
+
+  if (!admin) {
+    return { success: false, error: "Email not authorized" };
+  }
+
+  // Rate-limit check: 1 OTP per 60 seconds
+  const [lastOtp] = await db
+    .select()
+    .from(otpVerifications)
+    .where(eq(otpVerifications.email, email))
+    .orderBy(desc(otpVerifications.createdAt))
+    .limit(1);
+
+  if (lastOtp && Date.now() - new Date(lastOtp.createdAt).getTime() < 60 * 1000) {
+    return { success: false, error: "Please wait before requesting another OTP" };
+  }
+
   const otp = generateOTP();
-  const expiresAt = addMinutes(new Date(), OTP_EXPIRY_MINUTES);
+  const expiresAt = new Date(Date.now() + 10 * 60 * 1000); // Valid for 10 minutes
 
-  // Invalidate any existing OTPs for this email
-  await db
-    .update(otpVerifications)
-    .set({ used: true })
-    .where(
-      and(
-        eq(otpVerifications.email, email),
-        eq(otpVerifications.used, false),
-        gte(otpVerifications.expiresAt, new Date())
-      )
-    );
+  // Delete any previous OTP records for this email
+  await db.delete(otpVerifications).where(eq(otpVerifications.email, email));
 
-  // Create new OTP
-  const [newOtp] = await db
-    .insert(otpVerifications)
-    .values({
-      email,
-      otp,
-      expiresAt,
-    })
-    .returning();
+  // Insert new OTP record
+  await db.insert(otpVerifications).values({
+    email,
+    otp,
+    expiresAt,
+    used: false,
+  });
 
-  return newOtp;
-};
+  // Send OTP Email
+  const mailResult = await sendOtpEmail(email, otp);
 
-/**
- * Verify if the provided OTP is valid for the given email
- */
-export const verifyOTP = async (email: string, otp: string) => {
-  const [otpRecord] = await db
-    .select()
-    .from(otpVerifications)
-    .where(
-      and(
-        eq(otpVerifications.email, email),
-        eq(otpVerifications.otp, otp),
-        eq(otpVerifications.used, false),
-        gte(otpVerifications.expiresAt, new Date())
-      )
-    )
-    .limit(1);
-
-  if (!otpRecord) {
-    return { isValid: false, message: 'Invalid or expired OTP' };
+  if (!mailResult.success) {
+    return { success: false, error: mailResult.message || "Failed to send OTP email" };
   }
 
-  // Mark OTP as used
-  await db
-    .update(otpVerifications)
-    .set({ used: true })
-    .where(eq(otpVerifications.id, otpRecord.id));
+  console.log(`[OTP] Sent to ${email}: ${otp}`); // For debugging
 
-  return { isValid: true, message: 'OTP verified successfully' };
+  return { success: true };
 };
 
-/**
- * Check if an OTP request is allowed (rate limiting)
- */
-export const isOTPRequestAllowed = async (email: string): Promise<{ allowed: boolean; timeLeft?: number }> => {
-  const recentOTP = await db
-    .select()
-    .from(otpVerifications)
-    .where(
-      and(
-        eq(otpVerifications.email, email),
-        eq(otpVerifications.used, false),
-        gte(otpVerifications.expiresAt, new Date())
-      )
-    )
-    .orderBy(otpVerifications.createdAt)
-    .limit(1);
-
-  if (recentOTP.length === 0) {
-    return { allowed: true };
-  }
-
-  const otp = recentOTP[0];
+// Verify OTP function
+export const verifyOTP = async (
+  email: string,
+  otp: string
+): Promise<{
+  success: boolean;
+  error?: string;
+  admin?: { email: string; name: string; role: string };
+}> => {
   const now = new Date();
-  const lastRequestTime = otp.createdAt;
-  const timeSinceLastRequest = now.getTime() - lastRequestTime.getTime();
-  const cooldownPeriod = 60 * 1000; // 1 minute cooldown
 
-  if (timeSinceLastRequest < cooldownPeriod) {
-    return {
-      allowed: false,
-      timeLeft: Math.ceil((cooldownPeriod - timeSinceLastRequest) / 1000),
-    };
+  const [record] = await db
+    .select()
+    .from(otpVerifications)
+    .where(and(eq(otpVerifications.email, email), eq(otpVerifications.used, false)))
+    .orderBy(desc(otpVerifications.createdAt))
+    .limit(1);
+
+  if (!record) {
+    return { success: false, error: "OTP not found or already used" };
   }
 
-  return { allowed: true };
+  if (new Date(record.expiresAt) < now) {
+    // Delete all OTP records for safety
+    await db.delete(otpVerifications).where(eq(otpVerifications.email, email));
+    return { success: false, error: "OTP expired" };
+  }
+
+  if (record.otp !== otp) {
+    return { success: false, error: "Invalid OTP" };
+  }
+
+  // Valid OTP: Delete all OTP records for that email
+  await db.delete(otpVerifications).where(eq(otpVerifications.email, email));
+
+  // Fetch the admin details
+  const [admin] = await db
+    .select({
+      email: authorizedAdmins.email,
+      name: authorizedAdmins.name,
+      role: authorizedAdmins.role,
+    })
+    .from(authorizedAdmins)
+    .where(eq(authorizedAdmins.email, email))
+    .limit(1);
+
+  if (!admin) {
+    return { success: false, error: "Admin not found" };
+  }
+
+  return { success: true, admin };
 };
