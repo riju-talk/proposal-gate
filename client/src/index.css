@@ -2,56 +2,58 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Professional IIIT Delhi Student Council Design System */
+/* IIIT Delhi Student Council Design System */
 
 @layer base {
   :root {
     color-scheme: dark;
     
-    /* Dark theme with purple accents */
-    --background: 240 10% 8%;         /* Dark background */
-    --foreground: 240 10% 95%;        /* Light text */
+    /* IIIT Delhi Student Council Theme - Dark with Gold Accents */
+    --background: 220 20% 5%;         /* Deep navy background */
+    --foreground: 45 20% 95%;         /* Warm white text */
 
-    --card: 240 10% 10%;              /* Card background */
-    --card-foreground: 240 10% 95%;   /* Text on cards */
+    --card: 220 15% 8%;               /* Slightly lighter card background */
+    --card-foreground: 45 15% 92%;    /* Card text */
 
-    --popover: 240 10% 10%;
-    --popover-foreground: 240 10% 95%;
+    --popover: 220 15% 8%;
+    --popover-foreground: 45 15% 92%;
 
-    --primary: 250 100% 69%;          /* Purple accent */
-    --primary-foreground: 240 10% 10%;
+    --primary: 45 90% 60%;            /* IIIT Delhi Gold */
+    --primary-foreground: 220 20% 8%;
 
-    --secondary: 240 10% 15%;         /* Secondary background */
-    --secondary-foreground: 240 10% 95%;
+    --secondary: 220 15% 12%;         /* Secondary background */
+    --secondary-foreground: 45 15% 88%;
 
-    --muted: 240 10% 15%;             /* Muted backgrounds */
-    --muted-foreground: 240 10% 60%;  /* Muted text */
+    --muted: 220 12% 15%;             /* Muted backgrounds */
+    --muted-foreground: 220 8% 55%;   /* Muted text */
 
-    --accent: 250 100% 69%;           /* Purple accent */
-    --accent-foreground: 240 10% 10%;
+    --accent: 45 85% 55%;             /* Gold accent */
+    --accent-foreground: 220 20% 8%;
 
-    --success: 142 76% 50%;           /* Green for approved */
-    --success-foreground: 240 10% 10%;
+    --success: 120 60% 50%;           /* Green for approved */
+    --success-foreground: 220 20% 8%;
 
-    --warning: 38 92% 50%;            /* Yellow for pending */
-    --warning-foreground: 240 10% 10%;
+    --warning: 45 90% 60%;            /* Gold for pending */
+    --warning-foreground: 220 20% 8%;
 
-    --destructive: 0 84% 60%;         /* Red for rejected */
-    --destructive-foreground: 240 10% 95%;
+    --destructive: 0 70% 55%;         /* Red for rejected */
+    --destructive-foreground: 45 20% 95%;
 
-    --border: 240 10% 20%;            /* Border color */
-    --input: 240 10% 15%;             /* Input backgrounds */
-    --ring: 250 100% 69%;             /* Focus rings in purple */
+    --border: 220 15% 18%;            /* Subtle border */
+    --input: 220 15% 12%;             /* Input backgrounds */
+    --ring: 45 85% 55%;               /* Focus rings in gold */
 
     --radius: 0.5rem;
 
-    /* Custom gradients */
-    --gradient-primary: linear-gradient(135deg, hsl(250 100% 69%), hsl(260 100% 60%));
-    --gradient-hero: linear-gradient(135deg, hsl(240 10% 8%) 0%, hsl(240 10% 10%) 50%, hsl(250 100% 69% / 0.1) 100%);
+    /* IIIT Delhi themed gradients */
+    --gradient-primary: linear-gradient(135deg, hsl(45 90% 60%), hsl(35 85% 55%));
+    --gradient-hero: linear-gradient(135deg, hsl(220 20% 5%) 0%, hsl(220 15% 8%) 50%, hsl(45 90% 60% / 0.08) 100%);
+    --gradient-nav: linear-gradient(180deg, hsl(220 20% 5%) 0%, hsl(220 18% 7%) 100%);
     
-    /* Professional shadows */
-    --shadow-elegant: 0 10px 25px -5px hsl(220 27% 4% / 0.5);
-    --shadow-card: 0 4px 12px -2px hsl(220 27% 4% / 0.3);
+    /* Professional shadows with navy tint */
+    --shadow-elegant: 0 10px 25px -5px hsl(220 25% 3% / 0.6);
+    --shadow-card: 0 4px 12px -2px hsl(220 25% 3% / 0.4);
+    --shadow-gold: 0 0 20px hsl(45 90% 60% / 0.15);
   }
 }
 
@@ -86,24 +88,39 @@
 }
 
 @layer components {
-  /* Professional card styling */
+  /* IIIT Delhi Student Council Card Styling */
   .professional-card {
-    @apply bg-card border border-border rounded-lg shadow-lg backdrop-blur-sm;
-    background: hsl(var(--card) / 0.8);
+    @apply bg-card border border-border rounded-lg backdrop-blur-sm;
+    background: hsl(var(--card) / 0.9);
+    box-shadow: var(--shadow-card);
   }
 
-  /* Gradient text */
+  /* IIIT Delhi Gold Gradient Text */
   .gradient-text {
-    background: linear-gradient(135deg, hsl(var(--primary)), hsl(200 100% 60%));
+    background: var(--gradient-primary);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
   }
 
-  /* Professional button styling */
+  /* Student Council Branding Text */
+  .sc-branding {
+    @apply text-primary font-bold tracking-wider;
+    text-shadow: 0 0 10px hsl(var(--primary) / 0.3);
+  }
+
+  /* Professional button styling with gold theme */
   .btn-primary {
     @apply bg-primary text-primary-foreground hover:bg-primary/90 shadow-lg;
-    background: linear-gradient(135deg, hsl(var(--primary)), hsl(200 100% 60%));
+    background: var(--gradient-primary);
+    box-shadow: var(--shadow-gold);
+  }
+
+  /* Header navigation styling */
+  .nav-header {
+    background: var(--gradient-nav);
+    border-bottom: 1px solid hsl(var(--border));
+    backdrop-filter: blur(12px);
   }
 
   /* Container with proper centering */
@@ -116,8 +133,28 @@
     @apply py-12 lg:py-16;
   }
 
-  /* Card hover effects */
+  /* Enhanced card hover effects with gold accent */
   .card-hover {
-    @apply transition-all duration-300 hover:shadow-xl hover:scale-[1.02] hover:border-primary/20;
+    @apply transition-all duration-300 hover:scale-[1.02] hover:border-primary/30;
+    &:hover {
+      box-shadow: var(--shadow-elegant), var(--shadow-gold);
+    }
+  }
+
+  /* Student Council Auth Pages */
+  .auth-background {
+    background: var(--gradient-hero);
+    background-attachment: fixed;
+  }
+
+  /* Logo container */
+  .logo-container {
+    @apply flex items-center gap-3;
+  }
+
+  /* IIIT Delhi styled inputs */
+  .input-styled {
+    @apply bg-input border-border focus:border-primary focus:ring-primary/20;
+    transition: all 0.2s ease-in-out;
   }
 }
