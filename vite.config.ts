@@ -28,7 +28,7 @@ export default defineConfig({
 
   server: {
     allowedHosts: [
-      "b1a26b6b-0854-473f-bf77-5acf5dfcbe87-00-xikxg78h0pdh.picard.replit.dev",
+      "ab53461e-d2bd-48bb-a65e-51591e183c09-00-whn2szcekejb.riker.replit.dev",
       "localhost",
       "0.0.0.0",
     ],
