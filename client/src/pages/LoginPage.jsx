@@ -6,7 +6,8 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
-import { ArrowLeft, Loader2, Sparkles } from 'lucide-react';
+import { ArrowLeft, Loader2 } from 'lucide-react';
+import { StudentCouncilLogo } from '@/components/StudentCouncilLogo';
 
 const LoginPage = () => {
   const navigate = useNavigate();
@@ -71,18 +72,33 @@ const LoginPage = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 p-4">
-      <div className="w-full max-w-md relative z-10">
-        <Card className="bg-card/80 backdrop-blur-xl shadow-lg">
-          <CardHeader className="text-center space-y-4">
-            <CardTitle className="text-2xl font-bold text-foreground">
-              <Sparkles className="inline-block h-5 w-5 text-primary mr-2" />
-              Admin Login
-            </CardTitle>
-            <CardDescription>
-              Enter your authorized email to receive OTP for secure access.
-            </CardDescription>
-          </CardHeader>
+    <div className="min-h-screen bg-background text-foreground">
+      {/* Header with Student Council Branding */}
+      <header className="nav-header p-6">
+        <div className="container-centered flex flex-col lg:flex-row justify-between items-center gap-6">
+          <div className="flex items-center gap-6">
+            <StudentCouncilLogo size="default" showText={true} />
+            <div className="hidden md:block">
+              <p className="text-muted-foreground text-sm">
+                Secure access for IIIT Delhi Student Council administrators
+              </p>
+            </div>
+          </div>
+        </div>
+      </header>
+
+      {/* Login Form */}
+      <main className="flex items-center justify-center flex-1 min-h-[80vh] p-4">
+        <div className="w-full max-w-md">
+          <Card className="professional-card">
+            <CardHeader className="text-center space-y-4">
+              <CardTitle className="text-2xl font-bold text-foreground">
+                Admin Login
+              </CardTitle>
+              <CardDescription>
+                Enter your authorized email to receive OTP for secure access.
+              </CardDescription>
+            </CardHeader>
 
           <CardContent className="space-y-6">
             <form onSubmit={handleSendOTP} className="space-y-4">
@@ -132,7 +148,7 @@ const LoginPage = () => {
                 <Button 
                   type="submit" 
                   disabled={isLoading || !email.trim()}
-                  className="w-full bg-gradient-to-r from-primary to-purple-600 hover:opacity-90"
+                  className="w-full btn-primary"
                 >
                   {isLoading ? (
                     <>
@@ -158,6 +174,7 @@ const LoginPage = () => {
           </CardContent>
         </Card>
       </div>
+    </main>
     </div>
   );
 };

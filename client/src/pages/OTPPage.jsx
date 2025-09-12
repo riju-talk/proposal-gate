@@ -6,7 +6,8 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
-import { ArrowLeft, Loader2, Shield, RefreshCw } from 'lucide-react';
+import { ArrowLeft, Loader2, RefreshCw } from 'lucide-react';
+import { StudentCouncilLogo } from '@/components/StudentCouncilLogo';
 
 const OTPPage = () => {
   const navigate = useNavigate();
@@ -86,19 +87,34 @@ const OTPPage = () => {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 p-4">
-      <div className="w-full max-w-md relative z-10">
-        <Card className="bg-card/80 backdrop-blur-xl shadow-lg">
-          <CardHeader className="text-center space-y-4">
-            <CardTitle className="text-2xl font-bold text-foreground">
-              <Shield className="inline-block h-5 w-5 text-primary mr-2" />
-              Verify OTP
-            </CardTitle>
-            <CardDescription>
-              Enter the 6-digit OTP sent to <br />
-              <span className="font-medium text-foreground">{email}</span>
-            </CardDescription>
-          </CardHeader>
+    <div className="min-h-screen bg-background text-foreground">
+      {/* Header with Student Council Branding */}
+      <header className="nav-header p-6">
+        <div className="container-centered flex flex-col lg:flex-row justify-between items-center gap-6">
+          <div className="flex items-center gap-6">
+            <StudentCouncilLogo size="default" showText={true} />
+            <div className="hidden md:block">
+              <p className="text-muted-foreground text-sm">
+                Secure OTP verification for IIIT Delhi Student Council
+              </p>
+            </div>
+          </div>
+        </div>
+      </header>
+
+      {/* OTP Verification Form */}
+      <main className="flex items-center justify-center flex-1 min-h-[80vh] p-4">
+        <div className="w-full max-w-md">
+          <Card className="professional-card">
+            <CardHeader className="text-center space-y-4">
+              <CardTitle className="text-2xl font-bold text-foreground">
+                Verify OTP
+              </CardTitle>
+              <CardDescription>
+                Enter the 6-digit OTP sent to <br />
+                <span className="font-medium text-foreground">{email}</span>
+              </CardDescription>
+            </CardHeader>
 
           <CardContent className="space-y-6">
             <form onSubmit={handleVerifyOTP} className="space-y-4">
@@ -163,7 +179,7 @@ const OTPPage = () => {
               <Button 
                 type="submit" 
                 disabled={isLoading || otp.length !== 6}
-                className="w-full bg-gradient-to-r from-primary to-purple-600 hover:opacity-90"
+                className="w-full btn-primary"
               >
                 {isLoading ? (
                   <>
@@ -178,6 +194,7 @@ const OTPPage = () => {
           </CardContent>
         </Card>
       </div>
+    </main>
     </div>
   );
 };
