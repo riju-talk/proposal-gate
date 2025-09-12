@@ -65,9 +65,30 @@ class ApiClient {
     });
   }
 
-  // Get current authenticated user
+  // Parse JWT from cookies directly for auth persistence
   async getCurrentUser() {
-    return this.request("/auth/me");
+    try {
+      const cookies = parseCookies();
+      const token = cookies["auth_token"];
+
+      if (!token) {
+        return { error: "No auth token found in cookies" };
+      }
+
+      // Decode JWT payload (without verification - backend handles security)
+      const payloadBase64 = token.split(".")[1];
+      const payloadJson = atob(payloadBase64);
+      const payload = JSON.parse(payloadJson);
+
+      // Check if token is expired
+      if (payload.exp && payload.exp < Date.now() / 1000) {
+        return { error: "Token expired" };
+      }
+
+      return { data: { user: payload } };
+    } catch (error) {
+      return { error: "Failed to parse auth token" };
+    }
   }
 
   async logout() {
