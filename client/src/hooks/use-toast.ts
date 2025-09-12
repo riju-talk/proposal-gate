@@ -35,7 +35,7 @@ const addToRemoveQueue = (toastId) => {
   toastTimeouts.set(toastId, timeout);
 };
 
-export const reducer = (state, action) => {
+export const reducer = (state: any, action: any) => {
   switch (action.type) {
     case "ADD_TOAST":
       return {
@@ -100,7 +100,7 @@ function dispatch(action) {
 }
 
 
-function toast({ ...props }) {
+function toast({ ...props }: any) {
   const id = genId()
 
   const update = (props) =>

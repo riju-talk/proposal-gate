@@ -68,12 +68,12 @@ export async function setupVite(app: Application, server: Server): Promise<void>
 // Static serving for production (after `vite build`)
 // ============================================================================
 export function serveStatic(app: Application): void {
-  const distPath = path.resolve(__dirname, "..", "dist");
-  const indexPath = path.resolve(distPath, "index.html");
+  const distPublicPath = path.resolve(__dirname, "..", "dist", "public");
+  const indexPath = path.resolve(distPublicPath, "index.html");
 
   // Serve static files (hashed assets)
   app.use(
-    express.static(distPath, {
+    express.static(distPublicPath, {
       index: false, // we handle index.html manually
       maxAge: "1y",
       etag: true,

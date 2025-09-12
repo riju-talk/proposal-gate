@@ -27,11 +27,7 @@ export default defineConfig({
   },
 
   server: {
-    allowedHosts: [
-      "ab53461e-d2bd-48bb-a65e-51591e183c09-00-whn2szcekejb.riker.replit.dev",
-      "localhost",
-      "0.0.0.0",
-    ],
+    allowedHosts: true,
     host: "0.0.0.0",
     port: 5000,
     strictPort: true,
@@ -57,7 +53,7 @@ export default defineConfig({
   },
 
   build: {
-    outDir: path.resolve(__dirname, 'dist'),
+    outDir: path.resolve(__dirname, 'dist/public'),
     emptyOutDir: true,
     sourcemap: false,
     rollupOptions: {
