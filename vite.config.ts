@@ -1,15 +1,11 @@
-import { defineConfig } from 'vite';
-import react from '@vitejs/plugin-react';
-import path from 'path';
-import { fileURLToPath } from 'url';
+import { defineConfig } from "vite";
+import react from "@vitejs/plugin-react";
+import path from "path";
 
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const __dirname = path.dirname(new URL(import.meta.url).pathname);
 
 export default defineConfig({
-  root: path.resolve(__dirname, 'client'),
-
   plugins: [react()],
-
   resolve: {
     alias: {
       '@': path.resolve(__dirname, 'client/src'),
@@ -28,8 +24,13 @@ export default defineConfig({
   },
 
   server: {
+    allowedHosts: [
+      "b1a26b6b-0854-473f-bf77-5acf5dfcbe87-00-xikxg78h0pdh.picard.replit.dev",
+      "localhost",
+      "0.0.0.0",
+    ],
+    host: "0.0.0.0",
     port: 5000,
-    host: '0.0.0.0',
     strictPort: true,
     proxy: {
       '/api': {

@@ -1,0 +1,40 @@
+> iiitd-sc-proposal-gate@1.0.0 dev
+> concurrently "npm run server:dev" "npm run client:dev" --names "SERVER,CLIENT"[SERVER] -colors "blue,green"
+[SERVER] > iiitd-sc-proposal-gate@1.0.0 server:dev
+[SERVER] > cross-env NODE_ENV=development tsx watch server/index.ts --port 3000
+[SERVER] 
+[CLIENT] 
+[CLIENT] > iiitd-sc-proposal-gate@1.0.0 client:dev
+[CLIENT] > vite dev --port 5000 --host 0.0.0.0
+[CLIENT] 
+[CLIENT] failed to load config from /home/runner/workspace/vite.config.ts
+[CLIENT] error when starting dev server:
+[CLIENT] Error [ERR_MODULE_NOT_FOUND]: Cannot find package '@replit/vite-plugin-runtime-error-modal' imported from /home/runner/workspace/vite.config.ts.timestamp-1757648889557-4a960b91129e1.mjs
+[CLIENT]     at packageResolve (node:internal/modules/esm/resolve:873:9)
+[CLIENT]     at moduleResolve (node:internal/modules/esm/resolve:946:18)
+[CLIENT]     at defaultResolve (node:internal/modules/esm/resolve:1188:11)
+[CLIENT]     at ModuleLoader.defaultResolve (node:internal/modules/esm/loader:642:12)
+[CLIENT]     at #cachedDefaultResolve (node:internal/modules/esm/loader:591:25)
+[CLIENT]     at ModuleLoader.resolve (node:internal/modules/esm/loader:574:38)
+[CLIENT]     at ModuleLoader.getModuleJobForImport (node:internal/modules/esm/loader:236:38)
+[CLIENT]     at ModuleJob._link (node:internal/modules/esm/module_job:130:49)
+[CLIENT] npm run client:dev exited with code 1
+[SERVER] 
+[SERVER] node:internal/modules/run_main:123
+[SERVER]     triggerUncaughtException(
+[SERVER]     ^
+[SERVER] Error [ERR_MODULE_NOT_FOUND]: Cannot find package '@replit/vite-plugin-runtime-error-modal' imported from /home/runner/workspace/vite.config.ts
+[SERVER]     at packageResolve (node:internal/modules/esm/resolve:873:9)
+[SERVER]     at moduleResolve (node:internal/modules/esm/resolve:946:18)
+[SERVER]     at defaultResolve (node:internal/modules/esm/resolve:1188:11)
+[SERVER]     at nextResolve (node:internal/modules/esm/hooks:864:28)
+[SERVER]     at resolveBase (file:///home/runner/workspace/node_modules/tsx/dist/esm/index.mjs?1757648889717:2:3744)
+[SERVER]     at resolveDirectory (file:///home/runner/workspace/node_modules/tsx/dist/esm/index.mjs?1757648889717:2:4243)
+[SERVER]     at resolveTsPaths (file:///home/runner/workspace/node_modules/tsx/dist/esm/index.mjs?1757648889717:2:4984)
+[SERVER]     at async resolve (file:///home/runner/workspace/node_modules/tsx/dist/esm/index.mjs?1757648889717:2:5355)
+[SERVER]     at async nextResolve (node:internal/modules/esm/hooks:864:22)
+[SERVER]     at async Hooks.resolve (node:internal/modules/esm/hooks:306:24) {
+[SERVER]   code: 'ERR_MODULE_NOT_FOUND'
+[SERVER] }
+[SERVER] 
+[SERVER] Node.js v20.19.3
