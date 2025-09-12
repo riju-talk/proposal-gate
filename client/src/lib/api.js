@@ -55,6 +55,10 @@ class ApiClient {
     });
   }
 
+  async getCurrentUser() {
+    return this.request("/auth/me");
+  }
+
   async logout() {
     return this.request("/auth/logout", { method: "POST" });
   }
@@ -81,14 +85,14 @@ class ApiClient {
 
   async approveEvent(eventId, comments = "") {
     return this.request(`/events/${eventId}/approve`, {
-      method: "POST",
+      method: "PATCH",
       body: JSON.stringify({ comments }),
     });
   }
 
   async rejectEvent(eventId, comments = "") {
     return this.request(`/events/${eventId}/reject`, {
-      method: "POST",
+      method: "PATCH",
       body: JSON.stringify({ comments }),
     });
   }
