@@ -18,10 +18,11 @@
 /* Modern card animations */
 .modern-card {
   @apply transition-all duration-300 ease-out;
-  &:hover {
-    transform: translateY(-2px);
-    box-shadow: var(--shadow-elegant), var(--shadow-gold);
-  }
+}
+
+.modern-card:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-elegant), var(--shadow-gold);
 }
 
 /* Teal accent elements */

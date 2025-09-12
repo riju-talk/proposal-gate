@@ -113,9 +113,14 @@
 
   /* Professional button styling with gold theme */
   .btn-primary {
-    @apply bg-primary text-primary-foreground hover:bg-primary/90 shadow-lg;
+    @apply text-primary-foreground shadow-lg transition-all duration-200;
     background: var(--gradient-primary);
     box-shadow: var(--shadow-gold);
+  }
+  
+  .btn-primary:hover {
+    transform: scale(1.05);
+    box-shadow: var(--shadow-gold), var(--shadow-elegant);
   }
 
   /* Header navigation styling */
@@ -138,17 +143,19 @@
   /* Enhanced card hover effects with gold accent */
   .card-hover {
     @apply transition-all duration-300 hover:scale-[1.02] hover:border-primary/30;
-    &:hover {
-      box-shadow: var(--shadow-elegant), var(--shadow-gold);
-    }
+  }
+  
+  .card-hover:hover {
+    box-shadow: var(--shadow-elegant), var(--shadow-gold);
   }
   
   /* Teal accent hover effects */
   .card-hover-teal {
     @apply transition-all duration-300 hover:scale-[1.02] hover:border-accent/30;
-    &:hover {
-      box-shadow: var(--shadow-elegant), var(--shadow-teal);
-    }
+  }
+  
+  .card-hover-teal:hover {
+    box-shadow: var(--shadow-elegant), var(--shadow-teal);
   }
 
   /* Student Council Auth Pages */
