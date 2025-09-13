@@ -1,4 +1,5 @@
 import { GraduationCap, Sparkles } from "lucide-react";
+import studentCouncilLogo from "@/../public/student_council.jpg";
 
 export const StudentCouncilLogo = ({ size = "default", showText = true, className = "" }) => {
   const sizes = {
@@ -29,15 +30,10 @@ export const StudentCouncilLogo = ({ size = "default", showText = true, classNam
   return (
     <div className={`logo-container ${className}`}>
       {/* Logo Icon */}
-      <div className={`${currentSize.container} bg-gradient-to-br from-primary via-primary/90 to-accent rounded-full flex items-center justify-center relative overflow-hidden`}>
-        {/* Background decorative elements */}
-        <div className="absolute inset-0 bg-gradient-to-br from-primary/20 to-transparent rounded-full"></div>
-        <div className="absolute top-1 right-1 w-2 h-2 bg-accent/30 rounded-full"></div>
-        <div className="absolute bottom-1 left-1 w-1 h-1 bg-primary/40 rounded-full"></div>
-        
+      <div className={`${currentSize.container}`}>
         {/* Main icon */}
         <div className="relative z-10 flex items-center justify-center">
-          <img src="/student_council.png" alt="Student Council" className="h-full w-full object-contain fill-current"/>
+          <img src={studentCouncilLogo} alt="Student Council" className="h-full w-full object-contain fill-current"/>
         </div>
       </div>
 
