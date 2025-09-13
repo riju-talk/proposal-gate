@@ -1,4 +1,4 @@
-import { GraduationCap, Users, Sparkles } from "lucide-react";
+import { GraduationCap, Sparkles } from "lucide-react";
 
 export const StudentCouncilLogo = ({ size = "default", showText = true, className = "" }) => {
   const sizes = {
@@ -37,7 +37,7 @@ export const StudentCouncilLogo = ({ size = "default", showText = true, classNam
         
         {/* Main icon */}
         <div className="relative z-10 flex items-center justify-center">
-          <GraduationCap className={`${currentSize.icon} text-primary-foreground`} />
+          <img src="/student_council.png" alt="Student Council" className="h-full w-full object-contain fill-current"/>
         </div>
       </div>
 
