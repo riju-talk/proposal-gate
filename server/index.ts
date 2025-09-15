@@ -6,6 +6,12 @@ import cookieParser from 'cookie-parser';
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic } from "./vite";
 import { createServer, type Server } from "http";
+import path from 'path';
+import { fileURLToPath } from 'url';
+
+// Proper __dirname resolution in ESM
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 const log = (message: string, level: string = "info") => {
   const timestamp = new Date().toISOString();
