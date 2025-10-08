@@ -87,9 +87,41 @@ const OTPPage = () => {
   }
 
   return (
-    <div className="min-h-screen bg-background text-foreground">
+    <div className="min-h-screen auth-grid-pattern text-foreground overflow-hidden">
+      {/* Decorative floating elements */}
+      <div className="floating-decoration olive" style={{
+        width: '100px',
+        height: '100px',
+        top: '10%',
+        left: '5%'
+      }} />
+      <div className="floating-decoration teal" style={{
+        width: '80px',
+        height: '80px',
+        top: '15%',
+        right: '8%'
+      }} />
+      <div className="floating-decoration gold" style={{
+        width: '60px',
+        height: '60px',
+        bottom: '20%',
+        left: '10%'
+      }} />
+      <div className="floating-decoration teal" style={{
+        width: '120px',
+        height: '120px',
+        bottom: '10%',
+        right: '5%'
+      }} />
+      <div className="floating-decoration olive" style={{
+        width: '70px',
+        height: '70px',
+        top: '50%',
+        right: '15%'
+      }} />
+
       {/* Header with Student Council Branding */}
-      <header className="nav-header p-6">
+      <header className="nav-header p-6 relative z-10">
         <div className="container-centered flex flex-col lg:flex-row justify-between items-center gap-6">
           <div className="flex items-center gap-6">
             <StudentCouncilLogo size="default" showText={true} />
@@ -103,16 +135,16 @@ const OTPPage = () => {
       </header>
 
       {/* OTP Verification Form */}
-      <main className="flex items-center justify-center flex-1 min-h-[80vh] p-4">
+      <main className="flex items-center justify-center flex-1 min-h-[80vh] p-4 relative z-10">
         <div className="w-full max-w-md">
-          <Card className="professional-card">
-            <CardHeader className="text-center space-y-4">
-              <CardTitle className="text-2xl font-bold text-foreground">
+          <Card className="auth-card">
+            <CardHeader className="text-center space-y-4 pb-6">
+              <CardTitle className="text-3xl font-bold text-foreground">
                 Verify OTP
               </CardTitle>
-              <CardDescription>
+              <CardDescription className="text-base">
                 Enter the 6-digit OTP sent to <br />
-                <span className="font-medium text-foreground">{email}</span>
+                <span className="font-medium text-foreground/90">{email}</span>
               </CardDescription>
             </CardHeader>
 
