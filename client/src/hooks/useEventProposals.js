@@ -20,30 +20,52 @@ export const useEventProposals = (statusFilter, userRole = "public") => {
 
       const proposalsData = result.data;
       console.log("✅ Fetched proposals:", proposalsData.length);
+      console.log(proposalsData);
+      
+      // Normalize field names based on proposal type
+      const normalized = Array.isArray(proposalsData) ? proposalsData.map((proposal) => {
+        // Common fields for all proposals
+        const base = {
+          id: proposal.id,
+          type: proposal.type,
+          status: proposal.status,
+          created_at: proposal.created_at || proposal.createdAt,
+          updated_at: proposal.updated_at || proposal.updatedAt,
+          approvals_summary: proposal.approvals_summary,
+        };
 
-      // Normalize field names to snake_case for consistency
-      const normalized = Array.isArray(proposalsData) ? proposalsData.map((proposal) => ({
-        id: proposal.id,
-        event_name: proposal.event_name || proposal.eventName,
-        organizer_name: proposal.organizer_name || proposal.organizerName,
-        organizer_email: proposal.organizer_email || proposal.organizerEmail,
-        organizer_phone: proposal.organizer_phone || proposal.organizerPhone,
-        event_type: proposal.event_type || proposal.eventType,
-        event_date: proposal.event_date || proposal.eventDate,
-        start_time: proposal.start_time || proposal.startTime,
-        end_time: proposal.end_time || proposal.endTime,
-        venue: proposal.venue,
-        expected_participants: proposal.expected_participants || proposal.expectedParticipants,
-        budget_estimate: proposal.budget_estimate || proposal.budgetEstimate,
-        description: proposal.description,
-        objectives: proposal.objectives,
-        additional_requirements: proposal.additional_requirements || proposal.additionalRequirements,
-        pdf_document_url: proposal.pdf_document_url || proposal.pdfDocumentUrl,
-        status: proposal.status,
-        created_at: proposal.created_at || proposal.createdAt,
-        updated_at: proposal.updated_at || proposal.updatedAt,
-        approvals: proposal.approvals || [],
-      })) : [];
+        // If it's a club proposal, return club-specific fields
+        if (proposal.type === 'club') {
+          return {
+            ...base,
+            club_name: proposal.club_name,
+            founders: proposal.founders,
+            proposal_link: proposal.proposal_link,
+            description: proposal.description,
+          };
+        }
+
+        // If it's an event proposal, return event-specific fields
+        return {
+          ...base,
+          event_name: proposal.event_name || proposal.eventName,
+          organizer_name: proposal.organizer_name || proposal.organizerName,
+          organizer_email: proposal.organizer_email || proposal.organizerEmail,
+          organizer_phone: proposal.organizer_phone || proposal.organizerPhone,
+          event_type: proposal.event_type || proposal.eventType,
+          event_date: proposal.event_date || proposal.eventDate,
+          start_time: proposal.start_time || proposal.startTime,
+          end_time: proposal.end_time || proposal.endTime,
+          venue: proposal.venue,
+          expected_participants: proposal.expected_participants || proposal.expectedParticipants,
+          budget_estimate: proposal.budget_estimate || proposal.budgetEstimate,
+          description: proposal.description,
+          objectives: proposal.objectives,
+          additional_requirements: proposal.additional_requirements || proposal.additionalRequirements,
+          pdf_document_url: proposal.pdf_document_url || proposal.pdfDocumentUrl,
+          approvals: proposal.approvals || [],
+        };
+      }) : [];
 
       setProposals(normalized);
     } catch (err) {

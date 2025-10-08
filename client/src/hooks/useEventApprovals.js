@@ -25,6 +25,7 @@ export const useEventApprovals = (eventId) => {
       }
 
       console.log("✅ Fetched approvals:", data?.length || 0);
+      
       setApprovals(data || []);
       setError(null);
     } catch (err) {

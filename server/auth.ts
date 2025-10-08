@@ -1,6 +1,6 @@
 import { db } from './db';
 import { authorizedAdmins, otpVerifications } from '../shared/schema';
-import { eq, and, desc } from 'drizzle-orm';
+import { eq, and, desc, lt } from 'drizzle-orm';
 import { sendEmail } from './email';
 
 export const sendOTP = async (email: string): Promise<{ success: boolean; error?: string }> => {
@@ -9,7 +9,7 @@ export const sendOTP = async (email: string): Promise<{ success: boolean; error?
     const [admin] = await db
       .select()
       .from(authorizedAdmins)
-      .where(and(eq(authorizedAdmins.email, email), eq(authorizedAdmins.isActive, true)))
+      .where(and(eq(authorizedAdmins.email, email), eq(authorizedAdmins.is_active, true)))
       .limit(1);
 
     if (!admin) {
@@ -21,16 +21,16 @@ export const sendOTP = async (email: string): Promise<{ success: boolean; error?
       .select()
       .from(otpVerifications)
       .where(eq(otpVerifications.email, email))
-      .orderBy(desc(otpVerifications.createdAt))
+      .orderBy(desc(otpVerifications.created_at))
       .limit(1);
 
-    if (lastOtp && Date.now() - new Date(lastOtp.createdAt).getTime() < 60 * 1000) {
+    if (lastOtp && Date.now() - new Date(lastOtp.created_at).getTime() < 60 * 1000) {
       return { success: false, error: 'Please wait 60 seconds before requesting another OTP' };
     }
 
     // Generate OTP
     const otp = Math.floor(100000 + Math.random() * 900000).toString();
-    const expiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
+    const expires_at = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
 
     // Delete any previous OTP records for this email
     await db.delete(otpVerifications).where(eq(otpVerifications.email, email));
@@ -39,9 +39,9 @@ export const sendOTP = async (email: string): Promise<{ success: boolean; error?
     await db.insert(otpVerifications).values({
       email,
       otp,
-      expiresAt,
+      expires_at,
       used: false,
-      createdAt: new Date(),
+      created_at: new Date(),
     });
 
     // Send OTP via email or log to console
@@ -83,7 +83,7 @@ export const verifyOTP = async (
       .select()
       .from(otpVerifications)
       .where(and(eq(otpVerifications.email, email), eq(otpVerifications.used, false)))
-      .orderBy(desc(otpVerifications.createdAt))
+      .orderBy(desc(otpVerifications.created_at))
       .limit(1);
 
     if (!record) {
@@ -91,7 +91,7 @@ export const verifyOTP = async (
     }
 
     // Check expiration
-    if (new Date(record.expiresAt) < now) {
+    if (new Date(record.expires_at) < now) {
       await db.delete(otpVerifications).where(eq(otpVerifications.email, email));
       return { success: false, error: 'OTP has expired. Please request a new code.' };
     }
@@ -147,7 +147,7 @@ export const getCurrentUser = async (email: string) => {
       .from(authorizedAdmins)
       .where(and(
         eq(authorizedAdmins.email, email),
-        eq(authorizedAdmins.isActive, true)
+        eq(authorizedAdmins.is_active, true)
       ))
       .limit(1);
 
@@ -173,7 +173,7 @@ export const getCurrentUser = async (email: string) => {
 export const cleanupExpiredOTPs = async () => {
   try {
     const now = new Date();
-    await db.delete(otpVerifications).where(eq(otpVerifications.expiresAt, now));
+    await db.delete(otpVerifications).where(lt(otpVerifications.expires_at, now));
     console.log('Expired OTPs cleaned up');
   } catch (error) {
     console.error('Error cleaning up expired OTPs:', error);

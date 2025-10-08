@@ -25,7 +25,7 @@ export const verifyRateLimit = rateLimit({
 
 // Security middleware
 export const securityMiddleware = [
-  helmet({
+  helmet(process.env.NODE_ENV === 'production' ? {
     contentSecurityPolicy: {
       directives: {
         defaultSrc: ["'self'"],
@@ -36,14 +36,13 @@ export const securityMiddleware = [
         fontSrc: ["'self'", "https:", "data:"],
       },
     },
-  }),
+  } : { contentSecurityPolicy: false }),
   cors({
     origin: process.env.NODE_ENV === 'production' 
       ? ['https://your-domain.com'] 
       : ['http://localhost:5000', 'http://localhost:8080', 'http://localhost:3000'],
     credentials: true,
   }),
-  cookieParser(),
 ];
 
 // Admin authentication middleware using JWT from HTTP-only cookies

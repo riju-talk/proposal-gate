@@ -5,11 +5,11 @@ import { useEventProposals } from "@/hooks/useEventProposals";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { EventProposalCard } from "@/components/EventProposalCard";
+import { ProposalCard } from "@/components/ProposalCard";
 import { ProposalDetailsModal } from "@/components/ProposalDetailsModal";
 import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Search, Filter, LogIn, LogOut, CheckCircle, Clock, XCircle } from "lucide-react";
+import { Search, Filter, LogIn, LogOut, XCircle, Users, Building2, Eye } from "lucide-react";
 import { StudentCouncilLogo } from "@/components/StudentCouncilLogo";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
@@ -22,16 +22,16 @@ const HomePage = () => {
   const [statusFilter, setStatusFilter] = useState("all");
   const [selectedProposal, setSelectedProposal] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [activeStatusTab, setActiveStatusTab] = useState("pending");
+  const [activeTypeTab, setActiveTypeTab] = useState("all");
 
   const userRole = user ? (user.role === "admin" ? "admin" : "coordinator") : "public";
   const { proposals, isLoading, updateProposalStatus, error } = useEventProposals(statusFilter, userRole);
 
   const availableStatusFilters = useMemo(() => [
-    { value: "all", label: "All Events" },
-    { value: "approved", label: "Approved Events" },
-    { value: "pending", label: "Pending Events" },
-    { value: "rejected", label: "Rejected Events" }
+    { value: "all", label: "All Status" },
+    { value: "approved", label: "Approved" },
+    { value: "pending", label: "Pending" },
+    { value: "rejected", label: "Rejected" }
   ], []);
 
   const filteredProposals = useMemo(() => {
@@ -42,24 +42,26 @@ const HomePage = () => {
       const eventName = (proposal.event_name || "").toLowerCase();
       const organizerName = (proposal.organizer_name || "").toLowerCase();
       const description = (proposal.description || "").toLowerCase();
-      const venue = (proposal.venue || "").toLowerCase();
       const status = (proposal.status || "").toLowerCase();
 
       const matchesSearch =
         eventName.includes(searchLower) ||
         organizerName.includes(searchLower) ||
-        description.includes(searchLower) ||
-        venue.includes(searchLower);
+        description.includes(searchLower);
 
+      // Type filtering for admin view
       if (userRole === "admin") {
-        const matchesStatusTab =
-          activeStatusTab === status;
-        return matchesSearch && matchesStatusTab;
+        const matchesTypeTab =
+          activeTypeTab === "all" ||
+          (activeTypeTab === "events" && proposal.type === "event") ||
+          (activeTypeTab === "clubs" && proposal.type === "club");
+        return matchesSearch && matchesTypeTab;
       }
 
+      // For non-admin users, use status filter
       return matchesSearch && (statusFilter === "all" || status === statusFilter);
     });
-  }, [proposals, searchTerm, statusFilter, userRole, activeStatusTab]);
+  }, [proposals, searchTerm, statusFilter, userRole, activeTypeTab]);
 
   const handleViewDetails = (proposal) => {
     setSelectedProposal(proposal);
@@ -71,7 +73,7 @@ const HomePage = () => {
       await updateProposalStatus(id, status, comments);
       toast({
         title: "Success",
-        description: `Event ${status} successfully`,
+        description: `Proposal ${status} successfully`,
         variant: "default",
         duration: 3000,
       });
@@ -158,7 +160,7 @@ const HomePage = () => {
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
                 type="text"
-                placeholder="Search events..."
+                placeholder="Search events and clubs..."
                 className="pl-10 w-64"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
@@ -201,35 +203,35 @@ const HomePage = () => {
 
       <main className="container mx-auto p-6">
         <div className="mb-8 text-center">
-          <h2 className="text-3xl font-bold mb-4">Campus Events & Activities</h2>
+          <h2 className="text-3xl font-bold mb-4">Campus Events & Club Proposals</h2>
           <p className="text-gray-400 max-w-2xl mx-auto">
-            Discover all the upcoming events, activities, and opportunities at IIIT Delhi.
+            Discover all the upcoming events, activities, and club proposals at IIIT Delhi.
           </p>
         </div>
 
         {userRole === "admin" ? (
-          <Tabs value={activeStatusTab} onValueChange={setActiveStatusTab} className="space-y-8">
+          <Tabs value={activeTypeTab} onValueChange={setActiveTypeTab} className="space-y-8">
             <div className="flex justify-center">
               <TabsList className="bg-card border border-border">
-                <TabsTrigger value="pending" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
-                  <Clock className="h-4 w-4 mr-2" /> Pending Approval
+                <TabsTrigger value="all" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
+                  <Eye className="h-4 w-4 mr-2" /> All Proposals
                 </TabsTrigger>
-                <TabsTrigger value="approved" className="data-[state=active]:bg-success data-[state=active]:text-success-foreground">
-                  <CheckCircle className="h-4 w-4 mr-2" /> Approved
+                <TabsTrigger value="events" className="data-[state=active]:bg-blue-500 data-[state=active]:text-white">
+                  <Users className="h-4 w-4 mr-2" /> Events Only
                 </TabsTrigger>
-                <TabsTrigger value="rejected" className="data-[state=active]:bg-destructive data-[state=active]:text-destructive-foreground">
-                  <XCircle className="h-4 w-4 mr-2" /> Rejected
+                <TabsTrigger value="clubs" className="data-[state=active]:bg-purple-500 data-[state=active]:text-white">
+                  <Building2 className="h-4 w-4 mr-2" /> Clubs Only
                 </TabsTrigger>
               </TabsList>
             </div>
 
-            <TabsContent value={activeStatusTab}>
+            <TabsContent value={activeTypeTab}>
               {filteredProposals.length === 0 ? (
-                <NoProposals searchTerm={searchTerm} statusTab={activeStatusTab} />
+                <NoProposals searchTerm={searchTerm} typeTab={activeTypeTab} />
               ) : (
                 <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
                   {filteredProposals.map((proposal) => (
-                    <EventProposalCard
+                    <ProposalCard
                       key={proposal.id}
                       proposal={proposal}
                       onViewDetails={() => handleViewDetails(proposal)}
@@ -247,12 +249,10 @@ const HomePage = () => {
           ) : (
             <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
               {filteredProposals.map((proposal) => (
-                <EventProposalCard
+                <ProposalCard
                   key={proposal.id}
                   proposal={proposal}
                   onViewDetails={() => handleViewDetails(proposal)}
-                  showActions={false}
-                  userRole={userRole}
                 />
               ))}
             </div>
@@ -267,6 +267,7 @@ const HomePage = () => {
             showActions={userRole === "admin"}
             onStatusUpdate={handleStatusUpdate}
             userRole={userRole}
+            currentUser={user}
           />
         )}
       </main>
@@ -289,20 +290,22 @@ const HeaderSkeleton = () => (
 );
 
 // Reusable NoProposals UI
-const NoProposals = ({ searchTerm, statusTab }) => (
+const NoProposals = ({ searchTerm, typeTab, statusTab }) => (
   <div className="flex flex-col items-center justify-center py-16 text-center">
     <div className="bg-muted/50 rounded-full p-6 mb-6 border border-border">
       <Search className="h-12 w-12 text-muted-foreground" />
     </div>
     <h3 className="text-xl font-semibold mb-2 text-foreground">
-      No Events Found
+      No Proposals Found
     </h3>
     <p className="text-muted-foreground max-w-md">
       {searchTerm
         ? "Try adjusting your search or filter criteria"
-        : statusTab
-          ? `No ${statusTab} events found`
-          : "No events have been submitted yet"}
+        : typeTab
+          ? `No ${typeTab === 'events' ? 'event' : typeTab === 'clubs' ? 'club' : ''} proposals found`
+          : statusTab
+            ? `No ${statusTab} proposals found`
+            : "No proposals have been submitted yet"}
     </p>
   </div>
 );

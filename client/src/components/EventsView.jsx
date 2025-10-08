@@ -1,6 +1,6 @@
 import { useState, useMemo } from "react";
 import { useEventProposals } from "@/hooks/useEventProposals";
-import { EventProposalCard } from "@/components/EventProposalCard";
+import { ProposalCard } from "@/components/ProposalCard";
 import { ProposalDetailsModal } from "@/components/ProposalDetailsModal";
 import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -186,12 +186,10 @@ export const EventsView = ({ searchTerm = "", statusFilter, userRole }) => {
           <TabsContent value={activeStatusTab}>
             <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
               {filteredProposals.map((proposal) => (
-                <EventProposalCard
+                <ProposalCard
                   key={proposal.id}
                   proposal={proposal}
                   onViewDetails={() => handleViewDetails(proposal)}
-                  showActions
-                  userRole={userRole}
                 />
               ))}
             </div>
@@ -211,18 +209,15 @@ export const EventsView = ({ searchTerm = "", statusFilter, userRole }) => {
       </>
     );
   }
-
   // Coordinator / Public view
   return (
     <>
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
         {filteredProposals.map((proposal) => (
-          <EventProposalCard
+          <ProposalCard
             key={proposal.id}
             proposal={proposal}
             onViewDetails={() => handleViewDetails(proposal)}
-            showActions={false}
-            userRole={userRole}
           />
         ))}
       </div>
