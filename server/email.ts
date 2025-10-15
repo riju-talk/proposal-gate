@@ -1,9 +1,15 @@
 import nodemailer from "nodemailer";
+import dotenv from "dotenv";
+
+dotenv.config();
 
 const SMTP_USER = process.env.SMTP_USER;
-const SMTP_PASSWORD = process.env.SMTP_PASSWORD;
+const SMTP_PASSWORD = process.env.SMTP_PASS;
 const SMTP_HOST = "smtp.gmail.com";
 const SMTP_PORT = 465;
+
+console.log("[mailer] SMTP_USER:", SMTP_USER ? "configured" : "NOT configured");
+console.log("[mailer] SMTP_PASSWORD:", SMTP_PASSWORD ? "configured" : "NOT configured");
 
 // Create transporter only if SMTP credentials are available
 const transporter = SMTP_USER && SMTP_PASSWORD
